@@ -290,69 +290,75 @@ class AppSideMenu extends StatelessWidget {
     String subtitle, {
     String? badge,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      decoration: BoxDecoration(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Material(
         color: AppColors.surface,
-        borderRadius: AppRadius.cardRadius,
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.xs,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.cardRadius,
+          side: BorderSide(color: AppColors.border.withValues(alpha: 0.5)),
         ),
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppColors.background,
-            borderRadius: BorderRadius.circular(8),
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.xs,
           ),
-          child: Icon(icon, color: AppColors.primaryDark, size: 24),
-        ),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                title,
-                style: AppTextStyles.labelLarge.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+          leading: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(8),
             ),
-            if (badge != null)
-              Container(
-                margin: const EdgeInsets.only(left: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
+            child: Icon(icon, color: AppColors.primaryDark, size: 24),
+          ),
+          title: Row(
+            children: [
+              Expanded(
                 child: Text(
-                  badge,
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.primary,
-                    fontSize: 10,
+                  title,
+                  style: AppTextStyles.labelLarge.copyWith(
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-          ],
-        ),
-        subtitle: subtitle.isNotEmpty
-            ? Text(
-                subtitle,
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.textSecondary,
-                  fontSize: 11,
+              if (badge != null)
+                Container(
+                  margin: const EdgeInsets.only(left: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    badge,
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.primary,
+                      fontSize: 10,
+                    ),
+                  ),
                 ),
-              )
-            : null,
-        trailing: const Icon(
-          Icons.chevron_right,
-          color: AppColors.textSecondary,
-          size: 20,
+            ],
+          ),
+          subtitle: subtitle.isNotEmpty
+              ? Text(
+                  subtitle,
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                  ),
+                )
+              : null,
+          trailing: const Icon(
+            Icons.chevron_right,
+            color: AppColors.textSecondary,
+            size: 20,
+          ),
+          onTap: () {},
         ),
-        onTap: () {},
       ),
     );
   }

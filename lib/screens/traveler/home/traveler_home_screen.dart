@@ -4,12 +4,24 @@ import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../theme/app_spacing.dart';
 
+import 'package:intl/intl.dart';
+
 import '../../../../widgets/common/app_search_bar.dart';
 import '../../../../widgets/common/section_header.dart';
 import '../../../../widgets/common/app_icon_button.dart';
+import '../../../../widgets/cards/destination_card.dart';
+import '../../../../widgets/cards/homestay_card.dart';
+import 'widgets/home_filter_bottom_sheet.dart';
 
-class TravelerHomeScreen extends StatelessWidget {
+class TravelerHomeScreen extends StatefulWidget {
   const TravelerHomeScreen({super.key});
+
+  @override
+  State<TravelerHomeScreen> createState() => _TravelerHomeScreenState();
+}
+
+class _TravelerHomeScreenState extends State<TravelerHomeScreen> {
+  HomeFilterData? _filterData;
 
   @override
   Widget build(BuildContext context) {
@@ -23,11 +35,11 @@ class TravelerHomeScreen extends StatelessWidget {
               _buildAppBar(context),
               _buildSearchBar(),
               _buildFiltersRow(),
-              const SizedBox(height: AppSpacing.lg),
+              const SizedBox(height: AppSpacing.xl),
               _buildPopularDestinations(),
-              const SizedBox(height: AppSpacing.xl),
+              const SizedBox(height: AppSpacing.xxl),
               _buildVillageExperienceBanner(),
-              const SizedBox(height: AppSpacing.xl),
+              const SizedBox(height: AppSpacing.xxl),
               _buildRecommendedHomestays(),
               const SizedBox(height: AppSpacing.xxl),
             ],
@@ -121,80 +133,155 @@ class TravelerHomeScreen extends StatelessWidget {
   }
 
   Widget _buildSearchBar() {
-    return const AppSearchBar(
-      placeholder: 'Search destination, village, or homestay...',
+    return AppSearchBar(
+      placeholder: 'Search destinations, homestays...',
+      onFilterTap: _openFilterSheet,
     );
+  }
+
+  void _openFilterSheet() async {
+    final result = await showModalBottomSheet<HomeFilterData>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => HomeFilterBottomSheet(initialData: _filterData),
+    );
+
+    if (result != null) {
+      setState(() {
+        _filterData = result.hasAnyFilter ? result : null;
+      });
+    }
   }
 
   Widget _buildFiltersRow() {
+    if (_filterData == null || !_filterData!.hasAnyFilter) {
+      return const SizedBox.shrink();
+    }
+
+    final filters = <Widget>[];
+
+    if (_filterData!.checkIn != null && _filterData!.checkOut != null) {
+      final inFormat = DateFormat('dd MMM').format(_filterData!.checkIn!);
+      final outFormat = DateFormat('dd MMM').format(_filterData!.checkOut!);
+      filters.add(
+        _buildActiveFilterChip(
+          Icons.calendar_today,
+          '$inFormat–$outFormat',
+          onRemove: () {
+            setState(() {
+              _filterData = HomeFilterData(
+                adults: _filterData!.adults,
+                children: _filterData!.children,
+                useLocation: _filterData!.useLocation,
+                locationPosition: _filterData!.locationPosition,
+              );
+              if (!_filterData!.hasAnyFilter) _filterData = null;
+            });
+          },
+        ),
+      );
+    }
+
+    if (_filterData!.adults > 1 || _filterData!.children > 0) {
+      final text =
+          '${_filterData!.totalGuests} Guest${_filterData!.totalGuests > 1 ? 's' : ''}';
+      filters.add(
+        _buildActiveFilterChip(
+          Icons.people,
+          text,
+          onRemove: () {
+            setState(() {
+              _filterData = HomeFilterData(
+                checkIn: _filterData!.checkIn,
+                checkOut: _filterData!.checkOut,
+                useLocation: _filterData!.useLocation,
+                locationPosition: _filterData!.locationPosition,
+              );
+              if (!_filterData!.hasAnyFilter) _filterData = null;
+            });
+          },
+        ),
+      );
+    }
+
+    if (_filterData!.useLocation) {
+      filters.add(
+        _buildActiveFilterChip(
+          Icons.location_on,
+          'My Location',
+          onRemove: () {
+            setState(() {
+              _filterData = HomeFilterData(
+                checkIn: _filterData!.checkIn,
+                checkOut: _filterData!.checkOut,
+                adults: _filterData!.adults,
+                children: _filterData!.children,
+                useLocation: false,
+                locationPosition: null,
+              );
+              if (!_filterData!.hasAnyFilter) _filterData = null;
+            });
+          },
+        ),
+      );
+    }
+
+    if (filters.isEmpty) return const SizedBox.shrink();
+
     return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.md),
+      padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.sm),
       child: SizedBox(
-        height: 40,
+        height: 44,
         child: ListView(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          children: [
-            _buildFilterChip(Icons.location_on, 'Galewela', isSelected: true),
-            _buildFilterChip(Icons.calendar_today, '20-22 Aug'),
-            _buildFilterChip(Icons.people, '2 Guests'),
-            Container(
-              margin: const EdgeInsets.only(left: AppSpacing.sm),
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.tune, color: AppColors.surface, size: 20),
-            ),
-          ],
+          children: filters,
         ),
       ),
     );
   }
 
-  Widget _buildFilterChip(
+  Widget _buildActiveFilterChip(
     IconData icon,
     String label, {
-    bool isSelected = false,
+    required VoidCallback onRemove,
   }) {
     return Container(
       margin: const EdgeInsets.only(right: AppSpacing.sm),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: 8,
-      ),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isSelected
-              ? AppColors.primary
-              : AppColors.border.withValues(alpha: 0.5),
-        ),
+        color: AppColors.primary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.primary),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 16,
-            color: isSelected ? AppColors.primary : AppColors.secondary,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textPrimary,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onRemove,
+          borderRadius: BorderRadius.circular(22),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: 8,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 16, color: AppColors.primaryDark),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.primaryDark,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                const Icon(Icons.close, size: 16, color: AppColors.primaryDark),
+              ],
             ),
           ),
-          const SizedBox(width: 4),
-          Icon(
-            Icons.keyboard_arrow_down,
-            size: 16,
-            color: AppColors.textSecondary,
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -215,82 +302,29 @@ class TravelerHomeScreen extends StatelessWidget {
           child: ListView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            children: [
-              _buildDestinationCard(
-                'Sigiriya',
-                'Ancient Citadel',
-                'CITADEL',
-                'assets/images/onboarding/onboarding_01.png',
+            children: const [
+              DestinationCard(
+                title: 'Sigiriya',
+                subtitle: 'Ancient Citadel',
+                category: 'CITADEL',
+                imagePath: 'assets/images/onboarding/onboarding_01.png',
               ),
-              _buildDestinationCard(
-                'Knuckles',
-                'Central Range',
-                'HIGHLANDS',
-                'assets/images/onboarding/onboarding_02.png',
+              DestinationCard(
+                title: 'Knuckles',
+                subtitle: 'Central Range',
+                category: 'HIGHLANDS',
+                imagePath: 'assets/images/onboarding/onboarding_02.png',
               ),
-              _buildDestinationCard(
-                'Galewela',
-                'Nilagama Village',
-                'SANCTUARY',
-                'assets/images/onboarding/onboarding_03.png',
+              DestinationCard(
+                title: 'Galewela',
+                subtitle: 'Nilagama Village',
+                category: 'SANCTUARY',
+                imagePath: 'assets/images/onboarding/onboarding_03.png',
               ),
             ],
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildDestinationCard(
-    String title,
-    String subtitle,
-    String category,
-    String imagePath,
-  ) {
-    return Container(
-      width: 140,
-      margin: const EdgeInsets.only(right: AppSpacing.md),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        image: DecorationImage(image: AssetImage(imagePath), fit: BoxFit.cover),
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.transparent, Colors.black.withValues(alpha: 0.7)],
-          ),
-        ),
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              category,
-              style: AppTextStyles.caption.copyWith(
-                color: AppColors.secondary,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
-              ),
-            ),
-            Text(
-              title,
-              style: AppTextStyles.sectionHeading.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Text(
-              subtitle,
-              style: AppTextStyles.caption.copyWith(color: Colors.white70),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -339,44 +373,38 @@ class TravelerHomeScreen extends StatelessWidget {
               style: AppTextStyles.sectionHeading.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
+                fontSize: 20,
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Experience traditional blacksmithing, woodcarving, bullock cart rides across lotus lakes, and ancestral clay pot clay cooking lunch.',
+              'Experience traditional blacksmithing, woodcarving, bullock cart rides across lotus lakes, and ancestral clay pot cooking lunch.',
               style: AppTextStyles.bodyMedium.copyWith(
                 color: Colors.white70,
                 height: 1.4,
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.phone,
-                      color: AppColors.secondary,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '+94 71 422 6176',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
+            ElevatedButton(
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.secondary,
+                foregroundColor: AppColors.primaryDark,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                Text(
-                  'info@villagetoursrilanka.com',
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.secondary,
-                    decoration: TextDecoration.underline,
-                  ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
                 ),
-              ],
+                minimumSize: const Size(0, 44),
+              ),
+              child: Text(
+                'Explore Experiences',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ],
         ),
@@ -391,293 +419,28 @@ class TravelerHomeScreen extends StatelessWidget {
         SectionHeader(
           title: 'Recommended Homestays',
           subtitle: 'Stay with verified rural artisan families',
-          trailing: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.green.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.verified, color: Colors.green, size: 14),
-                const SizedBox(width: 4),
-                Text(
-                  'Verified Hosts',
-                  style: AppTextStyles.caption.copyWith(
-                    color: Colors.green,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
         ),
         const SizedBox(height: AppSpacing.md),
-        _buildHomestayCard(
-          'Nilagama Traditional Mud House',
-          'Nilagama, Bambaragaswewa, Galewela',
-          '4.9',
-          '(48)',
-          'Rs. 3,500',
-          ['Organic Farm & Bullock Cart', 'Catamaran Lake Ride'],
-          'assets/images/onboarding/onboarding_01.png',
+        const HomestayCard(
+          title: 'Nilagama Traditional Mud House',
+          location: 'Nilagama, Bambaragaswewa, Galewela',
+          rating: '4.9',
+          reviews: '(48)',
+          price: 'Rs. 3,500',
+          features: ['Organic Farm & Bullock Cart', 'Catamaran Lake Ride'],
+          imagePath: 'assets/images/onboarding/onboarding_01.png',
         ),
-        const SizedBox(height: AppSpacing.md),
-        _buildHomestayCard(
-          'Lakeside Eco Sanctuary & Camp',
-          'Bats Lake, Galewela, Central Province',
-          '4.8',
-          '(34)',
-          'Rs. 4,500',
-          ['Camping', 'Bird Watching'],
-          'assets/images/onboarding/onboarding_02.png',
+        const SizedBox(height: AppSpacing.lg),
+        const HomestayCard(
+          title: 'Lakeside Eco Sanctuary & Camp',
+          location: 'Bats Lake, Galewela, Central Province',
+          rating: '4.8',
+          reviews: '(34)',
+          price: 'Rs. 4,500',
+          features: ['Camping', 'Bird Watching'],
+          imagePath: 'assets/images/onboarding/onboarding_02.png',
         ),
       ],
-    );
-  }
-
-  Widget _buildHomestayCard(
-    String title,
-    String location,
-    String rating,
-    String reviews,
-    String price,
-    List<String> features,
-    String imagePath,
-  ) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            children: [
-              Container(
-                height: 180,
-                decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(24),
-                  ),
-                  image: DecorationImage(
-                    image: AssetImage(imagePath),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 12,
-                left: 12,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.verified_outlined,
-                        color: Colors.white,
-                        size: 14,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Verified Rural Host',
-                        style: AppTextStyles.caption.copyWith(
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 12,
-                right: 12,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.favorite_border,
-                    color: AppColors.textPrimary,
-                    size: 20,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: AppTextStyles.sectionHeading.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primaryDark,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppColors.border.withValues(alpha: 0.5),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.star,
-                            color: AppColors.tertiary,
-                            size: 14,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            rating,
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            reviews,
-                            style: AppTextStyles.caption.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.location_on_outlined,
-                      color: AppColors.secondary,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        location,
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: features
-                      .map(
-                        (f) => Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.background,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: AppColors.border.withValues(alpha: 0.5),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.eco,
-                                color: AppColors.primary,
-                                size: 14,
-                              ), // Default icon
-                              const SizedBox(width: 4),
-                              Text(
-                                f,
-                                style: AppTextStyles.caption.copyWith(
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                      .toList(),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        Text(
-                          price,
-                          style: AppTextStyles.sectionHeading.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primaryDark,
-                          ),
-                        ),
-                        Text(
-                          ' / night',
-                          style: AppTextStyles.caption.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    ElevatedButton(
-                      onPressed: () {},
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryDark,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 12,
-                        ),
-                      ),
-                      child: const Text('View Details'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

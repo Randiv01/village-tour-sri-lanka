@@ -51,8 +51,12 @@ class SectionHeader extends StatelessWidget {
           if (actionText != null)
             InkWell(
               onTap: onActionTap,
+              borderRadius: BorderRadius.circular(4),
               child: Padding(
-                padding: const EdgeInsets.only(left: AppSpacing.sm, bottom: 2),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: 12,
+                ),
                 child: Text(
                   actionText!,
                   style: AppTextStyles.bodyMedium.copyWith(
