@@ -394,7 +394,9 @@ class _HomeFilterBottomSheetState extends State<HomeFilterBottomSheet> {
                   child: Text(
                     'Clear',
                     style: AppTextStyles.bodyMedium.copyWith(
-                      color: _hasAnyFilter ? AppColors.textSecondary : AppColors.textSecondary.withValues(alpha: 0.4),
+                      color: _hasAnyFilter
+                          ? AppColors.textSecondary
+                          : AppColors.textSecondary.withValues(alpha: 0.4),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -404,9 +406,13 @@ class _HomeFilterBottomSheetState extends State<HomeFilterBottomSheet> {
                   onPressed: _hasAnyFilter ? _applyFilters : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.5),
+                    disabledBackgroundColor: AppColors.primary.withValues(
+                      alpha: 0.5,
+                    ),
                     foregroundColor: AppColors.surface,
-                    disabledForegroundColor: AppColors.surface.withValues(alpha: 0.8),
+                    disabledForegroundColor: AppColors.surface.withValues(
+                      alpha: 0.8,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -419,7 +425,9 @@ class _HomeFilterBottomSheetState extends State<HomeFilterBottomSheet> {
                   child: Text(
                     'Apply Filters',
                     style: AppTextStyles.bodyMedium.copyWith(
-                      color: _hasAnyFilter ? AppColors.surface : AppColors.surface.withValues(alpha: 0.8),
+                      color: _hasAnyFilter
+                          ? AppColors.surface
+                          : AppColors.surface.withValues(alpha: 0.8),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
