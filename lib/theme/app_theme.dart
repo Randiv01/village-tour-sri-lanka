@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'app_colors.dart';
 import 'app_text_styles.dart';
 import 'app_radius.dart';
@@ -62,7 +63,9 @@ class AppTheme {
           foregroundColor: AppColors.primaryDark,
           backgroundColor: Colors.transparent, // transparent surface
           side: const BorderSide(color: AppColors.primary, width: 1.5),
-          textStyle: AppTextStyles.buttonText.copyWith(color: AppColors.primaryDark),
+          textStyle: AppTextStyles.buttonText.copyWith(
+            color: AppColors.primaryDark,
+          ),
           padding: const EdgeInsets.symmetric(
             vertical: AppSpacing.md,
             horizontal: AppSpacing.xl,
@@ -75,7 +78,9 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: AppColors.primary,
-          textStyle: AppTextStyles.buttonText.copyWith(color: AppColors.primary),
+          textStyle: AppTextStyles.buttonText.copyWith(
+            color: AppColors.primary,
+          ),
           padding: const EdgeInsets.symmetric(
             vertical: AppSpacing.sm,
             horizontal: AppSpacing.md,
@@ -105,7 +110,9 @@ class AppTheme {
           borderRadius: AppRadius.inputButtonRadius,
           borderSide: BorderSide(color: AppColors.error),
         ),
-        hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+        hintStyle: AppTextStyles.bodyMedium.copyWith(
+          color: AppColors.textSecondary,
+        ),
         labelStyle: AppTextStyles.bodyMedium,
       ),
       cardTheme: CardThemeData(
@@ -120,8 +127,13 @@ class AppTheme {
       ),
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.softSecondarySurface,
-        labelStyle: AppTextStyles.caption.copyWith(color: AppColors.textPrimary),
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+        labelStyle: AppTextStyles.caption.copyWith(
+          color: AppColors.textPrimary,
+        ),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.xs,
+        ),
         shape: const StadiumBorder(side: BorderSide(color: Colors.transparent)),
       ),
       dividerTheme: const DividerThemeData(
@@ -140,7 +152,9 @@ class AppTheme {
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.large)),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppRadius.large),
+          ),
         ),
       ),
     );

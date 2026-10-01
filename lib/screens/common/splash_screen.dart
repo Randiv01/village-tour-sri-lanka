@@ -4,13 +4,14 @@ import 'dart:async';
 
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../firebase_options.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import 'onboarding_screen_1.dart';
+import '../traveler/main/traveler_main_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -73,24 +74,15 @@ class _SplashScreenState extends State<SplashScreen>
       final prefs = await SharedPreferences.getInstance();
       final hasCompletedOnboarding =
           prefs.getBool('onboarding_completed') ?? false;
-      final currentUser = FirebaseAuth.instance.currentUser;
-
       if (!mounted) return;
 
       Widget nextScreen;
 
       if (!hasCompletedOnboarding) {
         nextScreen = const OnboardingScreen1();
-      } else if (currentUser != null) {
-        // Authenticated user (Placeholder until real Home screen is ready)
-        nextScreen = const Scaffold(
-          body: Center(child: Text('Home Screen (Auth OK)')),
-        );
       } else {
-        // Unauthenticated user (Placeholder until real Auth screen is ready)
-        nextScreen = const Scaffold(
-          body: Center(child: Text('Sign In / Auth Screen')),
-        );
+        // Skipping auth for now, go straight to home
+        nextScreen = const TravelerMainScreen();
       }
 
       Navigator.of(context).pushReplacement(

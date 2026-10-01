@@ -5,6 +5,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_radius.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_text_styles.dart';
+import '../traveler/main/traveler_main_screen.dart';
 
 class OnboardingScreen3 extends StatelessWidget {
   const OnboardingScreen3({super.key});
@@ -15,11 +16,7 @@ class OnboardingScreen3 extends StatelessWidget {
 
     if (context.mounted) {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => const Scaffold(
-            body: Center(child: Text('Sign In / Auth Screen')),
-          ),
-        ),
+        MaterialPageRoute(builder: (_) => const TravelerMainScreen()),
       );
     }
   }
@@ -53,7 +50,7 @@ class OnboardingScreen3 extends StatelessWidget {
                       children: [
                         const Spacer(),
                         // Image Container
-                        Container(
+                        SizedBox(
                           height: MediaQuery.of(context).size.height * 0.4,
                           width: double.infinity,
                           child: ClipRRect(

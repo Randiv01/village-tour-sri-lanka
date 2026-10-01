@@ -73,7 +73,7 @@ class OnboardingScreen2 extends StatelessWidget {
                       children: [
                         const Spacer(),
                         // Image Container
-                        Container(
+                        SizedBox(
                           height: MediaQuery.of(context).size.height * 0.4,
                           width: double.infinity,
                           child: ClipRRect(
