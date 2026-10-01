@@ -12,6 +12,7 @@ import '../../../../widgets/common/app_icon_button.dart';
 import '../../../../widgets/cards/destination_card.dart';
 import '../../../../widgets/cards/homestay_card.dart';
 import 'widgets/home_filter_bottom_sheet.dart';
+import '../../admin/admin_shell.dart';
 
 class TravelerHomeScreen extends StatefulWidget {
   const TravelerHomeScreen({super.key});
@@ -108,22 +109,29 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen> {
                 onTap: () {},
               ),
               const SizedBox(width: AppSpacing.sm),
-              Container(
-                height: 40,
-                width: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  image: const DecorationImage(
-                    image: AssetImage(
-                      'assets/images/onboarding/onboarding_01.png',
-                    ), // Placeholder
-                    fit: BoxFit.cover,
+              GestureDetector(
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const AdminShell()),
+                  );
+                },
+                child: Container(
+                  height: 40,
+                  width: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    image: const DecorationImage(
+                      image: AssetImage(
+                        'assets/images/onboarding/onboarding_01.png',
+                      ), // Placeholder
+                      fit: BoxFit.cover,
+                    ),
+                    border: Border.all(
+                      color: AppColors.border.withValues(alpha: 0.5),
+                    ),
                   ),
-                  border: Border.all(
-                    color: AppColors.border.withValues(alpha: 0.5),
-                  ),
+                  child: const Icon(Icons.person, color: Colors.transparent),
                 ),
-                child: const Icon(Icons.person, color: Colors.transparent),
               ),
             ],
           ),
