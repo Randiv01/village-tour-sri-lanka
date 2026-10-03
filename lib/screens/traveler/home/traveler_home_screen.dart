@@ -13,6 +13,10 @@ import '../../../../widgets/cards/destination_card.dart';
 import '../../../../widgets/cards/homestay_card.dart';
 import 'widgets/home_filter_bottom_sheet.dart';
 import '../../admin/admin_shell.dart';
+import '../../../../repositories/destination_repository.dart';
+import '../../../../models/destination.dart';
+import '../destinations/explore_destinations_screen.dart';
+import '../destinations/destination_details_screen.dart';
 
 class TravelerHomeScreen extends StatefulWidget {
   const TravelerHomeScreen({super.key});
@@ -302,35 +306,103 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen> {
           title: 'Popular Destinations',
           subtitle: 'Explore ancient living heritage and nature',
           actionText: 'See all >',
-          onActionTap: () {},
+          onActionTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ExploreDestinationsScreen(),
+              ),
+            );
+          },
         ),
         const SizedBox(height: AppSpacing.md),
-        SizedBox(
-          height: 220,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            children: const [
-              DestinationCard(
-                title: 'Sigiriya',
-                subtitle: 'Ancient Citadel',
-                category: 'CITADEL',
-                imagePath: 'assets/images/onboarding/onboarding_01.png',
+        StreamBuilder<List<Destination>>(
+          stream: DestinationRepository().getPopularActiveDestinationsStream(),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                child: Column(
+                  children: [
+                    const Text('Unable to load destinations.'),
+                    TextButton(
+                      onPressed: () => setState(() {}),
+                      child: const Text('Try Again'),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return SizedBox(
+                height: 220,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                  ),
+                  itemCount: 3,
+                  itemBuilder: (context, index) {
+                    return Container(
+                      width: MediaQuery.of(context).size.width * 0.38,
+                      margin: const EdgeInsets.only(right: AppSpacing.md),
+                      decoration: BoxDecoration(
+                        color: AppColors.softSecondarySurface,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    );
+                  },
+                ),
+              );
+            }
+
+            final destinations = snapshot.data ?? [];
+
+            if (destinations.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                child: Text(
+                  'No popular destinations yet.\nExplore more places coming soon.',
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+              );
+            }
+
+            return SizedBox(
+              height: 220,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                itemCount: destinations.length,
+                itemBuilder: (context, index) {
+                  final dest = destinations[index];
+                  String imageUrl = '';
+                  if (dest.images.isNotEmpty) {
+                    imageUrl = dest.images.first.url;
+                  } else if (dest.imageUrl != null) {
+                    imageUrl = dest.imageUrl!;
+                  }
+
+                  return DestinationCard(
+                    title: dest.name,
+                    subtitle: dest.locationName,
+                    category: 'DESTINATION',
+                    imageUrl: imageUrl,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              DestinationDetailsScreen(destination: dest),
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
-              DestinationCard(
-                title: 'Knuckles',
-                subtitle: 'Central Range',
-                category: 'HIGHLANDS',
-                imagePath: 'assets/images/onboarding/onboarding_02.png',
-              ),
-              DestinationCard(
-                title: 'Galewela',
-                subtitle: 'Nilagama Village',
-                category: 'SANCTUARY',
-                imagePath: 'assets/images/onboarding/onboarding_03.png',
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ],
     );

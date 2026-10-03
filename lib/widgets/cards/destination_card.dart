@@ -8,7 +8,7 @@ class DestinationCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final String category;
-  final String imagePath;
+  final String imageUrl;
   final double? width;
   final VoidCallback? onTap;
 
@@ -17,7 +17,7 @@ class DestinationCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.category,
-    required this.imagePath,
+    required this.imageUrl,
     this.width,
     this.onTap,
   });
@@ -34,48 +34,91 @@ class DestinationCard extends StatelessWidget {
         margin: const EdgeInsets.only(right: AppSpacing.md),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
-          image: DecorationImage(
-            image: AssetImage(imagePath),
-            fit: BoxFit.cover,
-          ),
+          color: AppColors.surface, // fallback color
         ),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Colors.transparent, Colors.black.withValues(alpha: 0.7)],
-            ),
-          ),
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.end,
-            crossAxisAlignment: CrossAxisAlignment.start,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Stack(
+            fit: StackFit.expand,
             children: [
-              Text(
-                category,
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.secondary,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
+              if (imageUrl.isNotEmpty)
+                Image.network(
+                  imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    color: AppColors.softSecondarySurface,
+                    child: const Icon(
+                      Icons.image_not_supported,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Container(
+                      color: AppColors.softSecondarySurface,
+                      child: const Center(
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    );
+                  },
+                )
+              else
+                Container(
+                  color: AppColors.softSecondarySurface,
+                  child: const Icon(
+                    Icons.terrain,
+                    color: AppColors.textSecondary,
+                    size: 40,
+                  ),
                 ),
-              ),
-              Text(
-                title,
-                style: AppTextStyles.sectionHeading.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.7),
+                    ],
+                  ),
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              Text(
-                subtitle,
-                style: AppTextStyles.caption.copyWith(color: Colors.white70),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (category.isNotEmpty) ...[
+                      Text(
+                        category,
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.secondary,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ],
+                    Text(
+                      title,
+                      style: AppTextStyles.sectionHeading.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (subtitle.isNotEmpty) ...[
+                      Text(
+                        subtitle,
+                        style: AppTextStyles.caption.copyWith(
+                          color: Colors.white70,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ],
           ),

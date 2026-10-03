@@ -18,6 +18,35 @@ class DestinationRepository {
         });
   }
 
+  Stream<List<Destination>> getActiveDestinationsStream() {
+    return _firestore
+        .collection(_collection)
+        .where('isActive', isEqualTo: true)
+        .snapshots()
+        .map((snapshot) {
+          final list = snapshot.docs
+              .map((doc) => Destination.fromMap(doc.data(), doc.id))
+              .toList();
+          list.sort((a, b) => a.displayOrder.compareTo(b.displayOrder));
+          return list;
+        });
+  }
+
+  Stream<List<Destination>> getPopularActiveDestinationsStream() {
+    return _firestore
+        .collection(_collection)
+        .where('isActive', isEqualTo: true)
+        .snapshots()
+        .map((snapshot) {
+          final list = snapshot.docs
+              .map((doc) => Destination.fromMap(doc.data(), doc.id))
+              .where((dest) => dest.isPopular)
+              .toList();
+          list.sort((a, b) => a.displayOrder.compareTo(b.displayOrder));
+          return list;
+        });
+  }
+
   Future<Destination?> getDestination(String id) async {
     final doc = await _firestore.collection(_collection).doc(id).get();
     if (doc.exists && doc.data() != null) {
