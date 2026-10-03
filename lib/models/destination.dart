@@ -1,5 +1,23 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+class DestinationImage {
+  final String url;
+  final String publicId;
+
+  DestinationImage({required this.url, required this.publicId});
+
+  factory DestinationImage.fromMap(Map<String, dynamic> map) {
+    return DestinationImage(
+      url: map['url'] ?? '',
+      publicId: map['publicId'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {'url': url, 'publicId': publicId};
+  }
+}
+
 class Destination {
   final String id;
   final String name;
@@ -8,8 +26,11 @@ class Destination {
   final String locationName;
   final double? latitude;
   final double? longitude;
+  final List<DestinationImage> images;
+  // Legacy fields
   final String? imageUrl;
   final String? imagePublicId;
+
   final bool isPopular;
   final bool isActive;
   final int displayOrder;
@@ -25,6 +46,7 @@ class Destination {
     required this.locationName,
     this.latitude,
     this.longitude,
+    required this.images,
     this.imageUrl,
     this.imagePublicId,
     this.isPopular = false,
@@ -36,6 +58,24 @@ class Destination {
   });
 
   factory Destination.fromMap(Map<String, dynamic> map, String id) {
+    List<DestinationImage> parsedImages = [];
+
+    // Parse new images array
+    if (map['images'] != null && map['images'] is List) {
+      parsedImages = (map['images'] as List)
+          .map((i) => DestinationImage.fromMap(i as Map<String, dynamic>))
+          .toList();
+    }
+    // Fallback for legacy single image
+    else if (map['imageUrl'] != null && map['imageUrl'].toString().isNotEmpty) {
+      parsedImages = [
+        DestinationImage(
+          url: map['imageUrl'],
+          publicId: map['imagePublicId'] ?? '',
+        ),
+      ];
+    }
+
     return Destination(
       id: id,
       name: map['name'] ?? '',
@@ -44,7 +84,8 @@ class Destination {
       locationName: map['locationName'] ?? '',
       latitude: (map['latitude'] as num?)?.toDouble(),
       longitude: (map['longitude'] as num?)?.toDouble(),
-      imageUrl: map['imageUrl'],
+      images: parsedImages,
+      imageUrl: map['imageUrl'], // Keep reference for migrations if needed
       imagePublicId: map['imagePublicId'],
       isPopular: map['isPopular'] ?? false,
       isActive: map['isActive'] ?? true,
@@ -63,8 +104,10 @@ class Destination {
       'locationName': locationName,
       'latitude': latitude,
       'longitude': longitude,
-      'imageUrl': imageUrl,
-      'imagePublicId': imagePublicId,
+      'images': images.map((img) => img.toMap()).toList(),
+      // Backward compatibility: also save first image to legacy fields
+      'imageUrl': images.isNotEmpty ? images.first.url : null,
+      'imagePublicId': images.isNotEmpty ? images.first.publicId : null,
       'isPopular': isPopular,
       'isActive': isActive,
       'displayOrder': displayOrder,
@@ -82,6 +125,7 @@ class Destination {
     String? locationName,
     double? latitude,
     double? longitude,
+    List<DestinationImage>? images,
     String? imageUrl,
     String? imagePublicId,
     bool? isPopular,
@@ -99,6 +143,7 @@ class Destination {
       locationName: locationName ?? this.locationName,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
+      images: images ?? this.images,
       imageUrl: imageUrl ?? this.imageUrl,
       imagePublicId: imagePublicId ?? this.imagePublicId,
       isPopular: isPopular ?? this.isPopular,
