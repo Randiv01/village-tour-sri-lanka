@@ -25,8 +25,6 @@ class _AdminShellState extends State<AdminShell> {
     const Center(child: Text('Users (Coming Soon)')),
   ];
 
-
-
   @override
   Widget build(BuildContext context) {
     // Basic role check UI block could be added here if needed,

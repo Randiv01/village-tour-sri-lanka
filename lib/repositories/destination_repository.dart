@@ -26,6 +26,28 @@ class DestinationRepository {
     return null;
   }
 
+  Future<bool> checkNameExists(String name, {String? excludeId}) async {
+    try {
+      final snapshot = await _firestore.collection(_collection).get();
+      final nameLower = name.trim().toLowerCase();
+
+      for (var doc in snapshot.docs) {
+        if (excludeId != null && doc.id == excludeId) continue;
+
+        final docName =
+            (doc.data()['name'] as String?)?.trim().toLowerCase() ?? '';
+        if (docName == nameLower) {
+          return true;
+        }
+      }
+      return false;
+    } catch (e) {
+      // If error occurs, assume it doesn't exist so we don't block saving completely
+      // or we could throw. But better to just log and return false.
+      return false;
+    }
+  }
+
   Future<void> createDestination(Destination destination) async {
     final docRef = _firestore.collection(_collection).doc();
     final data = destination.toMap();

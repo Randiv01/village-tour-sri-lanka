@@ -19,9 +19,39 @@ class ManageDestinationsScreen extends StatefulWidget {
 class _ManageDestinationsScreenState extends State<ManageDestinationsScreen> {
   final DestinationRepository _repository = DestinationRepository();
   final CloudinaryService _cloudinaryService = CloudinaryService();
+
+  late Stream<List<Destination>> _destinationsStream = _repository
+      .getDestinationsStream();
   String _searchQuery = '';
   String _statusFilter = 'All'; // All, Active, Inactive
   String _popularFilter = 'All'; // All, Popular, Not Popular
+  String _sortBy =
+      'Display Order'; // Display Order, Name A-Z, Name Z-A, Newest, Oldest
+
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStream();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _loadStream() {
+    _destinationsStream = _repository.getDestinationsStream();
+  }
+
+  Future<void> _handleRefresh() async {
+    setState(() {
+      _loadStream();
+    });
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,73 +72,48 @@ class _ManageDestinationsScreenState extends State<ManageDestinationsScreen> {
             ),
           ),
         ),
-        _buildFilters(),
+        _buildTopBar(),
         Expanded(
           child: StreamBuilder<List<Destination>>(
-            stream: _repository.getDestinationsStream(),
+            stream: _destinationsStream,
             builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
               if (snapshot.hasError) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.error_outline,
-                        size: 48,
-                        color: Colors.red,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Couldn\'t load destinations.',
-                        style: AppTextStyles.bodyMedium,
-                      ),
-                    ],
-                  ),
-                );
+                return _buildErrorState();
+              }
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return _buildLoadingState();
               }
 
               final allDestinations = snapshot.data ?? [];
-              final filteredDestinations = _filterDestinations(allDestinations);
-
-              if (filteredDestinations.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.place_outlined,
-                        size: 48,
-                        color: AppColors.textSecondary,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No destinations found.',
-                        style: AppTextStyles.bodyMedium,
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _openForm,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: const Text('+ Add Destination'),
-                      ),
-                    ],
-                  ),
-                );
+              if (allDestinations.isEmpty) {
+                return _buildDatabaseEmptyState();
               }
 
-              return ListView.builder(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                itemCount: filteredDestinations.length,
-                itemBuilder: (context, index) {
-                  final dest = filteredDestinations[index];
-                  return _buildDestinationCard(dest);
-                },
+              final filteredDestinations = _filterAndSortDestinations(
+                allDestinations,
+              );
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildResultCount(filteredDestinations.length),
+                  Expanded(
+                    child: RefreshIndicator(
+                      onRefresh: _handleRefresh,
+                      color: AppColors.primary,
+                      child: filteredDestinations.isEmpty
+                          ? _buildFilterEmptyState()
+                          : ListView.builder(
+                              padding: const EdgeInsets.all(AppSpacing.md),
+                              itemCount: filteredDestinations.length,
+                              itemBuilder: (context, index) {
+                                final dest = filteredDestinations[index];
+                                return _buildDestinationCard(dest);
+                              },
+                            ),
+                    ),
+                  ),
+                ],
               );
             },
           ),
@@ -117,124 +122,231 @@ class _ManageDestinationsScreenState extends State<ManageDestinationsScreen> {
     );
   }
 
-  List<Destination> _filterDestinations(List<Destination> all) {
-    return all.where((dest) {
-      // Search
-      final matchesSearch =
-          dest.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          dest.locationName.toLowerCase().contains(_searchQuery.toLowerCase());
-      if (!matchesSearch) return false;
-
-      // Status Filter
-      if (_statusFilter == 'Active' && !dest.isActive) return false;
-      if (_statusFilter == 'Inactive' && dest.isActive) return false;
-
-      // Popular Filter
-      if (_popularFilter == 'Popular' && !dest.isPopular) return false;
-      if (_popularFilter == 'Not Popular' && dest.isPopular) return false;
-
-      return true;
-    }).toList();
-  }
-
-  Widget _buildFilters() {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: Border(
-          bottom: BorderSide(color: AppColors.border.withValues(alpha: 0.5)),
-        ),
+  Widget _buildTopBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
       ),
-      child: Column(
+      child: Row(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Search destinations...',
-                    prefixIcon: const Icon(
-                      Icons.search,
-                      color: AppColors.textSecondary,
-                    ),
-                    filled: true,
-                    fillColor: AppColors.background,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 0,
-                      horizontal: 16,
-                    ),
+          Expanded(
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search destinations...',
+                prefixIcon: const Icon(
+                  Icons.search,
+                  color: AppColors.textSecondary,
+                ),
+                filled: true,
+                fillColor: AppColors.surface,
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 0,
+                  horizontal: 16,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: AppColors.border.withValues(alpha: 0.5),
                   ),
-                  onChanged: (val) {
-                    setState(() {
-                      _searchQuery = val;
-                    });
-                  },
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: AppColors.border.withValues(alpha: 0.5),
+                  ),
                 ),
               ),
-              const SizedBox(width: AppSpacing.md),
-              ElevatedButton(
-                onPressed: _openForm,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-                ),
-                child: const Text('+ Add'),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildFilterChip(
-                  'Status',
-                  ['All', 'Active', 'Inactive'],
-                  _statusFilter,
-                  (val) => setState(() => _statusFilter = val),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                _buildFilterChip(
-                  'Popularity',
-                  ['All', 'Popular', 'Not Popular'],
-                  _popularFilter,
-                  (val) => setState(() => _popularFilter = val),
-                ),
-              ],
+              onChanged: (val) {
+                setState(() {
+                  _searchQuery = val;
+                });
+              },
             ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          IconButton(
+            icon: const Icon(Icons.tune, color: AppColors.primary),
+            onPressed: _showFilterSortSheet,
+            tooltip: 'Filters & Sort',
+            style: IconButton.styleFrom(
+              backgroundColor: AppColors.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(
+                  color: AppColors.border.withValues(alpha: 0.5),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          ElevatedButton(
+            onPressed: _openForm,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            ),
+            child: const Text('+ Add'),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFilterChip(
+  void _showFilterSortSheet() {
+    String tempStatus = _statusFilter;
+    String tempPopular = _popularFilter;
+    String tempSort = _sortBy;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.background,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final bool hasChanges =
+                tempStatus != _statusFilter ||
+                tempPopular != _popularFilter ||
+                tempSort != _sortBy;
+            final bool hasFilters =
+                tempStatus != 'All' ||
+                tempPopular != 'All' ||
+                tempSort != 'Display Order';
+
+            return Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Filters & Sort',
+                        style: AppTextStyles.sectionHeading,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  _buildSheetDropdown(
+                    'Status',
+                    ['All', 'Active', 'Inactive'],
+                    tempStatus,
+                    (val) => setSheetState(() => tempStatus = val),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  _buildSheetDropdown(
+                    'Popularity',
+                    ['All', 'Popular', 'Not Popular'],
+                    tempPopular,
+                    (val) => setSheetState(() => tempPopular = val),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  _buildSheetDropdown(
+                    'Sort By',
+                    [
+                      'Display Order',
+                      'Name A-Z',
+                      'Name Z-A',
+                      'Newest',
+                      'Oldest',
+                    ],
+                    tempSort,
+                    (val) => setSheetState(() => tempSort = val),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: hasFilters
+                              ? () {
+                                  setSheetState(() {
+                                    tempStatus = 'All';
+                                    tempPopular = 'All';
+                                    tempSort = 'Display Order';
+                                  });
+                                }
+                              : null,
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            side: BorderSide(
+                              color: hasFilters
+                                  ? AppColors.primary
+                                  : Colors.grey.shade400,
+                            ),
+                          ),
+                          child: Text(
+                            'Clear',
+                            style: TextStyle(
+                              color: hasFilters
+                                  ? AppColors.primary
+                                  : Colors.grey.shade400,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: hasChanges
+                              ? () {
+                                  setState(() {
+                                    _statusFilter = tempStatus;
+                                    _popularFilter = tempPopular;
+                                    _sortBy = tempSort;
+                                  });
+                                  Navigator.of(context).pop();
+                                }
+                              : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            disabledBackgroundColor: Colors.grey.shade300,
+                            disabledForegroundColor: Colors.grey.shade500,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          child: const Text('Apply'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildSheetDropdown(
     String label,
     List<String> options,
-    String currentValue,
+    String value,
     Function(String) onChanged,
   ) {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          '$label:',
-          style: AppTextStyles.caption.copyWith(fontWeight: FontWeight.bold),
+          label,
+          style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold),
         ),
-        const SizedBox(width: 8),
         DropdownButton<String>(
-          value: currentValue,
+          value: value,
           underline: const SizedBox(),
           items: options
               .map(
@@ -252,6 +364,237 @@ class _ManageDestinationsScreenState extends State<ManageDestinationsScreen> {
     );
   }
 
+  void _clearFilters() {
+    setState(() {
+      _searchController.clear();
+      _searchQuery = '';
+      _statusFilter = 'All';
+      _popularFilter = 'All';
+      _sortBy = 'Display Order';
+    });
+  }
+
+  Widget _buildResultCount(int count) {
+    String text;
+    if (count == 1) {
+      text = '1 destination found';
+    } else {
+      text = '$count destinations found';
+    }
+    if (_searchQuery.isEmpty &&
+        _statusFilter == 'All' &&
+        _popularFilter == 'All') {
+      text = count == 1 ? '1 destination' : '$count destinations';
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+      child: Text(
+        text,
+        style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+      ),
+    );
+  }
+
+  List<Destination> _filterAndSortDestinations(List<Destination> all) {
+    final filtered = all.where((dest) {
+      final query = _searchQuery.trim().toLowerCase();
+      if (query.isNotEmpty) {
+        final matchesSearch =
+            dest.name.toLowerCase().contains(query) ||
+            dest.locationName.toLowerCase().contains(query) ||
+            dest.shortDescription.toLowerCase().contains(query);
+        if (!matchesSearch) return false;
+      }
+
+      if (_statusFilter == 'Active' && !dest.isActive) return false;
+      if (_statusFilter == 'Inactive' && dest.isActive) return false;
+
+      if (_popularFilter == 'Popular' && !dest.isPopular) return false;
+      if (_popularFilter == 'Not Popular' && dest.isPopular) return false;
+
+      return true;
+    }).toList();
+
+    filtered.sort((a, b) {
+      switch (_sortBy) {
+        case 'Name A-Z':
+          return a.name.compareTo(b.name);
+        case 'Name Z-A':
+          return b.name.compareTo(a.name);
+        case 'Newest':
+          return b.createdAt.compareTo(a.createdAt);
+        case 'Oldest':
+          return a.createdAt.compareTo(b.createdAt);
+        case 'Display Order':
+        default:
+          return a.displayOrder.compareTo(b.displayOrder);
+      }
+    });
+
+    return filtered;
+  }
+
+  Widget _buildLoadingState() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      itemCount: 4,
+      itemBuilder: (context, index) {
+        return Card(
+          margin: const EdgeInsets.only(bottom: AppSpacing.md),
+          color: AppColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: AppColors.border.withValues(alpha: 0.3)),
+          ),
+          elevation: 0,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 150,
+                        height: 16,
+                        color: Colors.grey.withValues(alpha: 0.2),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: 100,
+                        height: 12,
+                        color: Colors.grey.withValues(alpha: 0.2),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        height: 12,
+                        color: Colors.grey.withValues(alpha: 0.2),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        width: double.infinity,
+                        height: 12,
+                        color: Colors.grey.withValues(alpha: 0.2),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+          const SizedBox(height: 16),
+          Text(
+            'We couldn\'t load destinations',
+            style: AppTextStyles.sectionHeading,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                _loadStream();
+              });
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Try Again'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDatabaseEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.place_outlined,
+            size: 64,
+            color: AppColors.textSecondary,
+          ),
+          const SizedBox(height: 16),
+          Text('No destinations yet', style: AppTextStyles.sectionHeading),
+          const SizedBox(height: 8),
+          Text(
+            'Add your first destination to get started.',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: _openForm,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('+ Add Destination'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterEmptyState() {
+    return Center(
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.search_off,
+              size: 64,
+              color: AppColors.textSecondary,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No destinations match your filters',
+              style: AppTextStyles.sectionHeading,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            OutlinedButton(
+              onPressed: _clearFilters,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary),
+              ),
+              child: const Text('Clear Filters'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildDestinationCard(Destination dest) {
     return Card(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
@@ -260,28 +603,51 @@ class _ManageDestinationsScreenState extends State<ManageDestinationsScreen> {
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: AppColors.border.withValues(alpha: 0.5)),
       ),
+      elevation: 0,
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Image
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                width: 100,
+                height: 100,
                 color: AppColors.background,
-                image: dest.imageUrl != null
-                    ? DecorationImage(
-                        image: NetworkImage(dest.imageUrl!),
+                child:
+                    (dest.images.isNotEmpty ||
+                        (dest.imageUrl != null && dest.imageUrl!.isNotEmpty))
+                    ? Image.network(
+                        dest.images.isNotEmpty
+                            ? dest.images.first.url
+                            : dest.imageUrl!,
                         fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            color: Colors.grey.withValues(alpha: 0.2),
+                            child: const Center(
+                              child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(
+                            Icons.broken_image,
+                            color: AppColors.textSecondary,
+                          );
+                        },
                       )
-                    : null,
+                    : const Icon(Icons.image, color: AppColors.textSecondary),
               ),
-              child: dest.imageUrl == null
-                  ? const Icon(Icons.image, color: AppColors.textSecondary)
-                  : null,
             ),
             const SizedBox(width: AppSpacing.md),
             // Info
@@ -291,90 +657,152 @@ class _ManageDestinationsScreenState extends State<ManageDestinationsScreen> {
                 children: [
                   Text(
                     dest.name,
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      fontWeight: FontWeight.bold,
+                    style: AppTextStyles.labelLarge.copyWith(
                       color: AppColors.primaryDark,
+                      fontSize: 16,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    dest.locationName,
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.location_on,
+                        size: 14,
+                        color: AppColors.textSecondary,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          dest.locationName,
+                          style: AppTextStyles.caption,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 4),
                   Text(
                     dest.shortDescription,
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.textPrimary,
-                    ),
-                    maxLines: 2,
+                    style: AppTextStyles.bodySecondary,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 8),
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
                     children: [
-                      if (dest.isPopular) ...[
-                        const Icon(
-                          Icons.star,
-                          size: 14,
-                          color: AppColors.tertiary,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Popular',
-                          style: AppTextStyles.caption.copyWith(
-                            color: AppColors.tertiary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                      ],
-                      Icon(
-                        Icons.circle,
-                        size: 10,
-                        color: dest.isActive ? Colors.green : Colors.red,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
+                      _buildBadge(
                         dest.isActive ? 'Active' : 'Inactive',
-                        style: AppTextStyles.caption,
+                        dest.isActive ? Icons.check : Icons.close,
+                        dest.isActive ? Colors.green : AppColors.error,
+                      ),
+                      if (dest.isPopular)
+                        _buildBadge('Popular', Icons.star, AppColors.tertiary),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.photo_camera,
+                            size: 14,
+                            color: AppColors.textSecondary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            dest.images.length == 1
+                                ? '1 image'
+                                : '${dest.images.length} images',
+                            style: AppTextStyles.caption,
+                          ),
+                        ],
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          IconButton(
+                            icon: const Icon(
+                              Icons.edit,
+                              color: AppColors.primary,
+                            ),
+                            onPressed: () => _openForm(dest: dest),
+                            tooltip: 'Edit',
+                            constraints: const BoxConstraints(),
+                            padding: const EdgeInsets.all(8),
+                          ),
+                          const SizedBox(width: 4),
+                          IconButton(
+                            icon: Icon(
+                              dest.isActive
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
+                              color: dest.isActive
+                                  ? AppColors.textSecondary
+                                  : Colors.green,
+                            ),
+                            onPressed: () {
+                              if (dest.isActive) {
+                                _confirmDeactivate(dest);
+                              } else {
+                                _activateDestination(dest);
+                              }
+                            },
+                            tooltip: dest.isActive ? 'Deactivate' : 'Activate',
+                            constraints: const BoxConstraints(),
+                            padding: const EdgeInsets.all(8),
+                          ),
+                          const SizedBox(width: 4),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.delete_outline,
+                              color: AppColors.error,
+                            ),
+                            onPressed: () => _confirmDelete(dest),
+                            tooltip: 'Delete',
+                            constraints: const BoxConstraints(),
+                            padding: const EdgeInsets.all(8),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-            // Actions
-            Column(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit, color: AppColors.primary),
-                  onPressed: () => _openForm(dest: dest),
-                  tooltip: 'Edit',
-                ),
-                IconButton(
-                  icon: Icon(
-                    dest.isActive ? Icons.block : Icons.check_circle_outline,
-                    color: dest.isActive ? Colors.red : Colors.green,
-                  ),
-                  onPressed: () => _confirmToggleActive(dest),
-                  tooltip: dest.isActive ? 'Deactivate' : 'Reactivate',
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.red),
-                  onPressed: () => _confirmDelete(dest),
-                  tooltip: 'Delete',
-                ),
-              ],
-            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildBadge(String text, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: AppTextStyles.caption.copyWith(
+              color: color,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -387,60 +815,13 @@ class _ManageDestinationsScreenState extends State<ManageDestinationsScreen> {
     );
   }
 
-  void _confirmToggleActive(Destination dest) {
+  void _confirmDeactivate(Destination dest) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(
-          dest.isActive ? 'Deactivate Destination?' : 'Reactivate Destination?',
-        ),
-        content: Text(
-          dest.isActive
-              ? 'Are you sure you want to deactivate "${dest.name}"? It will no longer be visible to travelers.'
-              : 'Are you sure you want to reactivate "${dest.name}"? It will become visible to travelers again.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              if (dest.isActive) {
-                _repository.deactivateDestination(dest.id);
-              } else {
-                _repository.reactivateDestination(dest.id);
-              }
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Destination ${dest.isActive ? 'deactivated' : 'reactivated'} successfully',
-                  ),
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: dest.isActive ? Colors.red : Colors.green,
-              foregroundColor: Colors.white,
-            ),
-            child: Text(dest.isActive ? 'Deactivate' : 'Reactivate'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _confirmDelete(Destination dest) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Destination?'),
+        title: const Text('Hide destination?'),
         content: const Text(
-          'This will remove the destination from the app and delete its associated image.',
+          'Destination will no longer be visible to travelers, but its data will be kept.',
         ),
         actions: [
           TextButton(
@@ -452,47 +833,117 @@ class _ManageDestinationsScreenState extends State<ManageDestinationsScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              Navigator.of(context).pop(); // Close dialog
-
+              Navigator.of(context).pop();
+              final messenger = ScaffoldMessenger.of(context);
               try {
-                // 1. Delete Firestore Document
-                await _repository.deleteDestination(dest.id);
-
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                await _repository.deactivateDestination(dest.id);
+                if (mounted) {
+                  messenger.showSnackBar(
                     const SnackBar(
-                      content: Text('Destination deleted successfully'),
+                      content: Text('Destination deactivated successfully.'),
                     ),
                   );
                 }
-
-                // 2. Delete Cloudinary Image (if public ID exists)
-                if (dest.imagePublicId != null) {
-                  final bool deleted = await _cloudinaryService.deleteImage(
-                    dest.imagePublicId!,
-                  );
-                  if (!deleted && context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Destination deleted, but image could not be automatically removed from media storage.',
-                        ),
-                        duration: Duration(seconds: 4),
-                      ),
-                    );
-                  }
-                }
               } catch (e) {
-                // If Firestore deletion fails, it will be caught here and Cloudinary won't be touched.
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to delete destination: $e')),
+                debugPrint('Deactivate error: $e');
+                if (mounted) {
+                  messenger.showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'We couldn\'t complete this action. Please try again.',
+                      ),
+                    ),
                   );
                 }
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Deactivate'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _activateDestination(Destination dest) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await _repository.reactivateDestination(dest.id);
+      if (mounted) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Destination activated successfully.')),
+        );
+      }
+    } catch (e) {
+      debugPrint('Activate error: $e');
+      if (mounted) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'We couldn\'t complete this action. Please try again.',
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  void _confirmDelete(Destination dest) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete destination?'),
+        content: Text(
+          'This will permanently remove ${dest.name} from the system.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              final messenger = ScaffoldMessenger.of(context);
+              try {
+                await _repository.deleteDestination(dest.id);
+                if (mounted) {
+                  messenger.showSnackBar(
+                    const SnackBar(
+                      content: Text('Destination deleted successfully.'),
+                    ),
+                  );
+                }
+
+                if (dest.imagePublicId != null) {
+                  _cloudinaryService
+                      .deleteImage(dest.imagePublicId!)
+                      .catchError((e) {
+                        debugPrint('Silently failed to delete image: $e');
+                        return false;
+                      });
+                }
+              } catch (e) {
+                debugPrint('Delete error: $e');
+                if (mounted) {
+                  messenger.showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'We couldn\'t complete this action. Please try again.',
+                      ),
+                    ),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
               foregroundColor: Colors.white,
             ),
             child: const Text('Delete'),
