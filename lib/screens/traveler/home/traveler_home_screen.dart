@@ -25,8 +25,29 @@ class TravelerHomeScreen extends StatefulWidget {
   State<TravelerHomeScreen> createState() => _TravelerHomeScreenState();
 }
 
-class _TravelerHomeScreenState extends State<TravelerHomeScreen> {
+class _TravelerHomeScreenState extends State<TravelerHomeScreen>
+    with TickerProviderStateMixin {
   HomeFilterData? _filterData;
+  int _currentDestIndex = 0;
+  late AnimationController _blinkController;
+  late Stream<List<Destination>> _popularDestinationsStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _popularDestinationsStream =
+        DestinationRepository().getPopularActiveDestinationsStream();
+    _blinkController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _blinkController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -315,9 +336,40 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen> {
             );
           },
         ),
-        const SizedBox(height: AppSpacing.md),
+        Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.xs,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              FadeTransition(
+                opacity: _blinkController,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Swipe to explore',
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 14,
+                      color: AppColors.primary,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
         StreamBuilder<List<Destination>>(
-          stream: DestinationRepository().getPopularActiveDestinationsStream(),
+          stream: _popularDestinationsStream,
           builder: (context, snapshot) {
             if (snapshot.hasError) {
               return Padding(
@@ -345,8 +397,13 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen> {
                   itemCount: 3,
                   itemBuilder: (context, index) {
                     return Container(
-                      width: MediaQuery.of(context).size.width * 0.38,
-                      margin: const EdgeInsets.only(right: AppSpacing.md),
+                      width:
+                          (MediaQuery.of(context).size.width -
+                              (AppSpacing.lg * 3)) /
+                          2,
+                      margin: EdgeInsets.only(
+                        right: index == 2 ? 0 : AppSpacing.lg,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.softSecondarySurface,
                         borderRadius: BorderRadius.circular(20),
@@ -369,38 +426,97 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen> {
               );
             }
 
-            return SizedBox(
-              height: 220,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                itemCount: destinations.length,
-                itemBuilder: (context, index) {
-                  final dest = destinations[index];
-                  String imageUrl = '';
-                  if (dest.images.isNotEmpty) {
-                    imageUrl = dest.images.first.url;
-                  } else if (dest.imageUrl != null) {
-                    imageUrl = dest.imageUrl!;
-                  }
-
-                  return DestinationCard(
-                    title: dest.name,
-                    subtitle: dest.locationName,
-                    category: 'DESTINATION',
-                    imageUrl: imageUrl,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              DestinationDetailsScreen(destination: dest),
-                        ),
-                      );
+            return Column(
+              children: [
+                SizedBox(
+                  height: 220,
+                  child: NotificationListener<ScrollNotification>(
+                    onNotification: (ScrollNotification notification) {
+                      if (notification is ScrollUpdateNotification) {
+                        final cardWidth =
+                            (MediaQuery.of(context).size.width -
+                                (AppSpacing.lg * 3)) /
+                            2;
+                        final itemWidth = cardWidth + AppSpacing.lg;
+                        int newIndex = (notification.metrics.pixels / itemWidth)
+                            .round();
+                        if (newIndex < 0) {
+                          newIndex = 0;
+                        }
+                        if (newIndex >= destinations.length) {
+                          newIndex = destinations.length - 1;
+                        }
+                        if (newIndex != _currentDestIndex) {
+                          setState(() {
+                            _currentDestIndex = newIndex;
+                          });
+                        }
+                      }
+                      return false;
                     },
-                  );
-                },
-              ),
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg,
+                      ),
+                      itemCount: destinations.length,
+                      itemBuilder: (context, index) {
+                        final dest = destinations[index];
+                        String imageUrl = '';
+                        if (dest.images.isNotEmpty) {
+                          imageUrl = dest.images.first.url;
+                        } else if (dest.imageUrl != null) {
+                          imageUrl = dest.imageUrl!;
+                        }
+                        final cardWidth =
+                            (MediaQuery.of(context).size.width -
+                                (AppSpacing.lg * 3)) /
+                            2;
+
+                        return DestinationCard(
+                          width: cardWidth,
+                          margin: EdgeInsets.only(
+                            right: index == destinations.length - 1
+                                ? 0
+                                : AppSpacing.lg,
+                          ),
+                          title: dest.name,
+                          subtitle: dest.locationName,
+                          category: 'DESTINATION',
+                          imageUrl: imageUrl,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    DestinationDetailsScreen(destination: dest),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(destinations.length, (index) {
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      width: _currentDestIndex == index ? 24 : 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: _currentDestIndex == index
+                            ? AppColors.primary
+                            : AppColors.primary.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    );
+                  }),
+                ),
+              ],
             );
           },
         ),

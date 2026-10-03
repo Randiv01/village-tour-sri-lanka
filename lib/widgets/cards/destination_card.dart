@@ -10,6 +10,7 @@ class DestinationCard extends StatelessWidget {
   final String category;
   final String imageUrl;
   final double? width;
+  final EdgeInsetsGeometry? margin;
   final VoidCallback? onTap;
 
   const DestinationCard({
@@ -19,19 +20,20 @@ class DestinationCard extends StatelessWidget {
     required this.category,
     required this.imageUrl,
     this.width,
+    this.margin,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     // Show roughly 2.5 cards based on screen width if width is not provided
-    final cardWidth = width ?? MediaQuery.of(context).size.width * 0.38;
+    final cardWidth = width ?? MediaQuery.of(context).size.width * 0.48;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: cardWidth,
-        margin: const EdgeInsets.only(right: AppSpacing.md),
+        margin: margin ?? const EdgeInsets.only(right: AppSpacing.md),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           color: AppColors.surface, // fallback color
@@ -103,8 +105,10 @@ class DestinationCard extends StatelessWidget {
                       style: AppTextStyles.sectionHeading.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        height: 1.2,
                       ),
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     if (subtitle.isNotEmpty) ...[

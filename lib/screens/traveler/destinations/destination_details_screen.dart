@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../models/destination.dart';
 import '../../../../repositories/destination_repository.dart';
@@ -112,88 +115,91 @@ class _DestinationDetailsScreenState extends State<DestinationDetailsScreen> {
 
     final images = _getImages();
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        bottom: false,
-        child: Stack(
-          children: [
-            CustomScrollView(
-              slivers: [
-                _buildSliverAppBar(images),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Loading indicator if refreshing in background
-                        if (_isLoading)
-                          const Padding(
-                            padding: EdgeInsets.only(bottom: AppSpacing.sm),
-                            child: LinearProgressIndicator(),
-                          ),
-
-                        Text(
-                          _currentDestination.name,
-                          style: AppTextStyles.screenHeading.copyWith(
-                            color: AppColors.primaryDark,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.xs),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.location_on,
-                              size: 16,
-                              color: AppColors.secondary,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark,
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          bottom: false,
+          child: Stack(
+            children: [
+              CustomScrollView(
+                slivers: [
+                  _buildSliverAppBar(images),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Loading indicator if refreshing in background
+                          if (_isLoading)
+                            const Padding(
+                              padding: EdgeInsets.only(bottom: AppSpacing.sm),
+                              child: LinearProgressIndicator(),
                             ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                _currentDestination.locationName,
-                                style: AppTextStyles.bodyMedium.copyWith(
-                                  color: AppColors.secondary,
+
+                          Text(
+                            _currentDestination.name,
+                            style: AppTextStyles.screenHeading.copyWith(
+                              color: AppColors.primaryDark,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.location_on,
+                                size: 16,
+                                color: AppColors.secondary,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  _currentDestination.locationName,
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color: AppColors.secondary,
+                                  ),
                                 ),
                               ),
+                            ],
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+                          Text(
+                            _currentDestination.shortDescription,
+                            style: AppTextStyles.bodyLarge.copyWith(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w500,
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: AppSpacing.lg),
-                        Text(
-                          _currentDestination.shortDescription,
-                          style: AppTextStyles.bodyLarge.copyWith(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.w500,
                           ),
-                        ),
-                        const SizedBox(height: AppSpacing.xl),
-                        Text(
-                          'About this place',
-                          style: AppTextStyles.sectionHeading.copyWith(
-                            color: AppColors.primaryDark,
+                          const SizedBox(height: AppSpacing.xl),
+                          Text(
+                            'About this place',
+                            style: AppTextStyles.sectionHeading.copyWith(
+                              color: AppColors.primaryDark,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        Text(
-                          _currentDestination.description,
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.textSecondary,
-                            height: 1.6,
+                          const SizedBox(height: AppSpacing.sm),
+                          Text(
+                            _currentDestination.description,
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColors.textSecondary,
+                              height: 1.6,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: AppSpacing.xxl),
-                        _buildLocationSection(),
-                        const SizedBox(
-                          height: AppSpacing.xxl * 2,
-                        ), // Extra padding at bottom
-                      ],
+                          const SizedBox(height: AppSpacing.xxl),
+                          _buildLocationSection(),
+                          const SizedBox(
+                            height: AppSpacing.xxl * 2,
+                          ), // Extra padding at bottom
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -208,6 +214,17 @@ class _DestinationDetailsScreenState extends State<DestinationDetailsScreen> {
       iconTheme: const IconThemeData(
         color: AppColors.primaryDark,
       ), // Dark icon when collapsed
+      leading: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: CircleAvatar(
+          backgroundColor: Colors.white.withValues(alpha: 0.7),
+          child: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppColors.primaryDark),
+            onPressed: () => Navigator.of(context).pop(),
+            padding: EdgeInsets.zero,
+          ),
+        ),
+      ),
       flexibleSpace: FlexibleSpaceBar(
         background: Stack(
           fit: StackFit.expand,
@@ -438,8 +455,35 @@ class _DestinationDetailsScreenState extends State<DestinationDetailsScreen> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                       ),
-                      onPressed: () {
-                        // TODO: Implement map view/intent
+                      onPressed: () async {
+                        final lat = _currentDestination.latitude;
+                        final lng = _currentDestination.longitude;
+                        if (lat == null || lng == null) return;
+
+                        final url = Uri.parse(
+                          'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
+                        );
+                        try {
+                          final launched = await launchUrl(
+                            url,
+                            mode: LaunchMode.externalApplication,
+                          );
+                          if (!launched && mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Could not open map app.'),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Could not open map.'),
+                              ),
+                            );
+                          }
+                        }
                       },
                       child: const Text('View on Map'),
                     ),
