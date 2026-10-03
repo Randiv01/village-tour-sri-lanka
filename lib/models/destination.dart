@@ -90,10 +90,16 @@ class Destination {
       isPopular: map['isPopular'] ?? false,
       isActive: map['isActive'] ?? true,
       displayOrder: map['displayOrder'] ?? 0,
-      createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      updatedAt: (map['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      createdAt: _parseTimestamp(map['createdAt']),
+      updatedAt: _parseTimestamp(map['updatedAt']),
       createdBy: map['createdBy'],
     );
+  }
+
+  static DateTime _parseTimestamp(dynamic val) {
+    if (val is Timestamp) return val.toDate();
+    if (val is String) return DateTime.tryParse(val) ?? DateTime.now();
+    return DateTime.now();
   }
 
   Map<String, dynamic> toMap() {
