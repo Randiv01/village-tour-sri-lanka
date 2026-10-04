@@ -10,9 +10,7 @@ import '../../../widgets/common/auth/auth_help_sheet.dart';
 import '../../../widgets/common/auth/role_selector.dart';
 import '../../../widgets/common/auth/international_phone_field.dart';
 
-import '../../traveler/main/traveler_main_screen.dart';
-import '../../host/host_dashboard_screen.dart';
-import '../../guide/guide_dashboard_screen.dart';
+
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -36,26 +34,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _acceptedTerms = false;
   bool _isLoading = false;
 
-  void _navigateToRole(String role) {
-    Widget nextScreen;
-    switch (role) {
-      case 'host':
-        nextScreen = const HostDashboardScreen();
-        break;
-      case 'guide':
-        nextScreen = const GuideDashboardScreen();
-        break;
-      case 'traveler':
-      default:
-        nextScreen = const TravelerMainScreen();
-        break;
-    }
 
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => nextScreen),
-      (route) => false,
-    );
-  }
 
   Future<void> _signUp() async {
     if (!_formKey.currentState!.validate()) return;
@@ -71,15 +50,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
       String phone = _completePhoneNumber;
 
       final user = await _authService.signUpWithEmail(
-        name: _nameController.text,
+        fullName: _nameController.text,
         email: _emailController.text,
         password: _passwordController.text,
-        phone: phone,
+        phoneNumber: phone,
         role: _selectedRole,
       );
 
       if (user != null) {
-        _navigateToRole(user.role);
+        // Success! We don't need to manually navigate here.
+        // The AuthGate is listening to the authStateChanges stream
+        // and will automatically replace this screen with the correct
+        // role-based dashboard based on the user's Firestore profile.
       }
     } catch (e) {
       _showError(e.toString());

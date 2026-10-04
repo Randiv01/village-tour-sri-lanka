@@ -4,7 +4,9 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import 'admin_dashboard_screen.dart';
 import 'destinations/manage_destinations_screen.dart';
-
+import 'users/manage_users_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../services/auth_service.dart';
 class AdminShell extends StatefulWidget {
   const AdminShell({super.key});
 
@@ -22,7 +24,7 @@ class _AdminShellState extends State<AdminShell> {
     const Center(child: Text('Homestays (Coming Soon)')),
     const Center(child: Text('Experiences (Coming Soon)')),
     const Center(child: Text('Bookings (Coming Soon)')),
-    const Center(child: Text('Users (Coming Soon)')),
+    const ManageUsersScreen(),
   ];
 
   @override
@@ -54,11 +56,23 @@ class _AdminShellState extends State<AdminShell> {
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.primaryDark),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.exit_to_app),
-            onPressed: () {
-              Navigator.of(context).pop(); // Back to traveler home
-            },
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: GestureDetector(
+              onTap: () => _showProfileModal(context),
+              child: Container(
+                height: 36,
+                width: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: const Icon(Icons.person, color: AppColors.primary, size: 20),
+              ),
+            ),
           ),
         ],
       ),
@@ -156,6 +170,83 @@ class _AdminShellState extends State<AdminShell> {
         });
         Navigator.pop(context); // Close drawer
       },
+    );
+  }
+
+  void _showProfileModal(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const CircleAvatar(
+                  radius: 30,
+                  backgroundColor: AppColors.primary,
+                  child: Icon(Icons.admin_panel_settings, color: Colors.white, size: 32),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Admin Profile',
+                        style: AppTextStyles.sectionHeading.copyWith(
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                      Text(
+                        user?.email ?? 'System Administrator',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  final authService = AuthService();
+                  await authService.signOut();
+                },
+                icon: const Icon(Icons.logout, color: Colors.red),
+                label: Text(
+                  'Sign Out',
+                  style: const TextStyle(
+                    color: Colors.red,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  side: const BorderSide(color: Colors.red),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
     );
   }
 }

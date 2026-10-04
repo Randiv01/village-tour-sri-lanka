@@ -8,10 +8,7 @@ import '../../../widgets/common/auth/auth_text_field.dart';
 import '../../../widgets/common/auth/auth_help_sheet.dart';
 import 'sign_up_screen.dart';
 
-import '../../traveler/main/traveler_main_screen.dart';
-import '../../admin/admin_shell.dart';
-import '../../host/host_dashboard_screen.dart';
-import '../../guide/guide_dashboard_screen.dart';
+
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -28,29 +25,7 @@ class _SignInScreenState extends State<SignInScreen> {
 
   bool _isLoading = false;
 
-  void _navigateToRole(String role) {
-    Widget nextScreen;
-    switch (role) {
-      case 'admin':
-        nextScreen = const AdminShell();
-        break;
-      case 'host':
-        nextScreen = const HostDashboardScreen();
-        break;
-      case 'guide':
-        nextScreen = const GuideDashboardScreen();
-        break;
-      case 'traveler':
-      default:
-        nextScreen = const TravelerMainScreen();
-        break;
-    }
 
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => nextScreen),
-      (route) => false,
-    );
-  }
 
   Future<void> _signIn() async {
     if (!_formKey.currentState!.validate()) return;
@@ -64,7 +39,10 @@ class _SignInScreenState extends State<SignInScreen> {
       );
 
       if (user != null) {
-        _navigateToRole(user.role);
+        // Success! We don't need to manually navigate here.
+        // The AuthGate is listening to the authStateChanges stream
+        // and will automatically replace this screen with the correct
+        // role-based dashboard based on the user's Firestore profile.
       } else {
         _showError('No user profile found. Please contact support.');
         await _authService.signOut();

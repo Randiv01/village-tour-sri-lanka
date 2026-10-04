@@ -1,1 +1,26 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"village-tour-sri-lanka","appId":"1:798967339122:android:730d3be6667179e4fe4aeb","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"village-tour-sri-lanka","configurations":{"android":"1:798967339122:android:730d3be6667179e4fe4aeb","ios":"1:798967339122:ios:de8233db8573abb3fe4aeb","web":"1:798967339122:web:e9c2c4bed33a60e9fe4aeb"}}}}}}
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "village-tour-sri-lanka",
+          "appId": "1:798967339122:android:730d3be6667179e4fe4aeb",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "village-tour-sri-lanka",
+          "configurations": {
+            "android": "1:798967339122:android:730d3be6667179e4fe4aeb",
+            "ios": "1:798967339122:ios:de8233db8573abb3fe4aeb",
+            "web": "1:798967339122:web:e9c2c4bed33a60e9fe4aeb"
+          }
+        }
+      }
+    }
+  }
+}

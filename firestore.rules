@@ -1,0 +1,40 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Temporary development collection
+    match /test_users/{document} {
+      allow read, write: if true;
+    }
+
+    // User profiles
+    match /users/{uid} {
+      allow read: if request.auth != null
+                  && (
+                    request.auth.uid == uid
+                    || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"
+                  );
+
+      allow create: if request.auth != null
+                    && request.auth.uid == uid;
+
+      allow update: if request.auth != null
+                    && (
+                      (
+                        request.auth.uid == uid
+                        && request.resource.data.role == resource.data.role
+                      )
+                      ||
+                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"
+                    );
+
+      allow delete: if false;
+    }
+
+    // Existing destination development rules
+    match /destinations/{document} {
+      allow read, write: if true;
+    }
+  }
+}

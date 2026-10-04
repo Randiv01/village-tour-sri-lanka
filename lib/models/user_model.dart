@@ -2,23 +2,29 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class UserModel {
   final String uid;
-  final String name;
   final String email;
-  final String? phone;
+  final String fullName;
+  final String phoneNumber;
   final String role;
-  final String? profileImage;
-  final String? language;
+  final String? profileImageUrl;
+  final String? country;
+  final String? preferredLanguage;
+  final bool isActive;
+  final bool isEmailVerified;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
   UserModel({
     required this.uid,
-    required this.name,
     required this.email,
-    this.phone,
+    required this.fullName,
+    required this.phoneNumber,
     required this.role,
-    this.profileImage,
-    this.language,
+    this.profileImageUrl,
+    this.country,
+    this.preferredLanguage,
+    this.isActive = true,
+    this.isEmailVerified = false,
     this.createdAt,
     this.updatedAt,
   });
@@ -26,12 +32,15 @@ class UserModel {
   factory UserModel.fromMap(Map<String, dynamic> map, String documentId) {
     return UserModel(
       uid: documentId,
-      name: map['name'] ?? '',
       email: map['email'] ?? '',
-      phone: map['phone'],
+      fullName: map['fullName'] ?? '',
+      phoneNumber: map['phoneNumber'] ?? '',
       role: map['role'] ?? 'traveler',
-      profileImage: map['profileImage'],
-      language: map['language'],
+      profileImageUrl: map['profileImageUrl'],
+      country: map['country'],
+      preferredLanguage: map['preferredLanguage'],
+      isActive: map['isActive'] ?? true,
+      isEmailVerified: map['isEmailVerified'] ?? false,
       createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
       updatedAt: (map['updatedAt'] as Timestamp?)?.toDate(),
     );
@@ -39,12 +48,15 @@ class UserModel {
 
   Map<String, dynamic> toMap() {
     return {
-      'name': name,
       'email': email,
-      'phone': phone,
+      'fullName': fullName,
+      'phoneNumber': phoneNumber,
       'role': role,
-      'profileImage': profileImage,
-      'language': language,
+      'profileImageUrl': profileImageUrl,
+      'country': country,
+      'preferredLanguage': preferredLanguage,
+      'isActive': isActive,
+      'isEmailVerified': isEmailVerified,
       'createdAt': createdAt != null
           ? Timestamp.fromDate(createdAt!)
           : FieldValue.serverTimestamp(),

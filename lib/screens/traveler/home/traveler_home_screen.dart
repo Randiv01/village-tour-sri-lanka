@@ -12,8 +12,9 @@ import '../../../../widgets/common/app_icon_button.dart';
 import '../../../../widgets/cards/destination_card.dart';
 import '../../../../widgets/cards/homestay_card.dart';
 import 'widgets/home_filter_bottom_sheet.dart';
-import '../../admin/admin_shell.dart';
 import '../../../../repositories/destination_repository.dart';
+import '../../../../services/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../models/destination.dart';
 import '../destinations/explore_destinations_screen.dart';
 import '../destinations/destination_details_screen.dart';
@@ -47,6 +48,79 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
   void dispose() {
     _blinkController.dispose();
     super.dispose();
+  }
+
+  void _showProfileModal(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const CircleAvatar(
+                  radius: 30,
+                  backgroundColor: AppColors.primary,
+                  child: Icon(Icons.person, color: Colors.white, size: 32),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'My Profile',
+                        style: AppTextStyles.sectionHeading.copyWith(
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                      Text(
+                        user?.email ?? 'Traveler',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.xxl),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  final authService = AuthService();
+                  await authService.signOut();
+                },
+                icon: const Icon(Icons.logout, color: Colors.red),
+                label: Text(
+                  'Sign Out',
+                  style: AppTextStyles.buttonText.copyWith(color: Colors.red),
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  side: const BorderSide(color: Colors.red),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -136,9 +210,7 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
               const SizedBox(width: AppSpacing.sm),
               GestureDetector(
                 onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => const AdminShell()),
-                  );
+                  _showProfileModal(context);
                 },
                 child: Container(
                   height: 40,
