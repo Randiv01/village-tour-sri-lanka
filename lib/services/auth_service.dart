@@ -20,47 +20,92 @@ class AuthService {
         email: email.trim(),
         password: password,
       );
-      return await getUserProfile(cred.user!.uid);
+      
+      // TEMPORARY FIX: Automatically create/repair the admin's Firestore profile 
+      // if they log in with the admin email.
+      if (email.trim().toLowerCase() == 'admin@villagetour.com') {
+        final docRef = _firestore.collection('users').doc(cred.user!.uid);
+        final docSnap = await docRef.get();
+        if (!docSnap.exists) {
+          await docRef.set({
+            'uid': cred.user!.uid,
+            'email': email.trim().toLowerCase(),
+            'fullName': 'System Admin',
+            'phoneNumber': '',
+            'role': 'admin',
+            'isActive': true,
+            'isEmailVerified': true,
+            'createdAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        }
+      }
+
+      final user = await getUserProfile(cred.user!.uid);
+      
+      if (user == null) {
+        // Fallback for missing profile
+        await _auth.signOut();
+        throw 'No profile found for this account. Please contact support.';
+      }
+      
+      if (!user.isActive) {
+        await _auth.signOut();
+        throw 'Your account has been deactivated. Please contact support.';
+      }
+      
+      return user;
     } on FirebaseAuthException catch (e) {
       throw _handleFirebaseAuthError(e);
     } catch (e) {
+      if (e is String) rethrow;
       throw 'An unexpected error occurred. Please try again.';
     }
   }
 
   // Sign Up with Email & Password
   Future<UserModel?> signUpWithEmail({
-    required String name,
+    required String fullName,
     required String email,
     required String password,
-    required String phone,
+    required String phoneNumber,
     required String role,
   }) async {
+    UserCredential? cred;
     try {
-      final UserCredential cred = await _auth.createUserWithEmailAndPassword(
+      cred = await _auth.createUserWithEmailAndPassword(
         email: email.trim(),
         password: password,
       );
 
       final user = UserModel(
         uid: cred.user!.uid,
-        name: name.trim(),
+        fullName: fullName.trim(),
         email: email.trim(),
-        phone: phone.trim(),
+        phoneNumber: phoneNumber.trim(),
         role: role,
+        isActive: true,
+        isEmailVerified: cred.user!.emailVerified,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
 
-      await _firestore
-          .collection('users')
-          .doc(cred.user!.uid)
-          .set(user.toMap());
+      try {
+        await _firestore
+            .collection('users')
+            .doc(cred.user!.uid)
+            .set(user.toMap());
+      } catch (e) {
+        // If Firestore creation fails, clean up the created Firebase Auth user
+        await cred.user?.delete();
+        throw 'Unable to complete registration. Please try again.';
+      }
 
       return user;
     } on FirebaseAuthException catch (e) {
       throw _handleFirebaseAuthError(e);
     } catch (e) {
+      if (e is String) rethrow;
       throw 'An unexpected error occurred. Please try again.';
     }
   }
@@ -77,21 +122,11 @@ class AuthService {
   }
 
   // Google Sign In Mock/Architecture
-  // Note: Requires google_sign_in package for full native support
   Future<UserCredential> signInWithGoogle() async {
-    try {
-      // For Web, this works out of the box. For Android, requires google_sign_in.
-      GoogleAuthProvider googleProvider = GoogleAuthProvider();
-      return await _auth.signInWithProvider(googleProvider);
-    } on FirebaseAuthException catch (e) {
-      throw _handleFirebaseAuthError(e);
-    } catch (e) {
-      throw 'An unexpected error occurred during Google Sign-In.';
-    }
+    throw 'Google Sign In is coming soon.';
   }
 
   // Phone Authentication implementation is architecture-ready
-  // Note: Needs Firebase console setup
   Future<void> verifyPhoneNumber({
     required String phoneNumber,
     required Function(PhoneAuthCredential) onVerificationCompleted,
@@ -99,30 +134,14 @@ class AuthService {
     required Function(String, int?) onCodeSent,
     required Function(String) onCodeAutoRetrievalTimeout,
   }) async {
-    await _auth.verifyPhoneNumber(
-      phoneNumber: phoneNumber,
-      verificationCompleted: onVerificationCompleted,
-      verificationFailed: onVerificationFailed,
-      codeSent: onCodeSent,
-      codeAutoRetrievalTimeout: onCodeAutoRetrievalTimeout,
-    );
+    throw 'Phone Authentication is coming soon.';
   }
 
   Future<UserCredential> signInWithPhoneCredential(
     String verificationId,
     String smsCode,
   ) async {
-    try {
-      PhoneAuthCredential credential = PhoneAuthProvider.credential(
-        verificationId: verificationId,
-        smsCode: smsCode,
-      );
-      return await _auth.signInWithCredential(credential);
-    } on FirebaseAuthException catch (e) {
-      throw _handleFirebaseAuthError(e);
-    } catch (e) {
-      throw 'An unexpected error occurred during phone verification.';
-    }
+    throw 'Phone Authentication is coming soon.';
   }
 
   // Get User Profile
@@ -138,28 +157,6 @@ class AuthService {
     }
   }
 
-  // Create User Profile (For Google/Phone if doesn't exist)
-  Future<UserModel> createUserProfile({
-    required String uid,
-    required String name,
-    required String email,
-    String? phone,
-    required String role,
-  }) async {
-    final user = UserModel(
-      uid: uid,
-      name: name,
-      email: email,
-      phone: phone,
-      role: role,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
-
-    await _firestore.collection('users').doc(uid).set(user.toMap());
-    return user;
-  }
-
   // Sign Out
   Future<void> signOut() async {
     await _auth.signOut();
@@ -169,25 +166,27 @@ class AuthService {
     switch (e.code) {
       case 'invalid-credential':
       case 'wrong-password':
-        return 'Email or password is incorrect.';
+        return 'Incorrect email or password.';
       case 'user-not-found':
-        return 'No account was found with this email.';
+        return 'No account was found with these credentials.';
       case 'invalid-email':
         return 'Please enter a valid email address.';
       case 'user-disabled':
         return 'This account has been disabled. Please contact support.';
       case 'email-already-in-use':
-        return 'An account already exists with this email.';
+        return 'An account with this email already exists. Please sign in instead.';
       case 'operation-not-allowed':
         return 'This sign-in method is not enabled.';
       case 'weak-password':
-        return 'The password provided is too weak.';
+        return 'Please choose a stronger password.';
       case 'network-request-failed':
-        return 'Please check your internet connection and try again.';
+        return 'Unable to connect. Please check your internet connection and try again.';
+      case 'too-many-requests':
+        return 'Too many attempts. Please wait a moment and try again.';
       case 'invalid-verification-code':
         return 'The SMS verification code is invalid.';
       default:
-        return e.message ?? 'An unknown error occurred.';
+        return 'Error [${e.code}]: ${e.message}';
     }
   }
 }
