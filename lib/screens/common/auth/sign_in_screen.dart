@@ -39,13 +39,19 @@ class _SignInScreenState extends State<SignInScreen> {
       );
 
       if (user != null) {
-        // Success! We don't need to manually navigate here.
-        // The AuthGate is listening to the authStateChanges stream
-        // and will automatically replace this screen with the correct
-        // role-based dashboard based on the user's Firestore profile.
-      } else {
-        _showError('No user profile found. Please contact support.');
-        await _authService.signOut();
+        if (user.role == 'admin') {
+          _showSuccess('Admin sign in successful.');
+        } else {
+          _showSuccess('Sign in successful! Welcome back.');
+        }
+
+        await Future.delayed(const Duration(milliseconds: 700));
+
+        if (mounted) {
+          // Pop back to the root route (AuthGate) which will automatically 
+          // build the correct dashboard based on the new auth state.
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        }
       }
     } catch (e) {
       _showError(e.toString());
@@ -87,6 +93,16 @@ class _SignInScreenState extends State<SignInScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: AppColors.error),
+    );
+  }
+
+  void _showSuccess(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green, // Or use AppColors.primary if preferred
+      ),
     );
   }
 

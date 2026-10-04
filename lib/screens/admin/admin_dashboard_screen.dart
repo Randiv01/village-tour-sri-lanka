@@ -98,10 +98,15 @@ class AdminDashboardScreen extends StatelessWidget {
           for (var doc in snapshot.data!.docs) {
             final data = doc.data() as Map<String, dynamic>;
             final role = data['role'] as String?;
-            if (role == 'traveler') travelers++;
-            else if (role == 'host') hosts++;
-            else if (role == 'guide') guides++;
-            else if (role == 'admin') admins++;
+            if (role == 'traveler') {
+              travelers++;
+            } else if (role == 'host') {
+              hosts++;
+            } else if (role == 'guide') {
+              guides++;
+            } else if (role == 'admin') {
+              admins++;
+            }
           }
         }
 

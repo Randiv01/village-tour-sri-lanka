@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../widgets/common/app_bottom_navigation.dart';
 import '../../../../widgets/common/app_side_menu.dart';
 import '../home/traveler_home_screen.dart';
+import '../../common/auth/auth_guard.dart';
 
 class TravelerMainScreen extends StatefulWidget {
   const TravelerMainScreen({super.key});
@@ -29,9 +30,20 @@ class _TravelerMainScreenState extends State<TravelerMainScreen> {
       bottomNavigationBar: AppBottomNavigation(
         currentIndex: _currentIndex,
         onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
+          if (index == 2 || index == 3) {
+            AuthGuard.requireAuth(
+              context: context,
+              onAuthenticated: () {
+                setState(() {
+                  _currentIndex = index;
+                });
+              },
+            );
+          } else {
+            setState(() {
+              _currentIndex = index;
+            });
+          }
         },
       ),
     );

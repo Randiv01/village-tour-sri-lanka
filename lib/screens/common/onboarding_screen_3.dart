@@ -5,7 +5,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_radius.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_text_styles.dart';
-import 'auth/sign_in_screen.dart';
+import 'auth/auth_gate.dart';
 
 class OnboardingScreen3 extends StatelessWidget {
   const OnboardingScreen3({super.key});
@@ -16,7 +16,7 @@ class OnboardingScreen3 extends StatelessWidget {
 
     if (context.mounted) {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const SignInScreen()),
+        MaterialPageRoute(builder: (_) => const AuthGate()),
       );
     }
   }

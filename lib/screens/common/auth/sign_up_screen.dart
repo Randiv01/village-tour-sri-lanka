@@ -58,10 +58,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
       );
 
       if (user != null) {
-        // Success! We don't need to manually navigate here.
-        // The AuthGate is listening to the authStateChanges stream
-        // and will automatically replace this screen with the correct
-        // role-based dashboard based on the user's Firestore profile.
+        _showSuccess('Account created successfully! Welcome.');
+
+        await Future.delayed(const Duration(milliseconds: 700));
+
+        if (mounted) {
+          // Pop back to the root route (AuthGate) which will automatically 
+          // build the correct dashboard based on the new auth state.
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        }
       }
     } catch (e) {
       _showError(e.toString());
@@ -74,6 +79,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: AppColors.error),
+    );
+  }
+
+  void _showSuccess(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+      ),
     );
   }
 

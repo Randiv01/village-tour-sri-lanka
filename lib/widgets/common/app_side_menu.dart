@@ -98,67 +98,7 @@ class AppSideMenu extends StatelessWidget {
                   vertical: AppSpacing.lg,
                 ),
                 children: [
-                  // Profile Summary
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: AppRadius.cardRadius,
-                      border: Border.all(
-                        color: AppColors.border.withValues(alpha: 0.5),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          backgroundColor: AppColors.background,
-                          radius: 20,
-                          child: const Icon(
-                            Icons.person_outline,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Guest Traveler',
-                                style: AppTextStyles.labelLarge.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                'Ayubowan, Explorer',
-                                style: AppTextStyles.caption.copyWith(
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.green),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            'Active',
-                            style: AppTextStyles.caption.copyWith(
-                              color: Colors.green,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
+
 
                   // Main Menu Section
                   _buildSectionTitle('MAIN MENU', 'EXPERIENCES'),
