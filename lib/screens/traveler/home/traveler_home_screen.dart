@@ -35,8 +35,8 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
   @override
   void initState() {
     super.initState();
-    _popularDestinationsStream =
-        DestinationRepository().getPopularActiveDestinationsStream();
+    _popularDestinationsStream = DestinationRepository()
+        .getPopularActiveDestinationsStream();
     _blinkController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),

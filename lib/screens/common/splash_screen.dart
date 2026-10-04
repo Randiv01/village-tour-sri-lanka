@@ -11,7 +11,7 @@ import '../../firebase_options.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import 'onboarding_screen_1.dart';
-import '../traveler/main/traveler_main_screen.dart';
+import 'auth/sign_in_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -82,7 +82,7 @@ class _SplashScreenState extends State<SplashScreen>
         nextScreen = const OnboardingScreen1();
       } else {
         // Skipping auth for now, go straight to home
-        nextScreen = const TravelerMainScreen();
+        nextScreen = const SignInScreen();
       }
 
       Navigator.of(context).pushReplacement(
