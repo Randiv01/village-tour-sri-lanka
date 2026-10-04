@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../services/auth_service.dart';
-import 'sign_in_screen.dart';
 
 
 import '../../admin/admin_shell.dart';
@@ -31,9 +30,9 @@ class AuthGate extends StatelessWidget {
           );
         }
 
-        // Not signed in
+        // Not signed in -> Public Home
         if (!snapshot.hasData || snapshot.data == null) {
-          return const SignInScreen();
+          return const TravelerMainScreen();
         }
 
         // Signed in -> Need to fetch profile to know role

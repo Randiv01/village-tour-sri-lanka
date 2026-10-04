@@ -18,6 +18,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../models/destination.dart';
 import '../destinations/explore_destinations_screen.dart';
 import '../destinations/destination_details_screen.dart';
+import '../../common/auth/auth_guard.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class TravelerHomeScreen extends StatefulWidget {
   const TravelerHomeScreen({super.key});
@@ -208,32 +210,75 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
                 onTap: () {},
               ),
               const SizedBox(width: AppSpacing.sm),
-              GestureDetector(
-                onTap: () {
-                  _showProfileModal(context);
-                },
-                child: Container(
-                  height: 40,
-                  width: 40,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    image: const DecorationImage(
-                      image: AssetImage(
-                        'assets/images/onboarding/onboarding_01.png',
-                      ), // Placeholder
-                      fit: BoxFit.cover,
-                    ),
-                    border: Border.all(
-                      color: AppColors.border.withValues(alpha: 0.5),
-                    ),
-                  ),
-                  child: const Icon(Icons.person, color: Colors.transparent),
-                ),
-              ),
+              _buildProfileIcon(context),
             ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildProfileIcon(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        AuthGuard.requireAuth(
+          context: context,
+          onAuthenticated: () {
+            _showProfileModal(context);
+          },
+        );
+      },
+      child: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, authSnapshot) {
+          final user = authSnapshot.data;
+          
+          if (user == null) {
+            // Guest State
+            return _buildIconAvatar(null);
+          }
+
+          // Authenticated State - load profileImageUrl from Firestore
+          return StreamBuilder<DocumentSnapshot>(
+            stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
+            builder: (context, profileSnapshot) {
+              String? profileImageUrl;
+              if (profileSnapshot.hasData && profileSnapshot.data!.data() != null) {
+                final data = profileSnapshot.data!.data() as Map<String, dynamic>;
+                profileImageUrl = data['profileImageUrl'] as String?;
+              }
+              return _buildIconAvatar(profileImageUrl);
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildIconAvatar(String? imageUrl) {
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      return Container(
+        height: 40,
+        width: 40,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          image: DecorationImage(
+            image: NetworkImage(imageUrl),
+            fit: BoxFit.cover,
+          ),
+          border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+        ),
+      );
+    }
+    return Container(
+      height: 40,
+      width: 40,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: AppColors.surface,
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+      ),
+      child: const Icon(Icons.person, color: AppColors.textSecondary),
     );
   }
 
