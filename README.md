@@ -12,6 +12,34 @@ Before you begin, ensure you have the following installed on your system:
 2. **[Android Studio](https://developer.android.com/studio)** or **[Visual Studio Code](https://code.visualstudio.com/)** with the Flutter & Dart plugins installed.
 3. An Android Emulator, iOS Simulator, or a physical device connected to your machine.
 
+#### New to Flutter? How to Install via VS Code
+
+If you don't have the Flutter SDK installed, you can easily download it directly through Visual Studio Code:
+
+**Step 1: Download the Flutter SDK**
+1. Open VS Code and press `Ctrl + Shift + P` (Windows) or `Cmd + Shift + P` (macOS).
+2. Type and select `Flutter: New Project`.
+3. Click on the **Download SDK** button that appears.
+4. Select a location to save it (e.g., `C:\src\flutter`) and wait for the download to finish.
+
+**Step 2: Add Flutter to your Environment Path**
+To run Flutter commands from any terminal, you need to add its `bin` folder to your system PATH.
+
+* **On Windows:**
+  Open Command Prompt or PowerShell as Administrator and run the following command (replace the path if you saved it elsewhere):
+  ```cmd
+  setx /M PATH "%PATH%;C:\src\flutter\bin"
+  ```
+  *(Note: Alternatively, you can search for "Environment Variables" in the Start Menu and manually add `C:\src\flutter\bin` to the `Path` variable under System Variables).*
+
+* **On macOS / Linux:**
+  Open your terminal and add the path to your shell profile (`.zshrc` or `.bash_profile`):
+  ```bash
+  echo 'export PATH="$PATH:$HOME/development/flutter/bin"' >> ~/.zshrc
+  source ~/.zshrc
+  ```
+  *(Note: Replace the path if you downloaded Flutter to a different location).*
+
 ---
 
 ### Step-by-Step Instructions
