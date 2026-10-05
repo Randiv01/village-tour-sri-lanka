@@ -12,7 +12,12 @@
           "package_name": "com.example.flutter_application_1"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "798967339122-g9kbh3n5d2m694tsq0s3kgm6ts6qffun.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCzwGVKXpSMwS4Bq9x7gNlOo8MaWC2LxJ0"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "798967339122-g9kbh3n5d2m694tsq0s3kgm6ts6qffun.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "798967339122-qhl4iqug5nrv2eij4i7pvlo3r4pmoj95.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.villageTourSriLanka"
+              }
+            }
+          ]
         }
       }
     },
@@ -31,7 +48,20 @@
           "package_name": "com.example.village_tour_sri_lanka"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "798967339122-m49pa25lapb340711urhcs4tuh6l3qud.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.village_tour_sri_lanka",
+            "certificate_hash": "d8dd0b019f580d3906a38cbb9fab6c971dec0f35"
+          }
+        },
+        {
+          "client_id": "798967339122-g9kbh3n5d2m694tsq0s3kgm6ts6qffun.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCzwGVKXpSMwS4Bq9x7gNlOo8MaWC2LxJ0"
@@ -39,7 +69,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "798967339122-g9kbh3n5d2m694tsq0s3kgm6ts6qffun.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "798967339122-qhl4iqug5nrv2eij4i7pvlo3r4pmoj95.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.villageTourSriLanka"
+              }
+            }
+          ]
         }
       }
     }

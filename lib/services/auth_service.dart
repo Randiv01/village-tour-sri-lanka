@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 import '../models/user_model.dart';
 
@@ -121,12 +122,30 @@ class AuthService {
     }
   }
 
-  // Google Sign In Mock/Architecture
+  // Google Sign In
   Future<UserCredential> signInWithGoogle() async {
-    throw 'Google Sign In is coming soon.';
+    try {
+      final GoogleSignInAccount? googleUser = await GoogleSignIn(scopes: ['email']).signIn();
+      if (googleUser == null) {
+        throw 'Sign in with Google was cancelled.';
+      }
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      return await _auth.signInWithCredential(credential);
+    } on FirebaseAuthException catch (e) {
+      throw _handleFirebaseAuthError(e);
+    } catch (e) {
+      if (e is String) rethrow;
+      throw 'An unexpected error occurred during Google Sign In.';
+    }
   }
 
-  // Phone Authentication implementation is architecture-ready
+  // Phone Authentication
   Future<void> verifyPhoneNumber({
     required String phoneNumber,
     required Function(PhoneAuthCredential) onVerificationCompleted,
@@ -134,14 +153,63 @@ class AuthService {
     required Function(String, int?) onCodeSent,
     required Function(String) onCodeAutoRetrievalTimeout,
   }) async {
-    throw 'Phone Authentication is coming soon.';
+    try {
+      await _auth.verifyPhoneNumber(
+        phoneNumber: phoneNumber,
+        verificationCompleted: onVerificationCompleted,
+        verificationFailed: onVerificationFailed,
+        codeSent: onCodeSent,
+        codeAutoRetrievalTimeout: onCodeAutoRetrievalTimeout,
+      );
+    } catch (e) {
+      throw 'Failed to start phone verification. Please try again.';
+    }
   }
 
   Future<UserCredential> signInWithPhoneCredential(
     String verificationId,
     String smsCode,
   ) async {
-    throw 'Phone Authentication is coming soon.';
+    try {
+      final AuthCredential credential = PhoneAuthProvider.credential(
+        verificationId: verificationId,
+        smsCode: smsCode,
+      );
+      return await _auth.signInWithCredential(credential);
+    } on FirebaseAuthException catch (e) {
+      throw _handleFirebaseAuthError(e);
+    } catch (e) {
+      throw 'Failed to verify OTP. Please try again.';
+    }
+  }
+
+  // Create User Profile directly (used after Google/Phone sign in for new users)
+  Future<UserModel> createUserProfile({
+    required String uid,
+    required String fullName,
+    required String email,
+    required String phoneNumber,
+    required String role,
+    String? profileImageUrl,
+    String? authProvider,
+  }) async {
+    final user = UserModel(
+      uid: uid,
+      fullName: fullName.trim(),
+      email: email.trim(),
+      phoneNumber: phoneNumber.trim(),
+      role: role,
+      isActive: true,
+      profileImageUrl: profileImageUrl,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+
+    await _firestore.collection('users').doc(uid).set({
+      ...user.toMap(),
+      'authProvider': authProvider,
+    });
+    return user;
   }
 
   // Get User Profile
@@ -175,6 +243,8 @@ class AuthService {
         return 'This account has been disabled. Please contact support.';
       case 'email-already-in-use':
         return 'An account with this email already exists. Please sign in instead.';
+      case 'account-exists-with-different-credential':
+        return 'An account already exists with this email. Please sign in using your existing sign-in method.';
       case 'operation-not-allowed':
         return 'This sign-in method is not enabled.';
       case 'weak-password':

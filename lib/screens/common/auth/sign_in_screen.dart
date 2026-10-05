@@ -7,6 +7,8 @@ import '../../../services/auth_service.dart';
 import '../../../widgets/common/auth/auth_text_field.dart';
 import '../../../widgets/common/auth/auth_help_sheet.dart';
 import 'sign_up_screen.dart';
+import 'complete_profile_screen.dart';
+import 'phone_auth_screen.dart';
 
 
 
@@ -26,6 +28,55 @@ class _SignInScreenState extends State<SignInScreen> {
   bool _isLoading = false;
 
 
+
+  Future<void> _signInWithGoogle() async {
+    setState(() => _isLoading = true);
+    try {
+      final userCredential = await _authService.signInWithGoogle();
+      final profile = await _authService.getUserProfile(userCredential.user!.uid);
+
+      if (profile != null) {
+        if (profile.role == 'admin') {
+          _showSuccess('Admin sign in successful.');
+        } else {
+          _showSuccess('Sign in successful! Welcome back.');
+        }
+        await Future.delayed(const Duration(milliseconds: 700));
+        if (mounted) {
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        }
+      } else {
+        // New user through sign in -> Need to complete profile
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => CompleteProfileScreen(
+                userCredential: userCredential,
+                authProvider: 'google',
+                email: userCredential.user?.email,
+                fullName: userCredential.user?.displayName,
+                profileImageUrl: userCredential.user?.photoURL,
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      _showError(e.toString());
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _signInWithPhone() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const PhoneAuthScreen(isSignUp: false),
+      ),
+    );
+  }
 
   Future<void> _signIn() async {
     if (!_formKey.currentState!.validate()) return;
@@ -498,9 +549,7 @@ class _SignInScreenState extends State<SignInScreen> {
                                 child: OutlinedButton.icon(
                                   onPressed: _isLoading
                                       ? null
-                                      : () => _showError(
-                                          'Google Sign-In is pending platform configuration.',
-                                        ),
+                                      : _signInWithGoogle,
                                   style: OutlinedButton.styleFrom(
                                     backgroundColor: Colors.white,
                                     padding: const EdgeInsets.symmetric(
@@ -534,9 +583,7 @@ class _SignInScreenState extends State<SignInScreen> {
                                 child: OutlinedButton.icon(
                                   onPressed: _isLoading
                                       ? null
-                                      : () => _showError(
-                                          'Phone Auth is pending Firebase Console configuration.',
-                                        ),
+                                      : _signInWithPhone,
                                   style: OutlinedButton.styleFrom(
                                     backgroundColor: Colors.white,
                                     padding: const EdgeInsets.symmetric(
