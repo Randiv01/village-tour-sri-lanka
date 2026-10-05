@@ -9,6 +9,8 @@ import '../../../widgets/common/auth/auth_text_field.dart';
 import '../../../widgets/common/auth/auth_help_sheet.dart';
 import '../../../widgets/common/auth/role_selector.dart';
 import '../../../widgets/common/auth/international_phone_field.dart';
+import 'complete_profile_screen.dart';
+import 'phone_auth_screen.dart';
 
 
 
@@ -35,6 +37,56 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _isLoading = false;
 
 
+
+  Future<void> _signUpWithGoogle() async {
+    setState(() => _isLoading = true);
+    try {
+      final userCredential = await _authService.signInWithGoogle();
+      final profile = await _authService.getUserProfile(userCredential.user!.uid);
+
+      if (profile != null) {
+        // User already exists
+        _showSuccess('This account already exists. Signing you in...');
+        await Future.delayed(const Duration(milliseconds: 700));
+        if (mounted) {
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        }
+      } else {
+        // New Google account
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => CompleteProfileScreen(
+                userCredential: userCredential,
+                authProvider: 'google',
+                email: userCredential.user?.email,
+                fullName: userCredential.user?.displayName,
+                profileImageUrl: userCredential.user?.photoURL,
+                defaultRole: _selectedRole,
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      _showError(e.toString());
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _signUpWithPhone() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PhoneAuthScreen(
+          isSignUp: true,
+          defaultRole: _selectedRole,
+        ),
+      ),
+    );
+  }
 
   Future<void> _signUp() async {
     if (!_formKey.currentState!.validate()) return;
@@ -596,9 +648,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 child: OutlinedButton.icon(
                                   onPressed: _isLoading
                                       ? null
-                                      : () => _showError(
-                                          'Google Sign-In is pending platform configuration.',
-                                        ),
+                                      : _signUpWithGoogle,
                                   style: OutlinedButton.styleFrom(
                                     backgroundColor: Colors.white,
                                     padding: const EdgeInsets.symmetric(
@@ -632,9 +682,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 child: OutlinedButton.icon(
                                   onPressed: _isLoading
                                       ? null
-                                      : () => _showError(
-                                          'Phone Auth is pending Firebase Console configuration.',
-                                        ),
+                                      : _signUpWithPhone,
                                   style: OutlinedButton.styleFrom(
                                     backgroundColor: Colors.white,
                                     padding: const EdgeInsets.symmetric(
