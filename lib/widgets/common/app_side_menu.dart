@@ -4,6 +4,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_radius.dart';
+import '../../screens/traveler/experiences/buffet_lunch_experience_screen.dart';
 
 class AppSideMenu extends StatelessWidget {
   const AppSideMenu({super.key});
@@ -105,8 +106,16 @@ class AppSideMenu extends StatelessWidget {
                   _buildMenuItem(
                     Icons.restaurant,
                     'Buffet Lunch',
-                    'Traditional Organic Farmer\'s Fea',
-                    badge: 'Mud House',
+                    'Authentic Sri Lankan\nVillage Feast',
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const BuffetLunchExperienceScreen(),
+                        ),
+                      );
+                    },
                   ),
                   _buildMenuItem(
                     Icons.menu_book,
@@ -229,6 +238,7 @@ class AppSideMenu extends StatelessWidget {
     String title,
     String subtitle, {
     String? badge,
+    VoidCallback? onTap,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -297,7 +307,7 @@ class AppSideMenu extends StatelessWidget {
             color: AppColors.textSecondary,
             size: 20,
           ),
-          onTap: () {},
+          onTap: onTap ?? () {},
         ),
       ),
     );

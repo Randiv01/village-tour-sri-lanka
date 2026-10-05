@@ -6,14 +6,21 @@ import '../home/traveler_home_screen.dart';
 import '../../common/auth/auth_guard.dart';
 
 class TravelerMainScreen extends StatefulWidget {
-  const TravelerMainScreen({super.key});
+  final int initialIndex;
+  const TravelerMainScreen({super.key, this.initialIndex = 0});
 
   @override
   State<TravelerMainScreen> createState() => _TravelerMainScreenState();
 }
 
 class _TravelerMainScreenState extends State<TravelerMainScreen> {
-  int _currentIndex = 0;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+  }
 
   final List<Widget> _pages = [
     const TravelerHomeScreen(),

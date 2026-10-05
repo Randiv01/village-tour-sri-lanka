@@ -26,6 +26,7 @@ dependencies:
   url_launcher: ^6.3.3
   intl_phone_field: ^3.2.0
   google_sign_in: ^6.2.1
+  share_plus: ^13.3.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -61,3 +62,4 @@ flutter:
     - assets/images/
     - assets/images/onboarding/
     - assets/images/sign-in/
+    - assets/images/buffet_lunch/
