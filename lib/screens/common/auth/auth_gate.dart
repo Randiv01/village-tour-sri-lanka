@@ -6,7 +6,7 @@ import '../../../services/auth_service.dart';
 
 import '../../admin/admin_shell.dart';
 import '../../host/host_dashboard_screen.dart';
-import '../../guide/guide_dashboard_screen.dart';
+import '../../guide/guide_shell.dart';
 import '../../traveler/main/traveler_main_screen.dart';
 import '../../../theme/app_colors.dart';
 
@@ -104,7 +104,7 @@ class AuthGate extends StatelessWidget {
               case 'host':
                 return const HostDashboardScreen();
               case 'guide':
-                return const GuideDashboardScreen();
+                return const GuideShell();
               case 'traveler':
               default:
                 return const TravelerMainScreen();

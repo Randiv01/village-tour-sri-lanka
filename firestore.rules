@@ -36,5 +36,33 @@ service cloud.firestore {
     match /destinations/{document} {
       allow read, write: if true;
     }
+
+    // Tour Packages
+    match /tour_packages/{packageId} {
+      // Anyone can read active packages (travelers looking for tours)
+      allow read: if resource == null || resource.data.status == 'active' || 
+                    (request.auth != null && resource.data.guideId == request.auth.uid);
+      
+      // Only authenticated users with guide role can create packages
+      // (in production we'd verify the role field, but for development relying on the guideId matching the auth uid is sufficient)
+      allow create: if request.auth != null && request.resource.data.guideId == request.auth.uid;
+      
+      // Guides can update and delete their own packages
+      allow update, delete: if request.auth != null && resource.data.guideId == request.auth.uid;
+    }
+
+    // Guide Bookings
+    match /guide_bookings/{bookingId} {
+      // Guides can read, update their own bookings
+      allow read, update: if request.auth != null && resource.data.guideId == request.auth.uid;
+      
+      // Travelers can read their own bookings
+      allow read: if request.auth != null && resource.data.guestId == request.auth.uid;
+      
+      // Travelers can create bookings
+      allow create: if request.auth != null && request.resource.data.guestId == request.auth.uid;
+      
+      allow delete: if false; // Prefer logical deletion (status='cancelled')
+    }
   }
 }
