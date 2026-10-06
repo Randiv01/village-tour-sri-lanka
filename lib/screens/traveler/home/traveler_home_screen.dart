@@ -22,7 +22,8 @@ import '../../common/auth/auth_guard.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class TravelerHomeScreen extends StatefulWidget {
-  const TravelerHomeScreen({super.key});
+  final VoidCallback? onProfileTap;
+  const TravelerHomeScreen({super.key, this.onProfileTap});
 
   @override
   State<TravelerHomeScreen> createState() => _TravelerHomeScreenState();
@@ -224,7 +225,11 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
         AuthGuard.requireAuth(
           context: context,
           onAuthenticated: () {
-            _showProfileModal(context);
+            if (widget.onProfileTap != null) {
+              widget.onProfileTap!();
+            } else {
+              _showProfileModal(context);
+            }
           },
         );
       },
