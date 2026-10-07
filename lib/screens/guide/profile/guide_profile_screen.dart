@@ -7,6 +7,7 @@ import '../../../theme/app_spacing.dart';
 import '../../../theme/app_radius.dart';
 import '../../../models/user_model.dart';
 import '../../../services/auth_service.dart';
+import '../../traveler/profile/edit_profile_screen.dart';
 
 class GuideProfileScreen extends StatefulWidget {
   const GuideProfileScreen({super.key});
@@ -151,11 +152,16 @@ class _GuideProfileScreenState extends State<GuideProfileScreen> {
             // Actions
             _sectionTitle('Settings'),
             const SizedBox(height: AppSpacing.sm),
-            _settingsTile(Icons.edit_outlined, 'Edit Profile', AppColors.primary, () {}),
-            const SizedBox(height: AppSpacing.xs),
-            _settingsTile(Icons.lock_outline, 'Security', AppColors.primary, () {}),
-            const SizedBox(height: AppSpacing.xs),
-            _settingsTile(Icons.info_outline, 'About App', AppColors.primary, () {}),
+            _settingsTile(Icons.edit_outlined, 'Edit Profile', AppColors.primary, () async {
+              if (_profile == null) return;
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => EditProfileScreen(userModel: _profile!)),
+              );
+              if (result == true) {
+                _loadProfile();
+              }
+            }),
             const SizedBox(height: AppSpacing.xl),
 
             // Sign out

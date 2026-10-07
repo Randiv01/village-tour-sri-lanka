@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
@@ -39,8 +39,8 @@ class _GuideShellState extends State<GuideShell> {
         index: _currentIndex,
         children: [
           GuideHomeScreen(onNavigate: navigateTo),
-          const GuidePackagesScreen(),
           const GuideBookingsScreen(),
+          const GuidePackagesScreen(),
           const GuideProfileScreen(),
         ],
       ),
