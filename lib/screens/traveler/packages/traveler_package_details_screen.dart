@@ -9,6 +9,7 @@ import '../../../theme/app_colors.dart';
 import '../../../theme/app_text_styles.dart';
 import '../../../theme/app_spacing.dart';
 import '../../../models/tour_package.dart';
+import '../chat/traveler_chat_screen.dart';
 import '../../../repositories/tour_package_repository.dart';
 
 class TravelerPackageDetailsScreen extends StatefulWidget {
@@ -77,16 +78,27 @@ class _TravelerPackageDetailsScreenState extends State<TravelerPackageDetailsScr
   void _handleMessageGuide() {
     if (_package == null || _guideInfo == null) return;
     
-    // Future messaging implementation hook
-    // We pass packageId, guideId, package title, and guide name.
-    
-    // final guideId = _package!.guideId;
-    // final packageId = _package!.id;
-    // final packageTitle = _package!.title;
-    // final guideName = _guideInfo!['name'] ?? 'Guide';
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Messaging system coming soon!')),
+    final guideId = _package!.guideId;
+    final packageId = _package!.id;
+    final packageTitle = _package!.title;
+    final packagePrice = 'Rs. ${_package!.pricePerGuest.toStringAsFixed(0)}/day';
+    final guideName = _guideInfo!['fullName'] ?? 'Guide';
+    final guideImage = _guideInfo!['profileImage'] ?? _guideInfo!['profileImageUrl'] ?? '';
+    final guideLanguages = _guideInfo!['languages'] != null ? (_guideInfo!['languages'] as List).join(' & ') : 'Sinhala & English';
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TravelerChatScreen(
+          guideId: guideId,
+          guideName: guideName,
+          guideImage: guideImage,
+          guideLanguages: guideLanguages,
+          packageId: packageId,
+          packageTitle: packageTitle,
+          packagePrice: packagePrice,
+        ),
+      ),
     );
   }
 
