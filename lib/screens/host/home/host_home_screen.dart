@@ -8,6 +8,7 @@ import '../../../../theme/app_spacing.dart';
 import 'widgets/analytics_stat_card.dart';
 import 'widgets/host_homestay_card.dart';
 import 'widgets/upcoming_booking_tile.dart';
+import '../homestays/add_homestay_screen.dart';
 
 class HostHomeScreen extends StatelessWidget {
   const HostHomeScreen({super.key});
@@ -23,7 +24,7 @@ class HostHomeScreen extends StatelessWidget {
             _buildTopBanner(context),
             _buildAnalyticsRow(),
             const SizedBox(height: AppSpacing.xl),
-            _buildAddNewHomestayButton(),
+            _buildAddNewHomestayButton(context),
             const SizedBox(height: AppSpacing.xxl),
             _buildMyHomestaysSection(),
             const SizedBox(height: AppSpacing.xxl),
@@ -277,7 +278,7 @@ class HostHomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAddNewHomestayButton() {
+  Widget _buildAddNewHomestayButton(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Container(
@@ -297,7 +298,9 @@ class HostHomeScreen extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
-            onTap: () {},
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const AddHomestayScreen()));
+            },
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.md),
               child: Row(
@@ -345,90 +348,116 @@ class HostHomeScreen extends StatelessWidget {
   }
 
   Widget _buildMyHomestaysSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
+    final user = FirebaseAuth.instance.currentUser;
+    return StreamBuilder<QuerySnapshot>(
+      stream: user != null 
+          ? FirebaseFirestore.instance.collection('homestays').where('hostId', isEqualTo: user.uid).snapshots()
+          : null,
+      builder: (context, snapshot) {
+        int listedCount = 0;
+        List<Widget> homestayCards = [];
+
+        if (snapshot.hasData) {
+          final docs = snapshot.data!.docs;
+          listedCount = docs.length;
+          
+          for (var doc in docs) {
+            final data = doc.data() as Map<String, dynamic>;
+            final images = List<String>.from(data['images'] ?? []);
+            final imageUrl = images.isNotEmpty ? images.first : 'assets/images/onboarding/onboarding_01.png';
+            
+            homestayCards.add(
+              HostHomestayCard(
+                title: data['title'] ?? 'Unnamed Homestay',
+                location: data['location'] ?? 'Unknown Location',
+                roomsInfo: '${data['roomsCount'] ?? 1} Rooms  |  Up to ${data['maxGuests'] ?? 2} Guests',
+                priceInfo: 'Rs. ${data['pricePerNight']?.toString() ?? '0'}/night',
+                occupancyInfo: '0% Booked', // placeholder logic
+                status: data['status'] ?? 'Active',
+                imageUrl: imageUrl, 
+              )
+            );
+          }
+        }
+
+        if (homestayCards.isEmpty) {
+          homestayCards.add(const Padding(
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Text('No homestays listed yet.', style: TextStyle(color: AppColors.textSecondary)),
+          ));
+        } else {
+          homestayCards.add(const SizedBox(width: 8)); // Right padding
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
-                    'My Homestays',
-                    style: AppTextStyles.sectionHeading.copyWith(
-                      color: AppColors.primaryDark,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '2 Listed',
-                      style: AppTextStyles.caption.copyWith(
-                        color: AppColors.primaryDark,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 10,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        'My Homestays',
+                        style: AppTextStyles.sectionHeading.copyWith(
+                          color: AppColors.primaryDark,
+                        ),
                       ),
+                      const SizedBox(width: AppSpacing.md),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '$listedCount Listed',
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.primaryDark,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  InkWell(
+                    onTap: () {},
+                    child: Row(
+                      children: [
+                        Text(
+                          'Manage All ',
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.secondary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right, size: 16, color: AppColors.secondary),
+                      ],
                     ),
                   ),
                 ],
               ),
-              InkWell(
-                onTap: () {},
+            ),
+            const SizedBox(height: AppSpacing.md),
+            if (listedCount > 0)
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.only(left: AppSpacing.lg),
+                clipBehavior: Clip.none,
                 child: Row(
-                  children: [
-                    Text(
-                      'Manage All ',
-                      style: AppTextStyles.caption.copyWith(
-                        color: AppColors.secondary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Icon(Icons.chevron_right, size: 16, color: AppColors.secondary),
-                  ],
+                  children: homestayCards,
                 ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.only(left: AppSpacing.lg),
-          clipBehavior: Clip.none,
-          child: Row(
-            children: const [
-              HostHomestayCard(
-                title: 'Nilagama Village House',
-                location: 'Nilagama, Galewela',
-                roomsInfo: '2 Rooms  |  Up to 6 Guests',
-                priceInfo: 'Rs. 3,500/night',
-                occupancyInfo: '70% Booked',
-                status: 'Active',
-                imageUrl: 'assets/images/onboarding/onboarding_01.png',
-              ),
-              HostHomestayCard(
-                title: 'Ruwan Villa Homestay',
-                location: 'Dambulla, Sigiriya',
-                roomsInfo: '3 Rooms  |  Up to 8 Guests',
-                priceInfo: 'Rs. 4,000/night',
-                occupancyInfo: '30% Booked',
-                status: 'Inactive',
-                imageUrl: 'assets/images/onboarding/onboarding_02.png',
-              ),
-              SizedBox(width: 8), // Right padding
-            ],
-          ),
-        ),
-      ],
+              )
+            else
+              ...homestayCards,
+          ],
+        );
+      }
     );
   }
 
