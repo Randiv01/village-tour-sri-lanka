@@ -8,6 +8,7 @@ import '../../../../theme/app_spacing.dart';
 import 'widgets/analytics_stat_card.dart';
 import 'widgets/host_homestay_card.dart';
 import 'widgets/upcoming_booking_tile.dart';
+import '../promotions/my_promotions_screen.dart';
 
 class HostHomeScreen extends StatelessWidget {
   const HostHomeScreen({super.key});
@@ -29,7 +30,7 @@ class HostHomeScreen extends StatelessWidget {
             const SizedBox(height: AppSpacing.xxl),
             _buildUpcomingBookingsSection(),
             const SizedBox(height: AppSpacing.xxl),
-            _buildPromotionsSection(),
+            _buildPromotionsSection(context),
             const SizedBox(height: AppSpacing.xxl),
           ],
         ),
@@ -487,7 +488,7 @@ class HostHomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPromotionsSection() {
+  Widget _buildPromotionsSection(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Column(
@@ -504,7 +505,12 @@ class HostHomeScreen extends StatelessWidget {
                 ),
               ),
               InkWell(
-                onTap: () {},
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const MyPromotionsScreen()),
+                  );
+                },
                 child: Row(
                   children: [
                     Text(
@@ -521,48 +527,56 @@ class HostHomeScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.md),
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFAF1E3), // Warm yellow-orange tint
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border, width: 0.5),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.secondary.withValues(alpha: 0.5), // match image
-                    shape: BoxShape.circle,
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const MyPromotionsScreen()),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFAF1E3), // Warm yellow-orange tint
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.border, width: 0.5),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.secondary.withValues(alpha: 0.5), // match image
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.local_offer, color: Colors.white, size: 24),
                   ),
-                  child: const Icon(Icons.local_offer, color: Colors.white, size: 24),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Create a Promotion',
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primaryDark,
-                          fontSize: 16,
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Create a Promotion',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primaryDark,
+                            fontSize: 16,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Offer special rates or seasonal discounts',
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.textSecondary,
+                        const SizedBox(height: 2),
+                        Text(
+                          'Offer special rates or seasonal discounts',
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-              ],
+                  const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+                ],
+              ),
             ),
           ),
         ],
