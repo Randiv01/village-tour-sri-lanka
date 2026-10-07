@@ -137,7 +137,7 @@ class _CookeryExperienceScreenState extends State<CookeryExperienceScreen> {
       decoration: BoxDecoration(
         borderRadius: AppRadius.largeRadius,
         image: const DecorationImage(
-          image: AssetImage('assets/images/cookery/cookery_hero.png'), // Add suitable asset
+          image: AssetImage('assets/images/sign-in/auth_rural_landscape.png'), // Fallback asset
           fit: BoxFit.cover,
         ),
         color: Colors.grey[800], // Fallback color
@@ -276,16 +276,9 @@ class _CookeryExperienceScreenState extends State<CookeryExperienceScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(color: const Color(0xFFC47F46), width: 2),
-                  color: const Color(0xFFEFE8DA),
-                ),
-                child: const Center(
-                  child: Text(
-                    'KM',
-                    style: TextStyle(
-                      color: Color(0xFF1E6B52),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
-                    ),
+                  image: const DecorationImage(
+                    image: AssetImage('assets/images/buffet_lunch/buffet_lunch_host.png'),
+                    fit: BoxFit.cover,
                   ),
                 ),
               ),
@@ -326,41 +319,50 @@ class _CookeryExperienceScreenState extends State<CookeryExperienceScreen> {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.location_on,
-                      color: Color(0xFFC47F46),
-                      size: 14,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Nilagama Orchard Hearth',
-                      style: AppTextStyles.caption.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF1E6B52),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      width: 4,
-                      height: 4,
-                      decoration: const BoxDecoration(
-                        color: AppColors.textSecondary,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'English & Sinhala Guided',
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.bold,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFAFAF7),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFE5E2D9)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.only(top: 2.0),
+                        child: Icon(
+                          Icons.location_on,
+                          color: Color(0xFFC47F46),
+                          size: 14,
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: 'Nilagama Orchard Hearth   •   ',
+                                style: AppTextStyles.caption.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF1E6B52),
+                                ),
+                              ),
+                              TextSpan(
+                                text: 'English & Sinhala Guided',
+                                style: AppTextStyles.caption.copyWith(
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          style: const TextStyle(height: 1.4),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -385,24 +387,34 @@ class _CookeryExperienceScreenState extends State<CookeryExperienceScreen> {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFC47F46),
-                      shape: BoxShape.circle,
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFC47F46),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'The 4-Step Culinary Journey',
-                    style: AppTextStyles.sectionHeading,
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'The 4-Step Culinary Journey',
+                        style: AppTextStyles.sectionHeading,
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Text(
                 'Hands-on',
                 style: AppTextStyles.caption.copyWith(
@@ -612,24 +624,34 @@ class _CookeryExperienceScreenState extends State<CookeryExperienceScreen> {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFC47F46),
-                      shape: BoxShape.circle,
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFC47F46),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    "What You'll Prepare & Taste",
-                    style: AppTextStyles.sectionHeading,
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        "What You'll Prepare & Taste",
+                        style: AppTextStyles.sectionHeading,
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
