@@ -19,11 +19,13 @@ class GuideBookingsScreen extends StatefulWidget {
 
 class _GuideBookingsScreenState extends State<GuideBookingsScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final GuideBookingRepository _repo = GuideBookingRepository();
+  final String _uid = FirebaseAuth.instance.currentUser?.uid ?? '';
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -34,154 +36,151 @@ class _GuideBookingsScreenState extends State<GuideBookingsScreen> with SingleTi
 
   @override
   Widget build(BuildContext context) {
-    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
-    final repo = GuideBookingRepository();
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.background,
         elevation: 0,
-        title: Text('Bookings', style: AppTextStyles.screenHeading.copyWith(color: AppColors.primaryDark)),
+        title: Text('My Bookings', style: AppTextStyles.screenHeading.copyWith(color: AppColors.primaryDark)),
         centerTitle: true,
         bottom: TabBar(
           controller: _tabController,
-          labelColor: AppColors.primaryDark,
+          labelColor: AppColors.primary,
           unselectedLabelColor: AppColors.textSecondary,
           indicatorColor: AppColors.primary,
-          labelStyle: AppTextStyles.caption.copyWith(fontWeight: FontWeight.bold),
+          isScrollable: true,
+          tabAlignment: TabAlignment.center,
           tabs: const [
+            Tab(text: 'Pending'),
             Tab(text: 'Upcoming'),
-            Tab(text: 'All'),
             Tab(text: 'Completed'),
+            Tab(text: 'Cancelled'),
           ],
         ),
       ),
       body: StreamBuilder<List<GuideBooking>>(
-        stream: repo.getGuideBookingsStream(uid),
+        stream: _repo.getGuideBookingsStream(_uid),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator(color: AppColors.primary));
           }
           if (snapshot.hasError) {
-            return Center(child: Text('Failed to load bookings.', style: AppTextStyles.bodyLarge));
+            return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+              const SizedBox(height: AppSpacing.md),
+              Text('Unable to load bookings.', style: AppTextStyles.bodyLarge),
+            ]));
           }
-          final all = snapshot.data ?? [];
-          final now = DateTime.now();
-          final upcoming = all.where((b) => b.startDate.isAfter(now) && (b.status == 'confirmed' || b.status == 'pending')).toList();
-          final completed = all.where((b) => b.status == 'completed' || b.endDate.isBefore(now)).toList();
+
+          final allBookings = snapshot.data ?? [];
+          final pending = allBookings.where((b) => b.status == 'pending').toList();
+          final upcoming = allBookings.where((b) => b.status == 'confirmed' && b.startDate.isAfter(DateTime.now())).toList();
+          final completed = allBookings.where((b) => b.status == 'completed' || (b.status == 'confirmed' && b.startDate.isBefore(DateTime.now()))).toList();
+          final cancelled = allBookings.where((b) => b.status == 'cancelled' || b.status == 'rejected').toList();
 
           return TabBarView(
             controller: _tabController,
             children: [
-              _BookingList(bookings: upcoming, emptyMessage: 'No upcoming bookings.', emptySubtitle: 'Your upcoming confirmed and pending bookings will appear here.'),
-              _BookingList(bookings: all, emptyMessage: 'No bookings yet.', emptySubtitle: 'All your tour bookings will appear here.'),
-              _BookingList(bookings: completed, emptyMessage: 'No completed bookings.', emptySubtitle: 'Completed tour bookings will appear here.'),
+              _buildBookingList(pending, 'No pending bookings.'),
+              _buildBookingList(upcoming, 'No upcoming bookings.'),
+              _buildBookingList(completed, 'No completed bookings.'),
+              _buildBookingList(cancelled, 'No cancelled bookings.'),
             ],
           );
         },
       ),
     );
   }
-}
 
-class _BookingList extends StatelessWidget {
-  final List<GuideBooking> bookings;
-  final String emptyMessage;
-  final String emptySubtitle;
-
-  const _BookingList({required this.bookings, required this.emptyMessage, required this.emptySubtitle});
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildBookingList(List<GuideBooking> bookings, String emptyMessage) {
     if (bookings.isEmpty) {
-      return Center(child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xxxl),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.calendar_today_outlined, size: 56, color: AppColors.primary.withValues(alpha: 0.3)),
-          const SizedBox(height: AppSpacing.lg),
-          Text(emptyMessage, style: AppTextStyles.sectionHeading.copyWith(color: AppColors.primaryDark)),
-          const SizedBox(height: AppSpacing.sm),
-          Text(emptySubtitle, textAlign: TextAlign.center, style: AppTextStyles.bodySecondary),
-        ]),
-      ));
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xxl),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.event_note, size: 64, color: AppColors.primary.withValues(alpha: 0.3)),
+            const SizedBox(height: AppSpacing.lg),
+            Text(emptyMessage, style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textSecondary)),
+          ]),
+        ),
+      );
     }
+
     return ListView.separated(
       padding: const EdgeInsets.all(AppSpacing.lg),
       itemCount: bookings.length,
       separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.md),
       itemBuilder: (context, index) {
         final booking = bookings[index];
-        return _BookingCard(
-          booking: booking,
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => GuideBookingDetailScreen(booking: booking))),
-        );
+        return _BookingCard(booking: booking, onTap: () => _openBooking(booking));
       },
     );
+  }
+
+  void _openBooking(GuideBooking booking) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => GuideBookingDetailScreen(booking: booking)));
   }
 }
 
 class _BookingCard extends StatelessWidget {
-  final GuideBooking booking; final VoidCallback onTap;
+  final GuideBooking booking;
+  final VoidCallback onTap;
+
   const _BookingCard({required this.booking, required this.onTap});
-
-  Color _statusColor(String s) {
-    switch (s.toLowerCase()) {
-      case 'confirmed': return Colors.green;
-      case 'pending': return AppColors.secondary;
-      case 'cancelled': return AppColors.error;
-      default: return AppColors.textSecondary;
-    }
-  }
-
-  Color _statusBg(String s) {
-    switch (s.toLowerCase()) {
-      case 'confirmed': return Colors.green.withValues(alpha: 0.1);
-      case 'pending': return AppColors.secondary.withValues(alpha: 0.1);
-      case 'cancelled': return AppColors.error.withValues(alpha: 0.1);
-      default: return AppColors.softSecondarySurface;
-    }
-  }
-
-  String _cap(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
 
   @override
   Widget build(BuildContext context) {
-    final df = DateFormat('dd MMM yyyy');
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.md),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: AppRadius.cardRadius,
-          border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 6, offset: const Offset(0, 2))],
-        ),
-        child: Row(children: [
-          Container(width: 44, height: 44, decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), shape: BoxShape.circle), child: const Icon(Icons.person, color: AppColors.primary, size: 22)),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(booking.guestName, style: AppTextStyles.labelLarge.copyWith(color: AppColors.textPrimary)),
-            const SizedBox(height: 2),
-            Text('${df.format(booking.startDate)} – ${df.format(booking.endDate)}', style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary)),
-            const SizedBox(height: 2),
-            Text('${booking.numberOfGuests} Guests • ${booking.tourType}', style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary)),
-            const SizedBox(height: 4),
-            Text(booking.packageTitle, style: AppTextStyles.caption.copyWith(color: AppColors.primary, fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis),
-          ])),
-          const SizedBox(width: AppSpacing.sm),
-          Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(color: _statusBg(booking.status), borderRadius: BorderRadius.circular(12)),
-              child: Text(_cap(booking.status), style: AppTextStyles.caption.copyWith(color: _statusColor(booking.status), fontWeight: FontWeight.bold, fontSize: 11)),
-            ),
-            const SizedBox(height: 8),
-            const Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 18),
+        decoration: BoxDecoration(color: AppColors.surface, borderRadius: AppRadius.cardRadius, border: Border.all(color: AppColors.border)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Expanded(child: Text(booking.packageTitle, style: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis)),
+            _buildStatusBadge(booking.status),
+          ]),
+          const SizedBox(height: AppSpacing.sm),
+          Row(children: [
+            const Icon(Icons.person_outline, size: 16, color: AppColors.textSecondary),
+            const SizedBox(width: 4),
+            Text('${booking.guestName} (${booking.numberOfGuests} Guests)', style: AppTextStyles.bodyMedium),
+          ]),
+          const SizedBox(height: 4),
+          Row(children: [
+            const Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.textSecondary),
+            const SizedBox(width: 4),
+            Text('${DateFormat('MMM dd, yyyy').format(booking.startDate)} - ${DateFormat('MMM dd, yyyy').format(booking.endDate)}', style: AppTextStyles.bodyMedium),
+          ]),
+          const SizedBox(height: AppSpacing.md),
+          const Divider(height: 1),
+          const SizedBox(height: AppSpacing.sm),
+          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Total Amount', style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary)),
+              Text('${booking.currency} ${NumberFormat('#,##0').format(booking.totalPrice)}', style: AppTextStyles.labelLarge.copyWith(color: AppColors.primaryDark)),
+            ]),
+            TextButton(onPressed: onTap, child: const Text('View Details')),
           ]),
         ]),
       ),
+    );
+  }
+
+  Widget _buildStatusBadge(String status) {
+    Color color;
+    switch (status) {
+      case 'pending': color = Colors.orange; break;
+      case 'confirmed': color = Colors.green; break;
+      case 'completed': color = AppColors.primary; break;
+      case 'cancelled':
+      case 'rejected': color = AppColors.error; break;
+      default: color = AppColors.textSecondary;
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
+      child: Text(status.toUpperCase(), style: AppTextStyles.caption.copyWith(color: color, fontWeight: FontWeight.bold)),
     );
   }
 }
