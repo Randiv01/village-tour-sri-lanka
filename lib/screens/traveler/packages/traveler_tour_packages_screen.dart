@@ -541,7 +541,7 @@ class _TravelerTourPackagesScreenState extends State<TravelerTourPackagesScreen>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Hosted by',
+                                'Guided by',
                                 style: AppTextStyles.caption.copyWith(fontSize: 10, color: AppColors.textSecondary),
                               ),
                               Text(

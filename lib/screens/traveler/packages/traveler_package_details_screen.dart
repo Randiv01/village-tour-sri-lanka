@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_text_styles.dart';
@@ -151,6 +152,11 @@ class _TravelerPackageDetailsScreenState extends State<TravelerPackageDetailsScr
         backgroundColor: AppColors.background,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.primaryDark),
+        centerTitle: true,
+        title: Text(
+          'Tour Packages',
+          style: AppTextStyles.screenHeading.copyWith(color: AppColors.primaryDark, fontSize: 20),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.share, color: AppColors.primaryDark),
@@ -269,7 +275,7 @@ class _TravelerPackageDetailsScreenState extends State<TravelerPackageDetailsScr
                         const Divider(height: 48, color: AppColors.border),
                         
                         // Guide Section
-                        _buildSectionTitle('Hosted by'),
+                        _buildSectionTitle('Guided by'),
                         Row(
                           children: [
                             CircleAvatar(
@@ -301,6 +307,28 @@ class _TravelerPackageDetailsScreenState extends State<TravelerPackageDetailsScr
                                       child: Text(
                                         'Speaks: ${(_guideInfo!['languages'] as List).join(", ")}',
                                         style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                                      ),
+                                    ),
+                                  if (_guideInfo?['phoneNumber'] != null && _guideInfo!['phoneNumber'].toString().isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 4.0),
+                                      child: GestureDetector(
+                                        onTap: () async {
+                                          final Uri url = Uri.parse('tel:${_guideInfo!['phoneNumber']}');
+                                          if (await canLaunchUrl(url)) {
+                                            await launchUrl(url);
+                                          }
+                                        },
+                                        child: Row(
+                                          children: [
+                                            const Icon(Icons.phone, size: 14, color: AppColors.primary),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              _guideInfo!['phoneNumber'],
+                                              style: AppTextStyles.caption.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                 ],
