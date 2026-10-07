@@ -21,6 +21,7 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
   late TourPackage _package;
   final TourPackageRepository _repo = TourPackageRepository();
   bool _isLoading = false;
+  int _currentImageIndex = 0;
 
   @override
   void initState() {
@@ -73,42 +74,98 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
 
+    List<String> allImages = [];
+    if (_package.coverImageUrl != null && _package.coverImageUrl!.isNotEmpty) {
+      allImages.add(_package.coverImageUrl!);
+    }
+    for (var img in _package.galleryImages) {
+      if (img.isNotEmpty && !allImages.contains(img)) {
+        allImages.add(img);
+      }
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 250,
-            pinned: true,
-            backgroundColor: AppColors.primaryDark,
-            iconTheme: const IconThemeData(color: Colors.white),
-            actions: [
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert, color: Colors.white),
-                onSelected: (val) {
-                  if (val == 'edit') {
-                    _edit();
-                  } else if (val == 'availability') {
-                    _manageAvailability();
-                  } else if (val == 'delete') {
-                    _delete();
-                  }
-                },
-                itemBuilder: (ctx) => [
-                  const PopupMenuItem(value: 'edit', child: Text('Edit Package')),
-                  const PopupMenuItem(value: 'availability', child: Text('Manage Availability')),
-                  const PopupMenuItem(value: 'delete', child: Text('Delete Package', style: TextStyle(color: AppColors.error))),
-                ],
-              ),
+      appBar: AppBar(
+        backgroundColor: AppColors.background,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.primaryDark),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.primaryDark),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(_package.title, style: const TextStyle(color: AppColors.primaryDark, fontSize: 18, fontWeight: FontWeight.bold)),
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: AppColors.primaryDark),
+            onSelected: (val) {
+              if (val == 'edit') {
+                _edit();
+              } else if (val == 'availability') {
+                _manageAvailability();
+              } else if (val == 'delete') {
+                _delete();
+              }
+            },
+            itemBuilder: (ctx) => [
+              const PopupMenuItem(value: 'edit', child: Text('Edit Package')),
+              const PopupMenuItem(value: 'availability', child: Text('Manage Availability')),
+              const PopupMenuItem(value: 'delete', child: Text('Delete Package', style: TextStyle(color: AppColors.error))),
             ],
-            flexibleSpace: FlexibleSpaceBar(
-              background: _package.coverImageUrl != null && _package.coverImageUrl!.isNotEmpty
-                  ? Image.network(_package.coverImageUrl!, fit: BoxFit.cover)
-                  : Container(color: AppColors.primaryDark, child: const Icon(Icons.image, size: 64, color: Colors.white54)),
-            ),
           ),
-          SliverToBoxAdapter(
-            child: Padding(
+        ],
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (allImages.isNotEmpty)
+              SizedBox(
+                height: 250,
+                child: Stack(
+                  children: [
+                    PageView.builder(
+                      itemCount: allImages.length,
+                      onPageChanged: (index) {
+                        setState(() {
+                          _currentImageIndex = index;
+                        });
+                      },
+                      itemBuilder: (context, index) {
+                        return Image.network(
+                          allImages[index],
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                        );
+                      },
+                    ),
+                    if (allImages.length > 1)
+                      Positioned(
+                        bottom: 16,
+                        right: 16,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.black54,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Text(
+                            '${_currentImageIndex + 1} / ${allImages.length}',
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              )
+            else
+              Container(
+                height: 250,
+                color: AppColors.primaryDark,
+                width: double.infinity,
+                child: const Icon(Icons.image, size: 64, color: Colors.white54),
+              ),
+            Padding(
               padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -190,8 +247,8 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
                 ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
