@@ -1,4 +1,4 @@
-﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class GuideBooking {
   final String id;
@@ -9,14 +9,15 @@ class GuideBooking {
   final String guestName;
   final String guestEmail;
   final String? guestPhone;
+  final String? guestProfileUrl;
   final DateTime startDate;
   final DateTime endDate;
   final int numberOfGuests;
   final double totalPrice;
   final String currency;
-  final String status; // 'pending', 'confirmed', 'cancelled', 'completed'
+  final String status; // 'pending', 'confirmed', 'cancelled', 'completed', 'rejected'
+  final String paymentStatus; // 'pending', 'paid', 'failed', 'refunded'
   final String? notes;
-  final String tourType; // 'Private Tour', 'Group Tour', etc.
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -29,14 +30,15 @@ class GuideBooking {
     required this.guestName,
     required this.guestEmail,
     this.guestPhone,
+    this.guestProfileUrl,
     required this.startDate,
     required this.endDate,
     required this.numberOfGuests,
     required this.totalPrice,
     this.currency = 'LKR',
     required this.status,
+    required this.paymentStatus,
     this.notes,
-    this.tourType = 'Private Tour',
     this.createdAt,
     this.updatedAt,
   });
@@ -51,14 +53,15 @@ class GuideBooking {
       guestName: map['guestName'] ?? '',
       guestEmail: map['guestEmail'] ?? '',
       guestPhone: map['guestPhone'],
+      guestProfileUrl: map['guestProfileUrl'],
       startDate: (map['startDate'] as Timestamp).toDate(),
       endDate: (map['endDate'] as Timestamp).toDate(),
       numberOfGuests: (map['numberOfGuests'] as num?)?.toInt() ?? 1,
       totalPrice: (map['totalPrice'] as num?)?.toDouble() ?? 0.0,
       currency: map['currency'] ?? 'LKR',
       status: map['status'] ?? 'pending',
+      paymentStatus: map['paymentStatus'] ?? 'pending',
       notes: map['notes'],
-      tourType: map['tourType'] ?? 'Private Tour',
       createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
       updatedAt: (map['updatedAt'] as Timestamp?)?.toDate(),
     );
@@ -73,14 +76,15 @@ class GuideBooking {
       'guestName': guestName,
       'guestEmail': guestEmail,
       'guestPhone': guestPhone,
+      'guestProfileUrl': guestProfileUrl,
       'startDate': Timestamp.fromDate(startDate),
       'endDate': Timestamp.fromDate(endDate),
       'numberOfGuests': numberOfGuests,
       'totalPrice': totalPrice,
       'currency': currency,
       'status': status,
+      'paymentStatus': paymentStatus,
       'notes': notes,
-      'tourType': tourType,
       'updatedAt': FieldValue.serverTimestamp(),
     };
   }
