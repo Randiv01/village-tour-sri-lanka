@@ -27,7 +27,7 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
 
   late TextEditingController _titleCtrl;
   late TextEditingController _descCtrl;
-  late TextEditingController _categoryCtrl;
+  String? _selectedCategory;
   late TextEditingController _daysCtrl;
   late TextEditingController _nightsCtrl;
   late TextEditingController _maxGuestsCtrl;
@@ -59,7 +59,13 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
     final p = widget.package;
     _titleCtrl = TextEditingController(text: p?.title ?? '');
     _descCtrl = TextEditingController(text: p?.description ?? '');
-    _categoryCtrl = TextEditingController(text: p?.category ?? '');
+    
+    String initialCategory = p?.category ?? 'Village Experience';
+    if (!TourPackage.packageCategories.contains(initialCategory)) {
+      initialCategory = 'Other Experience';
+    }
+    _selectedCategory = initialCategory;
+    
     _daysCtrl = TextEditingController(text: p?.durationDays.toString() ?? '1');
     _nightsCtrl = TextEditingController(text: p?.nights.toString() ?? '0');
     _maxGuestsCtrl = TextEditingController(text: p?.maxGuests.toString() ?? '2');
@@ -83,7 +89,7 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
 
   @override
   void dispose() {
-    for (final c in [_titleCtrl, _descCtrl, _categoryCtrl, _daysCtrl, _nightsCtrl, _maxGuestsCtrl, _priceCtrl, _vehicleCtrl, _locationCtrl, _meetingCtrl, _pickupNotesCtrl]) {
+    for (final c in [_titleCtrl, _descCtrl, _daysCtrl, _nightsCtrl, _maxGuestsCtrl, _priceCtrl, _vehicleCtrl, _locationCtrl, _meetingCtrl, _pickupNotesCtrl]) {
       c.dispose();
     }
     super.dispose();
@@ -155,9 +161,72 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_coverImageUrl == null && _coverImageFile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cover image is required.'), backgroundColor: AppColors.error));
+    
+    // Cross-field and length validations
+    if (_titleCtrl.text.trim().length < 3 || _titleCtrl.text.trim().length > 100) {
+      _showError('Title must be between 3 and 100 characters.');
       return;
+    }
+    if (_descCtrl.text.trim().length < 20 || _descCtrl.text.trim().length > 2000) {
+      _showError('Description must be between 20 and 2000 characters.');
+      return;
+    }
+    if (_selectedCategory == null) {
+      _showError('Category is required.');
+      return;
+    }
+    
+    final duration = int.tryParse(_daysCtrl.text.trim()) ?? 0;
+    final nights = int.tryParse(_nightsCtrl.text.trim()) ?? -1;
+    if (duration < 1) {
+      _showError('Duration must be at least 1 day.');
+      return;
+    }
+    if (nights < 0 || nights > duration) {
+      _showError('Nights must be >= 0 and cannot be greater than duration.');
+      return;
+    }
+    
+    final guests = int.tryParse(_maxGuestsCtrl.text.trim()) ?? 0;
+    if (guests < 1 || guests > 50) {
+      _showError('Max guests must be between 1 and 50.');
+      return;
+    }
+    
+    final price = double.tryParse(_priceCtrl.text.trim()) ?? 0.0;
+    if (price <= 0) {
+      _showError('Price must be greater than 0.');
+      return;
+    }
+
+    if (_locationCtrl.text.trim().isEmpty) {
+      _showError('Main location is required.');
+      return;
+    }
+
+    if (_coverImageUrl == null && _coverImageFile == null) {
+      _showError('Cover image is required.');
+      return;
+    }
+
+    // Active package specific validations
+    if (_status == 'active') {
+      if (_placesList.isEmpty && _activitiesList.isEmpty) {
+        _showError('Active packages require at least one place to visit or activity.');
+        return;
+      }
+      if (_itineraryList.isEmpty) {
+        _showError('Active packages require at least one itinerary item.');
+        return;
+      }
+      if (_meetingCtrl.text.trim().isEmpty) {
+        _showError('Active packages require a meeting/pickup location.');
+        return;
+      }
+      if (_vehicleCtrl.text.trim().isEmpty) {
+        _showError('Active packages require a vehicle type if transport is included.');
+        return;
+      }
     }
 
     setState(() => _saving = true);
@@ -168,7 +237,8 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
       String? finalCoverUrl = _coverImageUrl;
       if (_coverImageFile != null) {
         final res = await _cloudinary.uploadImage(_coverImageFile!);
-        finalCoverUrl = res?.secureUrl;
+        if (res == null) throw Exception('Cover image upload failed.');
+        finalCoverUrl = res.secureUrl;
       }
 
       // Upload Gallery Images
@@ -183,13 +253,13 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
         guideId: uid,
         title: _titleCtrl.text.trim(),
         description: _descCtrl.text.trim(),
-        category: _categoryCtrl.text.trim(),
+        category: _selectedCategory,
         coverImageUrl: finalCoverUrl,
         galleryImages: finalGallery,
-        durationDays: int.tryParse(_daysCtrl.text.trim()) ?? 1,
-        nights: int.tryParse(_nightsCtrl.text.trim()) ?? 0,
-        maxGuests: int.tryParse(_maxGuestsCtrl.text.trim()) ?? 1,
-        pricePerGuest: double.tryParse(_priceCtrl.text.trim()) ?? 0,
+        durationDays: duration,
+        nights: nights,
+        maxGuests: guests,
+        pricePerGuest: price,
         vehicleType: _vehicleCtrl.text.trim(),
         location: _locationCtrl.text.trim(),
         meetingPoint: _meetingCtrl.text.trim(),
@@ -205,17 +275,21 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
 
       if (isEditing) {
         await _repo.updatePackage(updatedPkg);
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Package updated successfully.')));
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tour package updated successfully.')));
       } else {
         await _repo.createPackage(updatedPkg);
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Package created successfully!')));
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tour package created successfully.')));
       }
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Something went wrong. Please try again. ($e)'), backgroundColor: AppColors.error));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: AppColors.error));
   }
 
   @override
@@ -276,7 +350,13 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
             const SizedBox(height: AppSpacing.md),
             _field(_descCtrl, 'Description *', 'Describe the experience...', maxLines: 4, required: true),
             const SizedBox(height: AppSpacing.md),
-            _field(_categoryCtrl, 'Category', 'e.g. Culture & Nature'),
+            DropdownButtonFormField<String>(
+              initialValue: _selectedCategory,
+              decoration: const InputDecoration(labelText: 'Category *'),
+              items: TourPackage.packageCategories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+              onChanged: (val) => setState(() => _selectedCategory = val),
+              validator: (v) => v == null ? 'Required' : null,
+            ),
             const SizedBox(height: AppSpacing.xxl),
 
             // --- SECTION 2: Tour Details ---

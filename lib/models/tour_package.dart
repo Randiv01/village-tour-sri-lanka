@@ -1,6 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class TourPackage {
+  static const List<String> packageCategories = [
+    'Cultural & Heritage',
+    'Nature & Wildlife',
+    'Adventure',
+    'Village Experience',
+    'Food & Culinary',
+    'Religious & Spiritual',
+    'Family & Leisure',
+    'Other Experience'
+  ];
+
   final String id;
   final String guideId;
   final String title;

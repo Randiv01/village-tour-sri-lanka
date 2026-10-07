@@ -1,4 +1,4 @@
-﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/tour_package.dart';
 
 class TourPackageRepository {
@@ -35,6 +35,25 @@ class TourPackageRepository {
           return snapshot.docs
               .map((doc) => TourPackage.fromMap(doc.data(), doc.id))
               .toList();
+        });
+  }
+
+  // Stream of all active packages (for travelers)
+  Stream<List<TourPackage>> getActivePackagesStream() {
+    return _firestore
+        .collection(_collection)
+        .where('status', isEqualTo: 'active')
+        .snapshots()
+        .map((snapshot) {
+          final packages = snapshot.docs
+              .map((doc) => TourPackage.fromMap(doc.data(), doc.id))
+              .toList();
+          packages.sort((a, b) {
+            final aTime = a.createdAt ?? DateTime(2000);
+            final bTime = b.createdAt ?? DateTime(2000);
+            return bTime.compareTo(aTime);
+          });
+          return packages;
         });
   }
 
@@ -77,5 +96,16 @@ class TourPackageRepository {
   // Delete a package
   Future<void> deletePackage(String packageId) async {
     await _firestore.collection(_collection).doc(packageId).delete();
+  }
+
+  // Check if package has any bookings
+  Future<bool> hasBookings(String packageId, String guideId) async {
+    final snapshot = await _firestore
+        .collection('guide_bookings')
+        .where('packageId', isEqualTo: packageId)
+        .where('guideId', isEqualTo: guideId)
+        .limit(1)
+        .get();
+    return snapshot.docs.isNotEmpty;
   }
 }

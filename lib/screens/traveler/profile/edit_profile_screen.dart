@@ -115,7 +115,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             backgroundColor: AppColors.primary,
           ),
         );
-        Navigator.pop(context);
+        Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
