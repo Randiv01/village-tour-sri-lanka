@@ -6,6 +6,7 @@ import '../../theme/app_spacing.dart';
 import '../../theme/app_radius.dart';
 import '../../screens/traveler/experiences/buffet_lunch_experience_screen.dart';
 import '../../screens/traveler/experiences/cookery_experience_screen.dart';
+import '../../screens/traveler/profile/settings_screen.dart';
 
 class AppSideMenu extends StatelessWidget {
   const AppSideMenu({super.key});
@@ -166,6 +167,15 @@ class AppSideMenu extends StatelessWidget {
                     Icons.settings_outlined,
                     'Settings & Privacy',
                     '',
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SettingsScreen(),
+                        ),
+                      );
+                    },
                   ),
 
                   const SizedBox(height: AppSpacing.xxl),

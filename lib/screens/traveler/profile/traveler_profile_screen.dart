@@ -11,6 +11,7 @@ import '../../../../models/user_model.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../services/cloudinary_service.dart';
 import 'edit_profile_screen.dart';
+import 'settings_screen.dart';
 
 class TravelerProfileScreen extends StatelessWidget {
   final VoidCallback? onBackTap;
@@ -74,8 +75,9 @@ class TravelerProfileScreen extends StatelessWidget {
                       child: const Icon(Icons.settings_outlined, size: 18, color: AppColors.primaryDark),
                     ),
                     onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Settings page coming soon')),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const SettingsScreen()),
                       );
                     },
                   ),
