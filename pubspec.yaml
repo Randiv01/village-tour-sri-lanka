@@ -28,6 +28,8 @@ dependencies:
   google_sign_in: ^6.2.1
   share_plus: ^13.3.1
   translator: ^1.0.4+1
+  file_picker: ^13.1.0
+  speech_to_text: ^7.5.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

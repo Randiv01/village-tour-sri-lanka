@@ -3,6 +3,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:translator/translator.dart';
 import 'package:intl/intl.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:image_picker/image_picker.dart';
+import '../../../../services/cloudinary_service.dart';
 
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
@@ -40,10 +44,14 @@ class _TravelerChatScreenState extends State<TravelerChatScreen> {
   String _sinhalaPreview = 'Ready';
   bool _isTranslating = false;
   String _chatId = '';
+  late stt.SpeechToText _speech;
+  bool _isListening = false;
+  String? _editingMessageId;
 
   @override
   void initState() {
     super.initState();
+    _speech = stt.SpeechToText();
     final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
     _chatId = '${currentUserId}_${widget.guideId}_${widget.packageId}';
   }
@@ -107,12 +115,26 @@ class _TravelerChatScreenState extends State<TravelerChatScreen> {
     };
 
     try {
-      // Add message
-      await FirebaseFirestore.instance
-          .collection('chats')
-          .doc(_chatId)
-          .collection('messages')
-          .add(messageData);
+      if (_editingMessageId != null) {
+        await FirebaseFirestore.instance
+            .collection('chats')
+            .doc(_chatId)
+            .collection('messages')
+            .doc(_editingMessageId)
+            .update({
+          'text': text,
+          'translatedText': translatedText,
+          'timestamp': FieldValue.serverTimestamp(),
+          'edited': true,
+        });
+        setState(() => _editingMessageId = null);
+      } else {
+        await FirebaseFirestore.instance
+            .collection('chats')
+            .doc(_chatId)
+            .collection('messages')
+            .add(messageData);
+      }
           
       // Update chat metadata
       await FirebaseFirestore.instance.collection('chats').doc(_chatId).set({
@@ -132,6 +154,119 @@ class _TravelerChatScreenState extends State<TravelerChatScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
+    }
+  }
+
+  void _deleteMessage(String messageId) async {
+    await FirebaseFirestore.instance
+        .collection('chats')
+        .doc(_chatId)
+        .collection('messages')
+        .doc(messageId)
+        .delete();
+  }
+
+  void _startEditing(String messageId, String currentText) {
+    setState(() {
+      _editingMessageId = messageId;
+      _messageController.text = currentText;
+      _onMessageChanged(currentText);
+    });
+  }
+
+  Future<void> _pickFile() async {
+    List<PlatformFile> result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'png', 'pdf', 'doc'],
+    );
+    
+    if (result.isNotEmpty && mounted) {
+      final file = result.first;
+      if (file.path == null) return;
+
+      setState(() {
+        _isTranslating = true;
+      });
+
+      try {
+        final cloudinaryService = CloudinaryService();
+        final uploadResult = await cloudinaryService.uploadImage(XFile(file.path!));
+
+        if (uploadResult != null) {
+          final imageUrl = uploadResult.secureUrl;
+          final isImage = file.extension?.toLowerCase() == 'jpg' || file.extension?.toLowerCase() == 'png' || file.extension?.toLowerCase() == 'jpeg';
+
+          final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+          if (currentUserId == null) return;
+
+          final messageData = {
+            'text': isImage ? '[Image Attached]' : '[File Attached: ${file.name}]',
+            'translatedText': isImage ? '[Image Attached]' : '[File Attached: ${file.name}]',
+            'imageUrl': isImage ? imageUrl : null,
+            'fileUrl': !isImage ? imageUrl : null,
+            'senderId': currentUserId,
+            'receiverId': widget.guideId,
+            'packageId': widget.packageId,
+            'timestamp': FieldValue.serverTimestamp(),
+            'read': false,
+          };
+
+          await FirebaseFirestore.instance
+              .collection('chats')
+              .doc(_chatId)
+              .collection('messages')
+              .add(messageData);
+
+          await FirebaseFirestore.instance.collection('chats').doc(_chatId).set({
+            'touristId': currentUserId,
+            'guideId': widget.guideId,
+            'packageId': widget.packageId,
+            'lastMessage': isImage ? '[Image Attached]' : '[File Attached: ${file.name}]',
+            'lastTranslatedMessage': isImage ? '[Image Attached]' : '[File Attached: ${file.name}]',
+            'lastMessageTime': FieldValue.serverTimestamp(),
+            'unreadCount_${widget.guideId}': FieldValue.increment(1),
+            'guideName': widget.guideName,
+            'packageTitle': widget.packageTitle,
+          }, SetOptions(merge: true));
+
+          _scrollToBottom();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('File attached: ${file.name}')),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isTranslating = false;
+          });
+        }
+      }
+    }
+  }
+
+  void _listen() async {
+    if (!_isListening) {
+      bool available = await _speech.initialize();
+      if (available) {
+        setState(() => _isListening = true);
+        _speech.listen(
+          onResult: (val) {
+            setState(() {
+              _messageController.text = val.recognizedWords;
+              _onMessageChanged(val.recognizedWords);
+            });
+          },
+        );
+      }
+    } else {
+      setState(() => _isListening = false);
+      _speech.stop();
     }
   }
   
@@ -312,10 +447,12 @@ class _TravelerChatScreenState extends State<TravelerChatScreen> {
             final timeStr = DateFormat('h:mm a').format(time);
 
             return _buildMessageBubble(
+              messageId: messages[index].id,
               isMe: isMe,
               text: msg['text'] ?? '',
               translatedText: msg['translatedText'] ?? '',
               timeStr: timeStr,
+              imageUrl: msg['imageUrl'],
             );
           },
         );
@@ -324,13 +461,49 @@ class _TravelerChatScreenState extends State<TravelerChatScreen> {
   }
 
   Widget _buildMessageBubble({
+    required String messageId,
     required bool isMe,
     required String text,
     required String translatedText,
     required String timeStr,
+    String? imageUrl,
   }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
+    return GestureDetector(
+      onLongPress: () {
+        if (!isMe) return;
+        showModalBottomSheet(
+          context: context,
+          backgroundColor: AppColors.surface,
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+          builder: (context) {
+            return SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.edit, color: AppColors.primaryDark),
+                    title: Text('Edit Message', style: AppTextStyles.bodyMedium),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _startEditing(messageId, text);
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.delete, color: Colors.red),
+                    title: Text('Delete Message', style: AppTextStyles.bodyMedium.copyWith(color: Colors.red)),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _deleteMessage(messageId);
+                    },
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 16.0),
       child: Row(
         mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
@@ -362,13 +535,26 @@ class _TravelerChatScreenState extends State<TravelerChatScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        text,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: isMe ? Colors.white : AppColors.primaryDark,
-                          height: 1.5,
+                      if (imageUrl != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              imageUrl,
+                              width: 200,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
                         ),
-                      ),
+                      if (text.isNotEmpty)
+                        Text(
+                          text,
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: isMe ? Colors.white : AppColors.primaryDark,
+                            height: 1.5,
+                          ),
+                        ),
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 12.0),
                         child: Divider(height: 1, color: isMe ? Colors.white24 : AppColors.border),
@@ -415,6 +601,7 @@ class _TravelerChatScreenState extends State<TravelerChatScreen> {
           ),
           if (isMe) const SizedBox(width: 20), // Balance the spacing
         ],
+      ),
       ),
     );
   }
@@ -478,7 +665,7 @@ class _TravelerChatScreenState extends State<TravelerChatScreen> {
             Row(
               children: [
                 IconButton(
-                  onPressed: () {},
+                  onPressed: _pickFile,
                   icon: const Icon(Icons.attach_file, color: AppColors.textSecondary),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -506,8 +693,8 @@ class _TravelerChatScreenState extends State<TravelerChatScreen> {
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.mic_none, color: AppColors.textSecondary),
-                          onPressed: () {},
+                          icon: Icon(_isListening ? Icons.mic : Icons.mic_none, color: _isListening ? Colors.red : AppColors.textSecondary),
+                          onPressed: _listen,
                         ),
                       ],
                     ),
