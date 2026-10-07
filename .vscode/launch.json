@@ -1,0 +1,16 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "village_tour_sri_lanka",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "village_tour_sri_lanka (profile mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        }
+    ]
+}
