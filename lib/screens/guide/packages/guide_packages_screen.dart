@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_text_styles.dart';
@@ -494,117 +495,241 @@ class _GuidePackagesScreenState extends State<GuidePackagesScreen> {
 }
 
 class _PackageListItem extends StatelessWidget {
-  final TourPackage package; 
+  final TourPackage package;
   final VoidCallback onTap;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onToggleStatus;
-  
+
   const _PackageListItem({
-    required this.package, 
+    required this.package,
     required this.onTap,
     required this.onEdit,
     required this.onDelete,
     required this.onToggleStatus,
   });
 
+  /// Returns a concise summary string for upcoming availability dates.
+  String _availabilitySummary() {
+    final today = DateTime.now();
+    final todayMidnight = DateTime(today.year, today.month, today.day);
+    final upcoming = (List<DateTime>.from(package.availabilityDates)
+      ..sort())
+        .where((d) => !d.isBefore(todayMidnight))
+        .toList();
+
+    if (upcoming.isEmpty) return 'No upcoming dates';
+    if (upcoming.length == 1) {
+      return DateFormat('d MMM yyyy').format(upcoming.first);
+    }
+    if (upcoming.length <= 3) {
+      return upcoming.map((d) => DateFormat('d MMM').format(d)).join(', ');
+    }
+    return '${upcoming.length} dates available';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final today = DateTime.now();
+    final todayMidnight = DateTime(today.year, today.month, today.day);
+    final upcomingCount = package.availabilityDates
+        .where((d) => !d.isBefore(todayMidnight))
+        .length;
+    final hasUpcoming = upcomingCount > 0;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.surface, 
-          borderRadius: AppRadius.cardRadius, 
-          border: Border.all(color: AppColors.border.withValues(alpha: 0.5)), 
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 3))]
+          color: AppColors.surface,
+          borderRadius: AppRadius.cardRadius,
+          border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         child: Row(
           children: [
+            // Cover image
             ClipRRect(
-              borderRadius: const BorderRadius.horizontal(left: Radius.circular(AppRadius.cards)),
+              borderRadius: const BorderRadius.horizontal(
+                left: Radius.circular(AppRadius.cards),
+              ),
               child: SizedBox(
-                width: 110, 
-                height: 140,
-                child: package.coverImageUrl != null && package.coverImageUrl!.isNotEmpty
-                    ? Image.network(package.coverImageUrl!, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => Container(color: AppColors.softSecondarySurface, child: const Icon(Icons.image, color: AppColors.textSecondary)))
-                    : Container(color: AppColors.softSecondarySurface, child: Icon(Icons.explore, color: AppColors.primary.withValues(alpha: 0.3), size: 32)),
+                width: 110,
+                height: 155,
+                child: package.coverImageUrl != null &&
+                        package.coverImageUrl!.isNotEmpty
+                    ? Image.network(
+                        package.coverImageUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            Container(
+                          color: AppColors.softSecondarySurface,
+                          child: const Icon(Icons.image,
+                              color: AppColors.textSecondary),
+                        ),
+                      )
+                    : Container(
+                        color: AppColors.softSecondarySurface,
+                        child: Icon(
+                          Icons.explore,
+                          color: AppColors.primary.withValues(alpha: 0.3),
+                          size: 32,
+                        ),
+                      ),
               ),
             ),
             const SizedBox(width: AppSpacing.md),
+            // Info
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.md, horizontal: 8),
+                padding: const EdgeInsets.symmetric(
+                    vertical: AppSpacing.md, horizontal: 8),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start, 
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(package.title, style: AppTextStyles.labelLarge.copyWith(color: AppColors.primaryDark), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    // Title
+                    Text(
+                      package.title,
+                      style: AppTextStyles.labelLarge
+                          .copyWith(color: AppColors.primaryDark),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     const SizedBox(height: 2),
+                    // Location
                     Row(
                       children: [
-                        const Icon(Icons.location_on, size: 12, color: AppColors.textSecondary),
+                        const Icon(Icons.location_on,
+                            size: 12, color: AppColors.textSecondary),
                         const SizedBox(width: 2),
-                        Expanded(child: Text(package.location, style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis)),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(package.category ?? package.description, style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: package.isActive ? Colors.green.withValues(alpha: 0.1) : AppColors.softSecondarySurface, 
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(color: package.isActive ? Colors.green.withValues(alpha: 0.5) : AppColors.border),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(package.isActive ? Icons.check : Icons.close, size: 10, color: package.isActive ? Colors.green : AppColors.textSecondary),
-                              const SizedBox(width: 4),
-                              Text(package.isActive ? 'Active' : package.status.capitalize(), style: AppTextStyles.caption.copyWith(color: package.isActive ? Colors.green : AppColors.textSecondary, fontSize: 10)),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.withValues(alpha: 0.1), 
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.star, size: 10, color: Colors.orange),
-                              const SizedBox(width: 4),
-                              Text('Popular', style: AppTextStyles.caption.copyWith(color: Colors.orange, fontSize: 10)),
-                            ],
+                        Expanded(
+                          child: Text(
+                            package.location,
+                            style: AppTextStyles.caption
+                                .copyWith(color: AppColors.textSecondary),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 2),
+                    // Category
+                    Text(
+                      package.category ?? '',
+                      style: AppTextStyles.caption
+                          .copyWith(color: AppColors.textSecondary),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    // Status badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: package.isActive
+                            ? Colors.green.withValues(alpha: 0.1)
+                            : AppColors.softSecondarySurface,
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                          color: package.isActive
+                              ? Colors.green.withValues(alpha: 0.5)
+                              : AppColors.border,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            package.isActive ? Icons.check : Icons.close,
+                            size: 10,
+                            color: package.isActive
+                                ? Colors.green
+                                : AppColors.textSecondary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            package.isActive
+                                ? 'Active'
+                                : package.status.capitalize(),
+                            style: AppTextStyles.caption.copyWith(
+                              color: package.isActive
+                                  ? Colors.green
+                                  : AppColors.textSecondary,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    // Available dates summary
                     Row(
                       children: [
-                        const Icon(Icons.camera_alt_outlined, size: 14, color: AppColors.textSecondary),
+                        Icon(
+                          Icons.calendar_month_outlined,
+                          size: 12,
+                          color: hasUpcoming
+                              ? AppColors.primary
+                              : AppColors.textSecondary,
+                        ),
                         const SizedBox(width: 4),
-                        Text('${package.galleryImages.length + (package.coverImageUrl != null ? 1 : 0)} images', style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary)),
+                        Expanded(
+                          child: Text(
+                            _availabilitySummary(),
+                            style: AppTextStyles.caption.copyWith(
+                              color: hasUpcoming
+                                  ? AppColors.primary
+                                  : AppColors.textSecondary,
+                              fontSize: 10,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    // Action icons row
+                    Row(
+                      children: [
+                        const Icon(Icons.camera_alt_outlined,
+                            size: 12, color: AppColors.textSecondary),
+                        const SizedBox(width: 2),
+                        Text(
+                          '${package.galleryImages.length + (package.coverImageUrl != null ? 1 : 0)}',
+                          style: AppTextStyles.caption
+                              .copyWith(color: AppColors.textSecondary),
+                        ),
                         const Spacer(),
                         GestureDetector(
                           onTap: onEdit,
-                          child: const Icon(Icons.edit, size: 18, color: AppColors.primaryDark),
+                          child: const Icon(Icons.edit,
+                              size: 18, color: AppColors.primaryDark),
                         ),
                         const SizedBox(width: AppSpacing.md),
                         GestureDetector(
                           onTap: onToggleStatus,
-                          child: Icon(package.isActive ? Icons.visibility_off : Icons.visibility, size: 18, color: AppColors.textSecondary),
+                          child: Icon(
+                            package.isActive
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            size: 18,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
                         const SizedBox(width: AppSpacing.md),
                         GestureDetector(
                           onTap: onDelete,
-                          child: const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
+                          child: const Icon(Icons.delete_outline,
+                              size: 18, color: AppColors.error),
                         ),
                         const SizedBox(width: 4),
                       ],
@@ -621,8 +746,8 @@ class _PackageListItem extends StatelessWidget {
 }
 
 extension StringExtension on String {
-    String capitalize() {
-      if (isEmpty) return "";
-      return "${this[0].toUpperCase()}${substring(1)}";
-    }
+  String capitalize() {
+    if (isEmpty) return '';
+    return '${this[0].toUpperCase()}${substring(1)}';
+  }
 }
