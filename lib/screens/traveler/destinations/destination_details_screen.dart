@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:url_launcher/url_launcher.dart';
-
+import '../map/offline_map_screen.dart';
 import '../../../../models/destination.dart';
 import '../../../../repositories/destination_repository.dart';
 import '../../../../theme/app_colors.dart';
@@ -455,37 +454,28 @@ class _DestinationDetailsScreenState extends State<DestinationDetailsScreen> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                       ),
-                      onPressed: () async {
+                      onPressed: () {
                         final lat = _currentDestination.latitude;
                         final lng = _currentDestination.longitude;
-                        if (lat == null || lng == null) return;
-
-                        final url = Uri.parse(
-                          'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
-                        );
-                        try {
-                          final launched = await launchUrl(
-                            url,
-                            mode: LaunchMode.externalApplication,
+                        if (lat == null || lng == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Map location is not available for this destination.'),
+                            ),
                           );
-                          if (!launched && mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Could not open map app.'),
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Could not open map.'),
-                              ),
-                            );
-                          }
+                          return;
                         }
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => OfflineMapScreen(
+                              selectedDestination: _currentDestination,
+                            ),
+                          ),
+                        );
                       },
-                      child: const Text('View on Map'),
+                      child: const Text('View on Offline Map'),
                     ),
                   ],
                 ),

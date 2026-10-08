@@ -7,6 +7,7 @@ import '../../../../theme/app_spacing.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../utils/cloudinary_utils.dart';
 import '../../../../widgets/cards/destination_card.dart';
+import '../map/offline_map_screen.dart';
 import 'destination_details_screen.dart';
 
 class ExploreDestinationsScreen extends StatefulWidget {
@@ -241,7 +242,16 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Explore Destinations'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Explore Sri Lanka'),
+            Text(
+              'Discover beautiful destinations and local experiences',
+              style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+            ),
+          ],
+        ),
         backgroundColor: AppColors.background,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.primaryDark),
@@ -290,6 +300,36 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
 
           return Column(
             children: [
+              // Explore Map Button
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.softSecondarySurface,
+                      foregroundColor: AppColors.primaryDark,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: const BorderSide(color: AppColors.primaryDark, width: 1),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    icon: const Icon(Icons.map_outlined),
+                    label: const Text('Explore Map', style: TextStyle(fontWeight: FontWeight.bold)),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const OfflineMapScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+
               // Search Bar
               Padding(
                 padding: const EdgeInsets.all(AppSpacing.md),
@@ -428,6 +468,8 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
                             category: 'DESTINATION',
                             imageUrl: imageUrl,
                             width: double.infinity,
+                            isPopular: dest.isPopular,
+                            shortDescription: dest.shortDescription,
                             onTap: () {
                               Navigator.push(
                                 context,
