@@ -379,7 +379,6 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
                   MaterialPageRoute(
                     builder: (context) => HomestayDetailsScreen(
                       homestayId: homestay['id'],
-                      homestayData: homestay,
                     ),
                   ),
                 );

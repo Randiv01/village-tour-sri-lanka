@@ -14,6 +14,7 @@ import '../map/offline_map_screen.dart';
 import 'destination_details_screen.dart';
 import '../../common/homestays/homestay_details_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../../models/homestay.dart';
 
 class ExploreDestinationsScreen extends StatefulWidget {
   const ExploreDestinationsScreen({super.key});
@@ -696,26 +697,17 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
           itemBuilder: (context, index) {
             final doc = filteredDocs[index];
             final data = doc.data() as Map<String, dynamic>;
-            final images = List<String>.from(data['images'] ?? []);
-            final imageUrl = images.isNotEmpty ? images.first : 'https://i.pravatar.cc/300';
             
             return Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.lg),
               child: HomestayCard(
-                title: data['title'] ?? 'Homestay',
-                location: data['location'] ?? 'Location',
-                rating: '4.9',
-                reviews: '(0)',
-                price: 'Rs. ${data['pricePerNight'] ?? 0}',
-                features: const ['Verified Host', 'Nature & Village'],
-                imagePath: imageUrl,
+                homestay: Homestay.fromMap(data, doc.id),
                 onViewDetailsTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => HomestayDetailsScreen(
                         homestayId: doc.id,
-                        homestayData: data,
                       ),
                     ),
                   );

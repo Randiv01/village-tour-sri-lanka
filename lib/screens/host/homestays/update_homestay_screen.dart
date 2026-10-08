@@ -2,14 +2,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-
-import '../../../../theme/app_colors.dart';
-import '../../../../theme/app_text_styles.dart';
 
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
@@ -82,9 +77,6 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
   final List<XFile> _selectedLocalImages = [];
   final CloudinaryService _cloudinaryService = CloudinaryService();
 
-  List<String> _networkImages = [];
-  final List<XFile> _selectedLocalImages = [];
-
   // Map Location
   LatLng? _selectedLocationPoint;
   final MapController _mapController = MapController();
@@ -117,16 +109,7 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
     _isAvailable = h.status == 'Active';
     _networkImages = List.from(h.images);
 
-    if (widget.homestayData['images'] != null) {
-      _networkImages = List<String>.from(widget.homestayData['images']);
-    }
-    
-    if (widget.homestayData['latitude'] != null && widget.homestayData['longitude'] != null) {
-      _selectedLocationPoint = LatLng(
-        (widget.homestayData['latitude'] as num).toDouble(),
-        (widget.homestayData['longitude'] as num).toDouble(),
-      );
-    }
+
   }
 
   @override
@@ -249,8 +232,6 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
         title: _titleController.text.trim(),
         propertyType: _propertyType,
         location: _locationController.text.trim(),
-        latitude: _selectedLocationPoint?.latitude,
-        longitude: _selectedLocationPoint?.longitude,
         description: _descriptionController.text.trim(),
         pricePerNight: double.tryParse(_priceController.text.trim()) ?? 0.0,
         rooms: int.tryParse(_roomsController.text.trim()) ?? 1,
@@ -326,7 +307,6 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
                   children: [
                     _buildAvailabilitySection(),
                     const SizedBox(height: AppSpacing.lg),
-                  children: [
                     _buildSectionHeader('1. Basic Information'),
                     _buildBasicInfoSection(),
                     const SizedBox(height: AppSpacing.lg),
@@ -611,9 +591,6 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
             checkmarkColor: AppColors.primaryDark,
           );
         }).toList(),
-      ),
-    );
-  }
       ),
     );
   }
