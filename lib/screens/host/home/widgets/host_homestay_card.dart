@@ -11,6 +11,8 @@ class HostHomestayCard extends StatelessWidget {
   final String occupancyInfo;
   final String status;
   final String imageUrl;
+  final VoidCallback onTapManage;
+  final VoidCallback onTapCard;
 
   const HostHomestayCard({
     super.key,
@@ -21,13 +23,17 @@ class HostHomestayCard extends StatelessWidget {
     required this.occupancyInfo,
     required this.status,
     required this.imageUrl,
+    required this.onTapManage,
+    required this.onTapCard,
   });
 
   @override
   Widget build(BuildContext context) {
     final isActive = status.toLowerCase() == 'active';
     
-    return Container(
+    return GestureDetector(
+      onTap: onTapCard,
+      child: Container(
       width: 320,
       margin: const EdgeInsets.only(right: 16, bottom: 8),
       decoration: BoxDecoration(
@@ -216,7 +222,7 @@ class HostHomestayCard extends StatelessWidget {
                         ),
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       ),
-                      onPressed: () {},
+                      onPressed: onTapManage,
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: const [
@@ -232,6 +238,7 @@ class HostHomestayCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }
