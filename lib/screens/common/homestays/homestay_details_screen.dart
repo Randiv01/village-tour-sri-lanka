@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../auth/sign_in_screen.dart';
 import '../../traveler/chat/traveler_host_chat_screen.dart';
+import 'homestay_reviews_screen.dart';
 class HomestayDetailsScreen extends StatefulWidget {
   final String homestayId;
   final Map<String, dynamic> homestayData;
@@ -391,6 +392,8 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
                 });
                 if (tabs[index] == 'Host') {
                   _handleMessageHost();
+                } else if (tabs[index] == 'Reviews') {
+                  _handleReviews();
                 }
               },
               child: Column(
@@ -474,6 +477,34 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
+  }
+
+  Future<void> _handleReviews() async {
+    final hostId = widget.homestayData['hostId'];
+    String hostName = 'Host';
+    if (hostId != null) {
+      try {
+        final hostDoc = await FirebaseFirestore.instance.collection('users').doc(hostId).get();
+        if (hostDoc.exists) {
+          hostName = hostDoc.data()?['fullName'] ?? 'Host';
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+    
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => HomestayReviewsScreen(
+          homestayId: widget.homestayId,
+          homestayTitle: widget.homestayData['title'] ?? 'Homestay',
+          homestayLocation: widget.homestayData['location'] ?? 'Location',
+          hostName: hostName,
+        ),
+      ),
+    );
   }
 
   Widget _buildOverviewText() {
