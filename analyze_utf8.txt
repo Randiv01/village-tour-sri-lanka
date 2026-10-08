@@ -1,0 +1,6 @@
+﻿Analyzing my_promotions_screen.dart...
+
+  error - my_promotions_screen.dart:67:19 - A value of type 'int' can't be assigned to a parameter of type 'FontWeight?' in a const constructor. Try using a subtype, or removing the keyword 'const'. - const_constructor_param_type_mismatch
+  error - my_promotions_screen.dart:67:31 - The argument type 'int' can't be assigned to the parameter type 'FontWeight?'.  - argument_type_not_assignable
+
+2 issues found.
