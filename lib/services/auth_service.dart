@@ -225,6 +225,39 @@ class AuthService {
     }
   }
 
+  // Update User Profile
+  Future<void> updateUserProfile({
+    required String uid,
+    required Map<String, dynamic> data,
+  }) async {
+    try {
+      final currentUid = _auth.currentUser?.uid;
+      if (currentUid == null || currentUid != uid) {
+        throw 'Unauthorized: You can only update your own profile.';
+      }
+
+      // Prevent updating immutable fields
+      data.remove('uid');
+      data.remove('role');
+      data.remove('isVerified');
+      data.remove('isEmailVerified');
+
+      data['updatedAt'] = FieldValue.serverTimestamp();
+
+      await _firestore.collection('users').doc(uid).update(data);
+
+      if (data.containsKey('fullName') && data['fullName'] is String) {
+        await _auth.currentUser?.updateDisplayName(data['fullName'] as String);
+      }
+      if (data.containsKey('profileImageUrl') && data['profileImageUrl'] is String) {
+        await _auth.currentUser?.updatePhotoURL(data['profileImageUrl'] as String);
+      }
+    } catch (e) {
+      if (e is String) rethrow;
+      throw 'Failed to update profile. Please try again.';
+    }
+  }
+
   // Sign Out
   Future<void> signOut() async {
     await _auth.signOut();
