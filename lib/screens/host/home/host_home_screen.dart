@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../../services/auth_service.dart';
 
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
@@ -12,6 +13,9 @@ import '../promotions/my_promotions_screen.dart';
 import '../homestays/add_homestay_screen.dart';
 import '../homestays/update_homestay_screen.dart';
 import '../../common/homestays/homestay_details_screen.dart';
+import '../../../../models/homestay.dart';
+import '../../../../models/homestay_booking.dart';
+import '../bookings/host_bookings_screen.dart';
 import '../notifications/host_notifications_screen.dart';
 
 class HostHomeScreen extends StatelessWidget {
@@ -32,7 +36,7 @@ class HostHomeScreen extends StatelessWidget {
             const SizedBox(height: AppSpacing.xxl),
             _buildMyHomestaysSection(),
             const SizedBox(height: AppSpacing.xxl),
-            _buildUpcomingBookingsSection(),
+            _buildUpcomingBookingsSection(context),
             const SizedBox(height: AppSpacing.xxl),
             _buildPromotionsSection(context),
             const SizedBox(height: AppSpacing.xxl),
@@ -147,15 +151,47 @@ class HostHomeScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: AppSpacing.md),
-                        CircleAvatar(
-                          radius: 20,
-                          backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty 
-                              ? NetworkImage(avatarUrl) 
-                              : null,
-                          backgroundColor: AppColors.softSecondarySurface,
-                          child: (avatarUrl == null || avatarUrl.isEmpty)
-                              ? const Icon(Icons.person, color: AppColors.textSecondary)
-                              : null,
+                        PopupMenuButton<String>(
+                          onSelected: (value) async {
+                            if (value == 'sign_out') {
+                              await AuthService().signOut();
+                            }
+                          },
+                          offset: const Offset(0, 50),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          child: CircleAvatar(
+                            radius: 20,
+                            backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty 
+                                ? NetworkImage(avatarUrl) 
+                                : null,
+                            backgroundColor: AppColors.softSecondarySurface,
+                            child: (avatarUrl == null || avatarUrl.isEmpty)
+                                ? const Icon(Icons.person, color: AppColors.textSecondary)
+                                : null,
+                          ),
+                          itemBuilder: (context) => [
+                            PopupMenuItem(
+                              value: 'profile',
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.person_outline, size: 20, color: AppColors.primaryDark),
+                                  const SizedBox(width: 12),
+                                  Text('My Profile', style: AppTextStyles.bodyMedium),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuDivider(),
+                            PopupMenuItem(
+                              value: 'sign_out',
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.logout, size: 20, color: Colors.red),
+                                  const SizedBox(width: 12),
+                                  Text('Sign Out', style: AppTextStyles.bodyMedium.copyWith(color: Colors.red)),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -231,6 +267,7 @@ class HostHomeScreen extends StatelessWidget {
               topIcon: Icons.payments_outlined,
               title: "This Month's Revenue",
               value: "Rs. 48,500",
+              width: 165,
               bottomWidget: Row(
                 children: [
                   const Icon(Icons.trending_up, size: 14, color: Colors.green),
@@ -392,8 +429,7 @@ class HostHomeScreen extends StatelessWidget {
                     context, 
                     MaterialPageRoute(
                       builder: (context) => UpdateHomestayScreen(
-                        homestayId: doc.id,
-                        homestayData: data,
+                        homestay: Homestay.fromMap(data, doc.id),
                       ),
                     ),
                   );
@@ -404,7 +440,6 @@ class HostHomeScreen extends StatelessWidget {
                     MaterialPageRoute(
                       builder: (context) => HomestayDetailsScreen(
                         homestayId: doc.id,
-                        homestayData: data,
                       ),
                     ),
                   );
@@ -495,7 +530,13 @@ class HostHomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildUpcomingBookingsSection() {
+  String _getMonth(int month) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return months[month - 1];
+  }
+
+  Widget _buildUpcomingBookingsSection(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Column(
@@ -512,7 +553,9 @@ class HostHomeScreen extends StatelessWidget {
                 ),
               ),
               InkWell(
-                onTap: () {},
+                onTap: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const HostBookingsScreen()));
+                },
                 child: Row(
                   children: [
                     Text(
@@ -529,21 +572,48 @@ class HostHomeScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.md),
-          const UpcomingBookingTile(
-            guestName: 'Emma Wilson',
-            dateRange: '14 Oct 2024 - 16 Oct 2024',
-            guestsInfo: '2 Guests',
-            propertyName: 'Nilagama\nVillage House',
-            status: 'Confirmed',
-            avatarUrl: 'https://i.pravatar.cc/150?img=1', // placeholder
-          ),
-          const UpcomingBookingTile(
-            guestName: 'Luca Bianchi',
-            dateRange: '22 Oct 2024 - 25 Oct 2024',
-            guestsInfo: '3 Guests',
-            propertyName: 'Ruwan Villa\nHomestay',
-            status: 'Pending',
-            avatarUrl: 'https://i.pravatar.cc/150?img=11', // placeholder
+          StreamBuilder<QuerySnapshot>(
+            stream: user != null 
+                ? FirebaseFirestore.instance
+                    .collection('homestay_bookings')
+                    .where('hostId', isEqualTo: user.uid)
+                    .snapshots()
+                : null,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: Padding(padding: EdgeInsets.all(AppSpacing.md), child: CircularProgressIndicator()));
+              }
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return const Text('No upcoming bookings at the moment.', style: TextStyle(color: AppColors.textSecondary));
+              }
+
+              final now = DateTime.now();
+              final bookings = snapshot.data!.docs.map((doc) {
+                return HomestayBooking.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+              }).where((b) => b.checkOutDate.isAfter(now) && b.bookingStatus != 'cancelled' && b.bookingStatus != 'rejected').toList();
+              
+              bookings.sort((a, b) => a.checkInDate.compareTo(b.checkInDate));
+
+              if (bookings.isEmpty) {
+                return const Text('No upcoming bookings at the moment.', style: TextStyle(color: AppColors.textSecondary));
+              }
+
+              return Column(
+                children: bookings.take(3).map((booking) {
+                  final inDate = '${booking.checkInDate.day} ${_getMonth(booking.checkInDate.month)} ${booking.checkInDate.year}';
+                  final outDate = '${booking.checkOutDate.day} ${_getMonth(booking.checkOutDate.month)} ${booking.checkOutDate.year}';
+                  
+                  return UpcomingBookingTile(
+                    guestName: booking.travelerName,
+                    dateRange: '$inDate - $outDate',
+                    guestsInfo: '${booking.guestCount} Guests',
+                    propertyName: booking.homestayTitle,
+                    status: booking.bookingStatus[0].toUpperCase() + booking.bookingStatus.substring(1),
+                    avatarUrl: 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(booking.travelerName)}&background=random',
+                  );
+                }).toList(),
+              );
+            },
           ),
         ],
       ),

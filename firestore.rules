@@ -53,6 +53,18 @@ service cloud.firestore {
                             && request.auth.uid == resource.data.hostId;
     }
 
+    // Homestay Reviews
+    match /homestay_reviews/{reviewId} {
+      // Anyone can read reviews (shown publicly on cards and detail screens)
+      allow read: if true;
+      // Only authenticated travelers can create reviews
+      allow create: if request.auth != null
+                    && request.resource.data.travelerId == request.auth.uid;
+      // Only the author can update/delete their own review
+      allow update, delete: if request.auth != null
+                            && resource.data.travelerId == request.auth.uid;
+    }
+
     // Tour Packages (Restored)
     match /tour_packages/{packageId} {
       allow read: if resource.data.status == 'active' || 
@@ -80,6 +92,15 @@ service cloud.firestore {
       allow delete: if false; // Prefer logical deletion (status='cancelled')
     }
 
+    // Homestay Bookings
+    match /homestay_bookings/{bookingId} {
+      allow read, update: if request.auth != null && resource.data.hostId == request.auth.uid;
+      allow update: if request.auth != null && resource.data.travelerId == request.auth.uid;
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.travelerId == request.auth.uid;
+      allow delete: if false;
+    }
+
     // Payments
     match /payments/{paymentId} {
       allow read: if request.auth != null && resource.data.userId == request.auth.uid;
@@ -88,6 +109,12 @@ service cloud.firestore {
       // But they need to update status upon mock payment success. 
       // In a real app this would be a cloud function.
       allow update: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // Notifications
+    match /notifications/{notificationId} {
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null;
     }
     
     // Chats

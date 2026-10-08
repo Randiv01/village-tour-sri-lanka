@@ -4,11 +4,13 @@ import 'package:intl/intl.dart';
 import '../../models/payment.dart';
 import '../../repositories/payment_repository.dart';
 import '../../repositories/guide_booking_repository.dart';
+import '../../repositories/homestay_booking_repository.dart';
 import 'dart:math';
 
 class PaymentService {
   final PaymentRepository _paymentRepo = PaymentRepository();
   final GuideBookingRepository _bookingRepo = GuideBookingRepository();
+  final HomestayBookingRepository _homestayBookingRepo = HomestayBookingRepository();
 
   Future<void> processMockPayment({
     required BuildContext context,
@@ -72,12 +74,26 @@ class PaymentService {
           'accepted', // keep it accepted
           paymentStatus: 'failed',
         );
+      } else if (bookingType == 'homestay') {
+        await _homestayBookingRepo.updateBookingStatus(
+          bookingId,
+          'accepted',
+          paymentStatus: 'failed',
+        );
       }
       onComplete(false, null);
     } else {
       // Payment success
       if (bookingType == 'tour_package') {
         await _bookingRepo.updateBookingStatus(
+          bookingId,
+          'confirmed',
+          paymentStatus: 'paid',
+          transactionId: mockTxId,
+          paidAt: now,
+        );
+      } else if (bookingType == 'homestay') {
+        await _homestayBookingRepo.updateBookingStatus(
           bookingId,
           'confirmed',
           paymentStatus: 'paid',
