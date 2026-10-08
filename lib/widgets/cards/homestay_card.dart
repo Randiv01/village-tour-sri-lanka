@@ -26,6 +26,7 @@ class _HomestayCardState extends State<HomestayCard> {
   int _reviewCount = 0;
   double _avgRating = 0.0;
   bool _loadedStats = false;
+  bool _isHostVerified = false;
 
   @override
   void initState() {
@@ -57,11 +58,21 @@ class _HomestayCardState extends State<HomestayCard> {
       isFav = favorites.contains(widget.homestay.id);
     }
 
+    // Load host verification
+    bool isHostVerified = false;
+    try {
+      final hostDoc = await FirebaseFirestore.instance.collection('users').doc(widget.homestay.hostId).get();
+      if (hostDoc.exists) {
+        isHostVerified = hostDoc.data()?['isVerified'] == true || hostDoc.data()?['verified'] == true;
+      }
+    } catch (_) {}
+
     if (mounted) {
       setState(() {
         _reviewCount = count;
         _avgRating = avg;
         _isFavorite = isFav;
+        _isHostVerified = isHostVerified;
         _loadedStats = true;
       });
     }
@@ -132,28 +143,29 @@ class _HomestayCardState extends State<HomestayCard> {
                       ? const Center(child: Icon(Icons.home, size: 48, color: AppColors.primaryDark))
                       : null,
                 ),
-                Positioned(
-                  top: 12,
-                  left: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.verified_outlined, color: Colors.white, size: 14),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Verified Rural Host',
-                          style: AppTextStyles.caption.copyWith(color: Colors.white, fontWeight: FontWeight.w600),
-                        ),
-                      ],
+                if (_isHostVerified || hs.isVerified)
+                  Positioned(
+                    top: 12,
+                    left: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.verified, color: Colors.blue, size: 14),
+                          const SizedBox(width: 4),
+                          Text(
+                            hs.isVerified ? 'Verified Homestay' : 'Verified Host',
+                            style: AppTextStyles.caption.copyWith(color: Colors.white, fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
                 Positioned(
                   top: 12,
                   right: 12,

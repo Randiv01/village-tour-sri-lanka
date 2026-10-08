@@ -48,9 +48,12 @@ service cloud.firestore {
       allow create: if request.auth != null
                     && request.auth.uid == request.resource.data.hostId;
 
-      // Only the owner can update/delete
+      // Only the owner or admin can update/delete
       allow update, delete: if request.auth != null
-                            && request.auth.uid == resource.data.hostId;
+                            && (
+                              request.auth.uid == resource.data.hostId
+                              || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"
+                            );
     }
 
     // Homestay Reviews
@@ -67,8 +70,10 @@ service cloud.firestore {
 
     // Tour Packages (Restored)
     match /tour_packages/{packageId} {
-      allow read: if resource.data.status == 'active' || 
-                    (request.auth != null && resource.data.guideId == request.auth.uid);
+      allow read: if resource == null 
+                  || resource.data.status == 'active' 
+                  || (request.auth != null && resource.data.guideId == request.auth.uid)
+                  || (request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin");
       
       allow create: if request.auth != null && request.resource.data.guideId == request.auth.uid;
       

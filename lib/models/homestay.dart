@@ -20,6 +20,7 @@ class Homestay {
   final String checkOutTime; // '11:00 AM'
   final List<Map<String, dynamic>> optionalAddOns; // { 'title': 'Buffet Lunch', 'price': 2000 }
   final String status; // 'Active', 'Inactive'
+  final bool isVerified; // true if admin verified this specific property
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -51,6 +52,7 @@ class Homestay {
     this.checkOutTime = '11:00 AM',
     this.optionalAddOns = const [],
     this.status = 'Active',
+    this.isVerified = false,
     this.createdAt,
     this.updatedAt,
   });
@@ -108,6 +110,7 @@ class Homestay {
               .toList() ??
           [],
       status: map['status'] ?? 'Active',
+      isVerified: map['isVerified'] ?? false,
       createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
       updatedAt: (map['updatedAt'] as Timestamp?)?.toDate(),
     );
@@ -133,6 +136,7 @@ class Homestay {
       'checkOutTime': checkOutTime,
       'optionalAddOns': optionalAddOns,
       'status': status,
+      'isVerified': isVerified,
       'updatedAt': FieldValue.serverTimestamp(),
       if (createdAt == null) 'createdAt': FieldValue.serverTimestamp(),
     };
