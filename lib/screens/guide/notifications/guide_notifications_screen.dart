@@ -94,10 +94,131 @@ class _BookingDetailsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _buildEmptyState(
-      Icons.event_busy,
-      'No Booking Updates',
-      'You have no recent booking updates.',
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    if (currentUserId == null) return const Center(child: Text('Not logged in'));
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('notifications')
+          .where('userId', isEqualTo: currentUserId)
+          .where('type', whereIn: ['booking_new', 'payment_success', 'payment_failed', 'booking_cancelled'])
+          .orderBy('createdAt', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+           return const Center(child: CircularProgressIndicator());
+        }
+        
+        if (snapshot.hasError) {
+          // Fallback if index is missing: just fetch and sort locally
+          return StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+              .collection('notifications')
+              .where('userId', isEqualTo: currentUserId)
+              .where('type', whereIn: ['booking_new', 'payment_success', 'payment_failed', 'booking_cancelled'])
+              .snapshots(),
+            builder: (context, fallbackSnapshot) {
+               if (fallbackSnapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+               if (!fallbackSnapshot.hasData || fallbackSnapshot.data!.docs.isEmpty) {
+                 return _buildEmptyState(
+                    Icons.event_busy,
+                    'No Booking Updates',
+                    'You have no recent booking updates.',
+                  );
+               }
+               var docs = fallbackSnapshot.data!.docs.toList();
+               docs.sort((a, b) {
+                 final aData = a.data() as Map<String, dynamic>;
+                 final bData = b.data() as Map<String, dynamic>;
+                 final aTime = aData['createdAt'] as Timestamp?;
+                 final bTime = bData['createdAt'] as Timestamp?;
+                 if (aTime == null && bTime == null) return 0;
+                 if (aTime == null) return 1;
+                 if (bTime == null) return -1;
+                 return bTime.compareTo(aTime);
+               });
+               return _buildNotificationList(docs);
+            }
+          );
+        }
+
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return _buildEmptyState(
+            Icons.event_busy,
+            'No Booking Updates',
+            'You have no recent booking updates.',
+          );
+        }
+
+        return _buildNotificationList(snapshot.data!.docs);
+      },
+    );
+  }
+
+  Widget _buildNotificationList(List<DocumentSnapshot> docs) {
+    return ListView.separated(
+      itemCount: docs.length,
+      separatorBuilder: (context, index) => const Divider(height: 1, color: AppColors.border),
+      itemBuilder: (context, index) {
+        final data = docs[index].data() as Map<String, dynamic>;
+        final title = data['title'] ?? '';
+        final body = data['body'] ?? '';
+        final type = data['type'] ?? '';
+        final createdAt = data['createdAt'] as Timestamp?;
+        final isRead = data['read'] ?? true;
+
+        IconData icon;
+        Color iconColor;
+        if (type == 'booking_new') {
+          icon = Icons.event_available;
+          iconColor = Colors.blue;
+        } else if (type == 'payment_success') {
+          icon = Icons.check_circle;
+          iconColor = Colors.green;
+        } else if (type == 'payment_failed') {
+          icon = Icons.error;
+          iconColor = Colors.red;
+        } else {
+          icon = Icons.info;
+          iconColor = Colors.grey;
+        }
+
+        return ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          leading: CircleAvatar(
+            backgroundColor: iconColor.withValues(alpha: 0.1),
+            child: Icon(icon, color: iconColor),
+          ),
+          title: Text(
+            title,
+            style: AppTextStyles.labelLarge.copyWith(
+              fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
+              color: AppColors.primaryDark,
+            ),
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 4),
+              Text(
+                body,
+                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 6),
+              if (createdAt != null)
+                Text(
+                  DateFormat('MMM d, h:mm a').format(createdAt.toDate()),
+                  style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary, fontSize: 11),
+                ),
+            ],
+          ),
+          onTap: () {
+            if (!isRead) {
+               FirebaseFirestore.instance.collection('notifications').doc(docs[index].id).update({'read': true});
+            }
+          },
+        );
+      },
     );
   }
 }

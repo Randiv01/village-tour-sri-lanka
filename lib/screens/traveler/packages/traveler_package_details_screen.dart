@@ -11,7 +11,8 @@ import '../../../theme/app_spacing.dart';
 import '../../../models/tour_package.dart';
 import '../chat/traveler_chat_screen.dart';
 import '../../../repositories/tour_package_repository.dart';
-
+import '../../common/auth/auth_guard.dart';
+import 'traveler_tour_booking_screen.dart';
 class TravelerPackageDetailsScreen extends StatefulWidget {
   final String packageId;
   const TravelerPackageDetailsScreen({super.key, required this.packageId});
@@ -103,9 +104,18 @@ class _TravelerPackageDetailsScreenState extends State<TravelerPackageDetailsScr
   }
 
   void _handleBookTour() {
-    // Future booking implementation hook
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Booking flow coming soon!')),
+    if (_package == null) return;
+    
+    AuthGuard.requireAuth(
+      context: context,
+      onAuthenticated: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => TravelerTourBookingScreen(package: _package!),
+          ),
+        );
+      },
     );
   }
 

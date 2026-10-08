@@ -325,13 +325,13 @@ class _GuideChatScreenState extends State<GuideChatScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text(
+                    widget.touristName,
+                    style: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.bold, color: AppColors.primaryDark),
+                  ),
+                  const SizedBox(height: 2),
                   Row(
                     children: [
-                      Text(
-                        widget.touristName,
-                        style: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.bold, color: AppColors.primaryDark),
-                      ),
-                      const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
@@ -340,15 +340,11 @@ class _GuideChatScreenState extends State<GuideChatScreen> {
                           border: Border.all(color: const Color(0xFFFFD1B3)),
                         ),
                         child: Text(
-                          'GUIDE',
+                          'TRAVELER',
                           style: AppTextStyles.caption.copyWith(color: const Color(0xFFD97706), fontSize: 9, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],
-                  ),
-                  Text(
-                    'Speaks ${widget.touristLanguages}',
-                    style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
                   ),
                 ],
               ),
@@ -358,8 +354,6 @@ class _GuideChatScreenState extends State<GuideChatScreen> {
       ),
       body: Column(
         children: [
-          _buildPackageHeader(),
-          const Divider(height: 1, color: AppColors.border),
           Expanded(
             child: Container(
               decoration: const BoxDecoration(
@@ -379,38 +373,7 @@ class _GuideChatScreenState extends State<GuideChatScreen> {
     );
   }
 
-  Widget _buildPackageHeader() {
-    return Container(
-      color: AppColors.background,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          const Icon(Icons.explore_outlined, color: Color(0xFFC47F46), size: 18),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              '${widget.packageTitle} • 21 Aug',
-              style: AppTextStyles.caption.copyWith(fontWeight: FontWeight.bold, color: AppColors.primaryDark),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Text(
-              widget.packagePrice,
-              style: AppTextStyles.caption.copyWith(fontWeight: FontWeight.bold, color: const Color(0xFF1E6B52)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   Widget _buildMessagesList() {
     return StreamBuilder<QuerySnapshot>(
@@ -712,6 +675,9 @@ class _GuideChatScreenState extends State<GuideChatScreen> {
                               hintText: 'Type a message in Sinhala...',
                               hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
                               border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              filled: false,
                             ),
                           ),
                         ),

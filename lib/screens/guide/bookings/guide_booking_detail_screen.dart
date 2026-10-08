@@ -6,7 +6,7 @@ import '../../../theme/app_spacing.dart';
 import '../../../theme/app_radius.dart';
 import '../../../models/guide_booking.dart';
 import '../../../repositories/guide_booking_repository.dart';
-
+import '../chat/guide_chat_screen.dart';
 class GuideBookingDetailScreen extends StatefulWidget {
   final GuideBooking booking;
   const GuideBookingDetailScreen({super.key, required this.booking});
@@ -26,10 +26,17 @@ class _GuideBookingDetailScreenState extends State<GuideBookingDetailScreen> {
     _booking = widget.booking;
   }
 
-  Future<void> _updateStatus(String newStatus) async {
+  Future<void> _updateStatus(String newStatus, {String? rejectionReason}) async {
     setState(() => _isLoading = true);
     try {
-      await _repo.updateBookingStatus(_booking.id, newStatus);
+      if (newStatus == 'rejected') {
+        await _repo.updateBookingStatus(_booking.id, newStatus, rejectionReason: rejectionReason, rejectedAt: DateTime.now());
+      } else if (newStatus == 'accepted') {
+        await _repo.updateBookingStatus(_booking.id, newStatus, acceptedAt: DateTime.now());
+      } else {
+        await _repo.updateBookingStatus(_booking.id, newStatus);
+      }
+
       final updated = await _repo.getBooking(_booking.id);
       if (updated != null && mounted) {
         setState(() => _booking = updated);
@@ -40,6 +47,91 @@ class _GuideBookingDetailScreenState extends State<GuideBookingDetailScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _showRejectDialog() {
+    String? selectedReason;
+    final otherReasonController = TextEditingController();
+    final reasons = ['Tour unavailable', 'Schedule conflict', 'Capacity issue', 'Personal reason', 'Other'];
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Reject Booking'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Why are you rejecting this booking?'),
+                  const SizedBox(height: 8),
+                  ...reasons.map((reason) => InkWell(
+                    onTap: () => setState(() => selectedReason = reason),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Row(
+                        children: [
+                          Icon(
+                            selectedReason == reason ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                            color: selectedReason == reason ? AppColors.primary : Colors.grey,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(reason),
+                        ],
+                      ),
+                    ),
+                  )),
+                  if (selectedReason == 'Other')
+                    TextField(
+                      controller: otherReasonController,
+                      decoration: const InputDecoration(labelText: 'Please specify', border: OutlineInputBorder()),
+                    )
+                ],
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                ElevatedButton(
+                  onPressed: () {
+                    final finalReason = selectedReason == 'Other' ? otherReasonController.text : selectedReason;
+                    if (finalReason == null || finalReason.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select or enter a reason')));
+                      return;
+                    }
+                    Navigator.pop(context);
+                    _updateStatus('rejected', rejectionReason: finalReason);
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+                  child: const Text('Reject', style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            );
+          }
+        );
+      }
+    );
+  }
+
+  void _showAcceptDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Accept Booking'),
+        content: const Text('Accept this booking request? The traveler will be notified to make the payment.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _updateStatus('accepted');
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text('Accept', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      )
+    );
   }
 
   @override
@@ -91,6 +183,14 @@ class _GuideBookingDetailScreenState extends State<GuideBookingDetailScreen> {
                 _infoItem('Notes', _booking.notes!),
               ]),
             ],
+            if (_booking.status == 'rejected' && _booking.rejectionReason != null) ...[
+              const SizedBox(height: AppSpacing.lg),
+              _sectionLabel('REJECTION REASON'),
+              const SizedBox(height: AppSpacing.sm),
+              _infoCard([
+                _infoItem('Reason', _booking.rejectionReason!, valueColor: AppColors.error),
+              ]),
+            ],
             const SizedBox(height: AppSpacing.xxxl),
 
             if (_isLoading)
@@ -109,19 +209,19 @@ class _GuideBookingDetailScreenState extends State<GuideBookingDetailScreen> {
       return Row(
         children: [
           Expanded(child: OutlinedButton(
-            onPressed: () => _updateStatus('rejected'),
+            onPressed: _showRejectDialog,
             style: OutlinedButton.styleFrom(foregroundColor: AppColors.error, side: const BorderSide(color: AppColors.error), padding: const EdgeInsets.symmetric(vertical: 16)),
             child: const Text('Reject Booking'),
           )),
           const SizedBox(width: AppSpacing.md),
           Expanded(child: ElevatedButton(
-            onPressed: () => _updateStatus('confirmed'),
+            onPressed: _showAcceptDialog,
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green, padding: const EdgeInsets.symmetric(vertical: 16)),
             child: const Text('Accept Booking'),
           )),
         ],
       );
-    } else if (_booking.status == 'confirmed') {
+    } else if (_booking.status == 'confirmed' || _booking.status == 'accepted') {
       return SizedBox(
         width: double.infinity,
         child: ElevatedButton.icon(
@@ -136,8 +236,20 @@ class _GuideBookingDetailScreenState extends State<GuideBookingDetailScreen> {
   }
 
   void _messageTraveler() {
-    // Navigate to a simple chat screen placeholder
-    Navigator.push(context, MaterialPageRoute(builder: (_) => _MessageTravelerScreen(booking: _booking)));
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => GuideChatScreen(
+          touristId: _booking.guestId,
+          touristName: _booking.guestName,
+          touristImage: _booking.guestProfileUrl ?? '',
+          touristLanguages: 'English',
+          packageId: _booking.packageId,
+          packageTitle: _booking.packageTitle,
+          packagePrice: '${_booking.currency} ${NumberFormat('#,##0').format(_booking.totalPrice)}',
+        ),
+      ),
+    );
   }
 
   Widget _sectionLabel(String text) => Text(text, style: AppTextStyles.labelLarge.copyWith(color: AppColors.primaryDark, fontWeight: FontWeight.bold));
@@ -170,6 +282,7 @@ class _GuideBookingDetailScreenState extends State<GuideBookingDetailScreen> {
   Color _getStatusColor(String status) {
     switch (status) {
       case 'pending': return Colors.orange;
+      case 'accepted': return Colors.blue;
       case 'confirmed': return Colors.green;
       case 'completed': return AppColors.primary;
       case 'cancelled':
@@ -179,43 +292,4 @@ class _GuideBookingDetailScreenState extends State<GuideBookingDetailScreen> {
   }
 }
 
-class _MessageTravelerScreen extends StatelessWidget {
-  final GuideBooking booking;
-  const _MessageTravelerScreen({required this.booking});
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.primaryDark, elevation: 0,
-        title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(booking.guestName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-          Text(booking.packageTitle, style: const TextStyle(fontSize: 12, color: Colors.white70)),
-        ]),
-        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => Navigator.pop(context)),
-      ),
-      body: Column(
-        children: [
-          Expanded(child: Center(child: Text('Chat messages will appear here.', style: AppTextStyles.bodySecondary))),
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(color: AppColors.surface, border: const Border(top: BorderSide(color: AppColors.border))),
-            child: Row(children: [
-              Expanded(child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Type a message...',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
-                  filled: true, fillColor: AppColors.background,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                ),
-              )),
-              const SizedBox(width: AppSpacing.sm),
-              CircleAvatar(backgroundColor: AppColors.primary, child: IconButton(icon: const Icon(Icons.send, color: Colors.white), onPressed: () {})),
-            ]),
-          )
-        ],
-      ),
-    );
-  }
-}
