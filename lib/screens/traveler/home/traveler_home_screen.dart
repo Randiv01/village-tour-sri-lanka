@@ -21,6 +21,7 @@ import '../destinations/destination_details_screen.dart';
 import '../../common/auth/auth_guard.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../common/homestays/homestay_details_screen.dart';
+import '../../../../models/homestay.dart';
 
 class TravelerHomeScreen extends StatefulWidget {
   final VoidCallback? onProfileTap;
@@ -767,28 +768,16 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
 
             return Column(
               children: docs.map((doc) {
-                final data = doc.data() as Map<String, dynamic>;
-                final images = List<String>.from(data['images'] ?? []);
-                final imageUrl = images.isNotEmpty ? images.first : 'https://i.pravatar.cc/300';
-                
+                final hs = Homestay.fromMap(doc.data() as Map<String, dynamic>, doc.id);
                 return Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.lg),
                   child: HomestayCard(
-                    title: data['title'] ?? 'Homestay',
-                    location: data['location'] ?? 'Location',
-                    rating: '4.9',
-                    reviews: '(0)',
-                    price: 'Rs. ${data['pricePerNight'] ?? 0}',
-                    features: const ['Verified Host', 'Nature & Village'],
-                    imagePath: imageUrl,
+                    homestay: hs,
                     onViewDetailsTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => HomestayDetailsScreen(
-                            homestayId: doc.id,
-                            homestayData: data,
-                          ),
+                          builder: (context) => HomestayDetailsScreen(homestayId: doc.id),
                         ),
                       );
                     },

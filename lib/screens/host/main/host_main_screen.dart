@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../../widgets/common/app_side_menu.dart';
 import '../home/host_home_screen.dart';
+import '../homestays/manage_homestays_screen.dart';
+import '../bookings/host_bookings_screen.dart';
 import 'widgets/host_bottom_navigation.dart';
 
 class HostMainScreen extends StatefulWidget {
@@ -23,8 +25,8 @@ class _HostMainScreenState extends State<HostMainScreen> {
 
   final List<Widget> _pages = [
     const HostHomeScreen(),
-    const Scaffold(body: Center(child: Text('Homestays Management Screen'))),
-    const Scaffold(body: Center(child: Text('Bookings Management Screen'))),
+    const ManageHomestaysScreen(),
+    const HostBookingsScreen(),
     const Scaffold(body: Center(child: Text('Profile Settings Screen'))),
   ];
 
