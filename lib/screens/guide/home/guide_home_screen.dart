@@ -15,6 +15,7 @@ import '../../../repositories/guide_booking_repository.dart';
 import '../packages/create_edit_package_screen.dart';
 import '../packages/package_management_screen.dart';
 import '../bookings/guide_booking_detail_screen.dart';
+import '../notifications/guide_notifications_screen.dart';
 
 class GuideHomeScreen extends StatefulWidget {
   final void Function(int)? onNavigate;
@@ -179,7 +180,16 @@ class _GuideHomeScreenState extends State<GuideHomeScreen> {
               ],
             ),
           ),
-          _GuideIconButton(icon: Icons.notifications_outlined, onTap: () {}, hasIndicator: true),
+          _GuideIconButton(
+            icon: Icons.notifications_outlined,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const GuideNotificationsScreen()),
+              );
+            },
+            hasIndicator: true,
+          ),
           const SizedBox(width: AppSpacing.sm),
           _buildProfileAvatar(guide),
         ],
