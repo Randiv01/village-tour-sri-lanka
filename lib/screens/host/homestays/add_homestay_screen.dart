@@ -592,6 +592,26 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
     );
   }
 
+  static IconData _amenityIcon(String amenity) {
+    switch (amenity) {
+      case 'Wi-Fi':            return Icons.wifi_rounded;
+      case 'Free Parking':     return Icons.local_parking_rounded;
+      case 'Breakfast':        return Icons.free_breakfast_rounded;
+      case 'Private Bathroom': return Icons.bathtub_outlined;
+      case 'Hot Water':        return Icons.water_drop_outlined;
+      case 'Air Conditioning': return Icons.ac_unit_rounded;
+      case 'Fan':              return Icons.wind_power_rounded;
+      case 'Kitchen':          return Icons.kitchen_rounded;
+      case 'Garden':           return Icons.yard_rounded;
+      case 'TV':               return Icons.tv_rounded;
+      case 'No Smoking':       return Icons.smoke_free_rounded;
+      case 'No Parties':       return Icons.do_not_disturb_on_rounded;
+      case 'Pets Allowed':     return Icons.pets_rounded;
+      case 'Children Allowed': return Icons.child_care_rounded;
+      default:                 return Icons.check_circle_outline_rounded;
+    }
+  }
+
   Widget _buildAmenitiesSection() {
     return _buildSectionContainer(
       child: Wrap(
@@ -600,6 +620,8 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
         children: _availableAmenities.map((amenity) {
           final isSelected = _selectedAmenities.contains(amenity);
           return FilterChip(
+            avatar: Icon(_amenityIcon(amenity), size: 16,
+                color: isSelected ? AppColors.primaryDark : AppColors.textSecondary),
             label: Text(amenity),
             selected: isSelected,
             onSelected: (selected) {
@@ -613,6 +635,7 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
             },
             selectedColor: AppColors.primaryDark.withValues(alpha: 0.2),
             checkmarkColor: AppColors.primaryDark,
+            showCheckmark: false,
           );
         }).toList(),
       ),
@@ -830,6 +853,8 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
         children: _availableRules.map((rule) {
           final isSelected = _selectedRules.contains(rule);
           return FilterChip(
+            avatar: Icon(_amenityIcon(rule), size: 16,
+                color: isSelected ? AppColors.primaryDark : AppColors.textSecondary),
             label: Text(rule),
             selected: isSelected,
             onSelected: (selected) {
@@ -843,6 +868,7 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
             },
             selectedColor: AppColors.primaryDark.withValues(alpha: 0.2),
             checkmarkColor: AppColors.primaryDark,
+            showCheckmark: false,
           );
         }).toList(),
       ),

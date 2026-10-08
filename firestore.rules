@@ -30,8 +30,8 @@ service cloud.firestore {
                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"
                     );
 
-      // Currently disabled
-      allow delete: if false;
+      // Allow users to delete their own profile
+      allow delete: if request.auth != null && request.auth.uid == uid;
     }
 
     // Existing destination development rules
@@ -94,7 +94,7 @@ service cloud.firestore {
       // Travelers can create bookings
       allow create: if request.auth != null && request.resource.data.guestId == request.auth.uid;
       
-      allow delete: if false; // Prefer logical deletion (status='cancelled')
+      allow delete: if request.auth != null && (resource.data.guestId == request.auth.uid || resource.data.guideId == request.auth.uid);
     }
 
     // Homestay Bookings
@@ -103,7 +103,7 @@ service cloud.firestore {
       allow update: if request.auth != null && resource.data.travelerId == request.auth.uid;
       allow read: if true;
       allow create: if request.auth != null && request.resource.data.travelerId == request.auth.uid;
-      allow delete: if false;
+      allow delete: if request.auth != null && (resource.data.travelerId == request.auth.uid || resource.data.hostId == request.auth.uid);
     }
 
     // Payments
@@ -114,6 +114,7 @@ service cloud.firestore {
       // But they need to update status upon mock payment success. 
       // In a real app this would be a cloud function.
       allow update: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
 
     // Notifications
