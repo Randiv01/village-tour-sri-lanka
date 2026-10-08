@@ -56,7 +56,9 @@ class HomestayCard extends StatelessWidget {
                     top: Radius.circular(24),
                   ),
                   image: DecorationImage(
-                    image: AssetImage(imagePath),
+                    image: imagePath.startsWith('http')
+                        ? NetworkImage(imagePath) as ImageProvider
+                        : AssetImage(imagePath),
                     fit: BoxFit.cover,
                   ),
                 ),

@@ -11,6 +11,16 @@ class MyPromotionsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        title: const Text(
+          'VILLAGE SANCTUARY',
+          style: TextStyle(
+            color: AppColors.secondary,
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.5,
+          ),
+        ),
+        centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: Padding(
@@ -300,9 +310,10 @@ class MyPromotionsScreen extends StatelessWidget {
           
           // Chart Graphic
           SizedBox(
-            height: 140,
+            height: 180,
             child: Stack(
               alignment: Alignment.bottomCenter,
+              clipBehavior: Clip.none,
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
