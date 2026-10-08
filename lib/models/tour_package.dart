@@ -33,6 +33,8 @@ class TourPackage {
   final String? meetingPoint;
   final String? pickupNotes;
   final List<DateTime> availabilityDates;
+  final Map<String, bool> availableDays;
+  final List<DateTime> unavailableDates;
   final String status; // 'draft', 'active', 'inactive'
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -59,6 +61,16 @@ class TourPackage {
     this.meetingPoint,
     this.pickupNotes,
     this.availabilityDates = const [],
+    this.availableDays = const {
+      'monday': true,
+      'tuesday': true,
+      'wednesday': true,
+      'thursday': true,
+      'friday': true,
+      'saturday': true,
+      'sunday': true,
+    },
+    this.unavailableDates = const [],
     this.status = 'active',
     this.createdAt,
     this.updatedAt,
@@ -67,6 +79,28 @@ class TourPackage {
   bool get isActive => status == 'active';
 
   factory TourPackage.fromMap(Map<String, dynamic> map, String documentId) {
+    Map<String, bool> parsedDays = {
+      'monday': true,
+      'tuesday': true,
+      'wednesday': true,
+      'thursday': true,
+      'friday': true,
+      'saturday': true,
+      'sunday': true,
+    };
+    if (map['availableDays'] != null) {
+      final m = map['availableDays'] as Map<dynamic, dynamic>;
+      parsedDays = {
+        'monday': m['monday'] ?? true,
+        'tuesday': m['tuesday'] ?? true,
+        'wednesday': m['wednesday'] ?? true,
+        'thursday': m['thursday'] ?? true,
+        'friday': m['friday'] ?? true,
+        'saturday': m['saturday'] ?? true,
+        'sunday': m['sunday'] ?? true,
+      };
+    }
+
     return TourPackage(
       id: documentId,
       guideId: map['guideId'] ?? '',
@@ -90,6 +124,15 @@ class TourPackage {
       pickupNotes: map['pickupNotes'],
       availabilityDates: (map['availabilityDates'] as List<dynamic>?)
               ?.map((e) => (e as Timestamp).toDate())
+              .toList() ??
+          [],
+      availableDays: parsedDays,
+      unavailableDates: (map['unavailableDates'] as List<dynamic>?)
+              ?.map((e) {
+                if (e is Timestamp) return e.toDate();
+                if (e is String) return DateTime.tryParse(e) ?? DateTime.now();
+                return DateTime.now();
+              })
               .toList() ??
           [],
       status: map['status'] ?? 'active',
@@ -135,6 +178,8 @@ class TourPackage {
       'meetingPoint': meetingPoint,
       'pickupNotes': pickupNotes,
       'availabilityDates': availabilityDates.map((d) => Timestamp.fromDate(d)).toList(),
+      'availableDays': availableDays,
+      'unavailableDates': unavailableDates.map((d) => "${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}").toList(),
       'status': status,
       'updatedAt': FieldValue.serverTimestamp(),
     };

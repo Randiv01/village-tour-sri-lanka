@@ -68,14 +68,28 @@ service cloud.firestore {
       // Guides can read, update their own bookings
       allow read, update: if request.auth != null && resource.data.guideId == request.auth.uid;
       
-      // Travelers can read their own bookings
-      allow read: if request.auth != null && resource.data.guestId == request.auth.uid;
+      // Travelers can update their own bookings (for payment completion, etc.)
+      allow update: if request.auth != null && resource.data.guestId == request.auth.uid;
+      
+      // Travelers can read their own bookings (and we must allow general reads for availability overlap checks)
+      allow read: if request.auth != null;
       
       // Travelers can create bookings
       allow create: if request.auth != null && request.resource.data.guestId == request.auth.uid;
       
       allow delete: if false; // Prefer logical deletion (status='cancelled')
     }
+
+    // Payments
+    match /payments/{paymentId} {
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      // We don't allow clients to update arbitrary payment fields.
+      // But they need to update status upon mock payment success. 
+      // In a real app this would be a cloud function.
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+    
     // Chats
     match /chats/{chatId} {
       allow read, write: if request.auth != null;

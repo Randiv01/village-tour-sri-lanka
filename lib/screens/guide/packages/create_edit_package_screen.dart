@@ -51,7 +51,16 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
   final List<XFile> _galleryImageFiles = [];
 
   // Availability dates - sorted list
-  List<DateTime> _availabilityDates = [];
+  List<DateTime> _unavailableDates = [];
+  Map<String, bool> _availableDays = {
+    'monday': true,
+    'tuesday': true,
+    'wednesday': true,
+    'thursday': true,
+    'friday': true,
+    'saturday': true,
+    'sunday': true,
+  };
 
   String _status = 'active';
   bool _saving = false;
@@ -92,8 +101,9 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
       _itineraryList = List.from(p.itinerary);
       _status = p.status;
       // Load existing availability dates
-      _availabilityDates = List.from(p.availabilityDates);
-      _availabilityDates.sort();
+      _unavailableDates = List.from(p.unavailableDates);
+      _unavailableDates.sort();
+      _availableDays = Map<String, bool>.from(p.availableDays);
     }
   }
 
@@ -137,7 +147,7 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
 
   /// Opens Flutter's built-in date picker and adds the selected date to the list.
   /// Past dates and already-selected dates are disallowed.
-  Future<void> _pickAvailabilityDate() async {
+  Future<void> _pickUnavailableDate() async {
     final today = DateTime.now();
     final firstDate = DateTime(today.year, today.month, today.day);
     final lastDate = DateTime(today.year + 2, 12, 31);
@@ -172,28 +182,28 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
     final normalised = DateTime(picked.year, picked.month, picked.day);
 
     // Prevent adding duplicate dates
-    final alreadyExists = _availabilityDates.any(
+    final alreadyExists = _unavailableDates.any(
       (d) => d.year == normalised.year && d.month == normalised.month && d.day == normalised.day,
     );
 
     if (alreadyExists) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('This date is already selected.')),
+          const SnackBar(content: Text('This date is already selected as a blackout date.')),
         );
       }
       return;
     }
 
     setState(() {
-      _availabilityDates.add(normalised);
-      _availabilityDates.sort();
+      _unavailableDates.add(normalised);
+      _unavailableDates.sort();
     });
   }
 
-  void _removeAvailabilityDate(DateTime date) {
+  void _removeUnavailableDate(DateTime date) {
     setState(() {
-      _availabilityDates.removeWhere(
+      _unavailableDates.removeWhere(
         (d) => d.year == date.year && d.month == date.month && d.day == date.day,
       );
     });
@@ -393,7 +403,8 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
         placesToVisit: _placesList,
         activities: _activitiesList,
         itinerary: _itineraryList,
-        availabilityDates: _availabilityDates,
+        availableDays: _availableDays,
+        unavailableDates: _unavailableDates,
         status: _status,
       );
 
@@ -697,71 +708,78 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
               ),
               const SizedBox(height: AppSpacing.xxl),
 
-              // ── SECTION 3: Available Dates ────────────────────────────
-              _sectionLabel('3. Available Dates'),
+              // ── SECTION 3: Available Dates & Blackout ─────────────────
+              _sectionLabel('3. Availability'),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                'Select the dates when this tour package is available for booking. Past dates cannot be selected.',
-                style: AppTextStyles.caption
-                    .copyWith(color: AppColors.textSecondary),
+                'Select the days of the week this tour is typically available.',
+                style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
               ),
               const SizedBox(height: AppSpacing.md),
-
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'
+                ].map((day) {
+                  final isSelected = _availableDays[day] == true;
+                  return FilterChip(
+                    label: Text(day.substring(0, 1).toUpperCase() + day.substring(1)),
+                    selected: isSelected,
+                    onSelected: (bool selected) {
+                      setState(() {
+                        _availableDays[day] = selected;
+                      });
+                    },
+                    selectedColor: AppColors.primary.withValues(alpha: 0.2),
+                    checkmarkColor: AppColors.primaryDark,
+                  );
+                }).toList(),
+              ),
+              
+              const SizedBox(height: AppSpacing.xl),
+              Text('Blackout Dates', style: AppTextStyles.labelLarge),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Add specific dates when you are NOT available to conduct this tour.',
+                style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              
               // Add Date Button
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: _pickAvailabilityDate,
-                  icon: const Icon(Icons.calendar_month_outlined,
-                      color: AppColors.primary),
+                  onPressed: _pickUnavailableDate,
+                  icon: const Icon(Icons.calendar_month_outlined, color: AppColors.primary),
                   label: Text(
-                    'Select Available Date',
-                    style: AppTextStyles.bodyMedium
-                        .copyWith(color: AppColors.primary),
+                    'Add Blackout Date',
+                    style: AppTextStyles.bodyMedium.copyWith(color: AppColors.primary),
                   ),
                   style: OutlinedButton.styleFrom(
-                    padding:
-                        const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                     side: const BorderSide(color: AppColors.primary),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: AppRadius.inputButtonRadius,
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: AppRadius.inputButtonRadius),
                   ),
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
 
               // Selected dates display
-              if (_availabilityDates.isEmpty)
+              if (_unavailableDates.isEmpty)
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(AppSpacing.lg),
                   decoration: BoxDecoration(
                     color: AppColors.softSecondarySurface,
                     borderRadius: AppRadius.cardRadius,
-                    border: Border.all(
-                      color: AppColors.border.withValues(alpha: 0.5),
-                    ),
+                    border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
                   ),
                   child: Column(
                     children: [
-                      Icon(
-                        Icons.calendar_today_outlined,
-                        size: 32,
-                        color: AppColors.textSecondary.withValues(alpha: 0.5),
-                      ),
+                      Icon(Icons.event_available, size: 32, color: AppColors.textSecondary.withValues(alpha: 0.5)),
                       const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        'No available dates selected.',
-                        style: AppTextStyles.bodySecondary,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Tap the button above to add dates.',
-                        style: AppTextStyles.caption,
-                        textAlign: TextAlign.center,
-                      ),
+                      Text('No blackout dates added.', style: AppTextStyles.bodySecondary, textAlign: TextAlign.center),
                     ],
                   ),
                 )
@@ -770,92 +788,27 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
                   decoration: BoxDecoration(
                     color: AppColors.surface,
                     borderRadius: AppRadius.cardRadius,
-                    border: Border.all(
-                      color: AppColors.border.withValues(alpha: 0.5),
-                    ),
+                    border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
                   ),
                   child: Column(
-                    children: _availabilityDates.asMap().entries.map((entry) {
+                    children: _unavailableDates.asMap().entries.map((entry) {
                       final index = entry.key;
                       final date = entry.value;
-                      final isLast =
-                          index == _availabilityDates.length - 1;
+                      final isLast = index == _unavailableDates.length - 1;
                       return Column(
                         children: [
                           ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.md,
-                              vertical: 2,
-                            ),
-                            leading: Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: AppColors.primary
-                                    .withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    DateFormat('d').format(date),
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.primary,
-                                    ),
-                                  ),
-                                  Text(
-                                    DateFormat('MMM').format(date),
-                                    style: const TextStyle(
-                                      fontSize: 9,
-                                      color: AppColors.primary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            title: Text(
-                              DateFormat('EEEE, d MMMM yyyy').format(date),
-                              style: AppTextStyles.bodyMedium,
-                            ),
-                            trailing: GestureDetector(
-                              onTap: () => _removeAvailabilityDate(date),
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: AppColors.error
-                                      .withValues(alpha: 0.1),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.close,
-                                  size: 16,
-                                  color: AppColors.error,
-                                ),
-                              ),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 2),
+                            title: Text(DateFormat('EEEE, d MMMM yyyy').format(date), style: AppTextStyles.bodyMedium),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.close, color: AppColors.error),
+                              onPressed: () => _removeUnavailableDate(date),
                             ),
                           ),
-                          if (!isLast)
-                            const Divider(
-                              height: 1,
-                              indent: 16,
-                              endIndent: 16,
-                            ),
+                          if (!isLast) const Divider(height: 1, indent: 16, endIndent: 16),
                         ],
                       );
                     }).toList(),
-                  ),
-                ),
-              if (_availabilityDates.isNotEmpty)
-                Padding(
-                  padding:
-                      const EdgeInsets.only(top: AppSpacing.sm),
-                  child: Text(
-                    '${_availabilityDates.length} date${_availabilityDates.length == 1 ? '' : 's'} selected',
-                    style: AppTextStyles.caption
-                        .copyWith(color: AppColors.primary),
                   ),
                 ),
               const SizedBox(height: AppSpacing.xxl),

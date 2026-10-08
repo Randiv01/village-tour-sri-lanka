@@ -74,7 +74,7 @@ class _GuideBookingsScreenState extends State<GuideBookingsScreen> with SingleTi
 
           final allBookings = snapshot.data ?? [];
           final pending = allBookings.where((b) => b.status == 'pending').toList();
-          final upcoming = allBookings.where((b) => b.status == 'confirmed' && b.startDate.isAfter(DateTime.now())).toList();
+          final upcoming = allBookings.where((b) => (b.status == 'confirmed' || b.status == 'accepted') && b.startDate.isAfter(DateTime.now())).toList();
           final completed = allBookings.where((b) => b.status == 'completed' || (b.status == 'confirmed' && b.startDate.isBefore(DateTime.now()))).toList();
           final cancelled = allBookings.where((b) => b.status == 'cancelled' || b.status == 'rejected').toList();
 
@@ -171,6 +171,7 @@ class _BookingCard extends StatelessWidget {
     Color color;
     switch (status) {
       case 'pending': color = Colors.orange; break;
+      case 'accepted': color = Colors.blue; break;
       case 'confirmed': color = Colors.green; break;
       case 'completed': color = AppColors.primary; break;
       case 'cancelled':
