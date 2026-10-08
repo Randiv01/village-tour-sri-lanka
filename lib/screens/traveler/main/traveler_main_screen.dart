@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../widgets/common/app_bottom_navigation.dart';
 import '../../../../widgets/common/app_side_menu.dart';
 import '../home/traveler_home_screen.dart';
+import '../destinations/explore_destinations_screen.dart';
 import '../../common/auth/auth_guard.dart';
 import '../bookings/traveler_bookings_screen.dart';
 import '../profile/traveler_profile_screen.dart';
@@ -32,7 +33,7 @@ class _TravelerMainScreenState extends State<TravelerMainScreen> {
         });
       },
     ),
-    const Scaffold(body: Center(child: Text('Explore Screen'))),
+    const ExploreDestinationsScreen(),
     const TravelerBookingsScreen(),
     TravelerProfileScreen(
       onBackTap: () {

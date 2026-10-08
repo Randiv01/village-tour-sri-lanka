@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../../../models/destination.dart';
 import '../../../../repositories/destination_repository.dart';
@@ -7,7 +9,12 @@ import '../../../../theme/app_spacing.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../utils/cloudinary_utils.dart';
 import '../../../../widgets/cards/destination_card.dart';
+import '../../../../widgets/cards/homestay_card.dart';
+import '../map/offline_map_screen.dart';
 import 'destination_details_screen.dart';
+import '../../common/homestays/homestay_details_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../../models/homestay.dart';
 
 class ExploreDestinationsScreen extends StatefulWidget {
   const ExploreDestinationsScreen({super.key});
@@ -24,6 +31,7 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
   String _searchQuery = '';
   String? _selectedLocation;
   bool _popularOnly = false;
+  bool _showHomestays = false;
   String _sortBy = 'Recommended';
 
   int get _activeFilterCount {
@@ -63,6 +71,7 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
           return false;
         }
       }
+
       return true;
     }).toList();
 
@@ -241,11 +250,12 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Explore Destinations'),
+        title: const Text('Explore'),
+        centerTitle: true,
         backgroundColor: AppColors.background,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.primaryDark),
-        titleTextStyle: AppTextStyles.sectionHeading.copyWith(
+        titleTextStyle: AppTextStyles.screenHeading.copyWith(
           color: AppColors.primaryDark,
         ),
       ),
@@ -290,43 +300,219 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
 
           return Column(
             children: [
+              // Map Preview
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const OfflineMapScreen(),
+                    ),
+                  );
+                },
+                child: Container(
+                  height: 160,
+                  margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    color: AppColors.softSecondarySurface,
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      // Non-interactive map
+                      FlutterMap(
+                        options: const MapOptions(
+                          initialCenter: LatLng(7.8731, 80.7718),
+                          initialZoom: 6.5,
+                          interactionOptions: InteractionOptions(
+                            flags: InteractiveFlag.none,
+                          ),
+                        ),
+                        children: [
+                          TileLayer(
+                            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            userAgentPackageName: 'com.villagetoursrilanka.app',
+                            tileProvider: CachedTileProvider(),
+                          ),
+                        ],
+                      ),
+                      // Gradient overlay
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withValues(alpha: 0.6),
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Text and icon
+                      Positioned(
+                        bottom: 16,
+                        left: 16,
+                        right: 16,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.explore, color: Colors.white, size: 28),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Explore Map',
+                              style: AppTextStyles.sectionHeading.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 22,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
               // Search Bar
               Padding(
-                padding: const EdgeInsets.all(AppSpacing.md),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (val) {
+                    setState(() {
+                      _searchQuery = val;
+                    });
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Search destinations...',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() {
+                                _searchQuery = '';
+                              });
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: AppColors.surface,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 0,
+                      horizontal: AppSpacing.md,
+                    ),
+                  ),
+                ),
+              ),
+
+              // Tabs (Destinations / Homestays)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() => _showHomestays = false),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            decoration: BoxDecoration(
+                              color: !_showHomestays ? AppColors.softSecondarySurface : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Destinations',
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.labelLarge.copyWith(
+                                color: !_showHomestays ? AppColors.primaryDark : AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() => _showHomestays = true),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            decoration: BoxDecoration(
+                              color: _showHomestays ? AppColors.softSecondarySurface : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Homestays',
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.labelLarge.copyWith(
+                                color: _showHomestays ? AppColors.primaryDark : AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Filters Row
+              if (!_showHomestays)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
                 child: Row(
                   children: [
                     Expanded(
-                      child: TextField(
-                        controller: _searchController,
-                        onChanged: (val) {
-                          setState(() {
-                            _searchQuery = val;
-                          });
-                        },
-                        decoration: InputDecoration(
-                          hintText: 'Search destinations...',
-                          prefixIcon: const Icon(Icons.search),
-                          suffixIcon: _searchQuery.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear),
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    setState(() {
-                                      _searchQuery = '';
-                                    });
-                                  },
-                                )
-                              : null,
-                          filled: true,
-                          fillColor: AppColors.surface,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 0,
-                            horizontal: AppSpacing.md,
-                          ),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            if (_selectedLocation != null && _selectedLocation != 'All Locations') ...[
+                              ActionChip(
+                                label: Text(_selectedLocation!),
+                                onPressed: () => setState(() => _selectedLocation = null),
+                                avatar: const Icon(Icons.close, size: 16),
+                                backgroundColor: AppColors.softSecondarySurface,
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                            ],
+                            if (_popularOnly) ...[
+                              ActionChip(
+                                label: const Text('Popular'),
+                                onPressed: () => setState(() => _popularOnly = false),
+                                avatar: const Icon(Icons.close, size: 16),
+                                backgroundColor: AppColors.softSecondarySurface,
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                            ],
+                            if (_sortBy != 'Recommended') ...[
+                              ActionChip(
+                                label: Text('Sort: $_sortBy'),
+                                onPressed: () => setState(() => _sortBy = 'Recommended'),
+                                avatar: const Icon(Icons.close, size: 16),
+                                backgroundColor: AppColors.softSecondarySurface,
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                            ],
+                            if (_activeFilterCount == 0)
+                              Text(
+                                'All Destinations',
+                                style: AppTextStyles.labelLarge.copyWith(color: AppColors.textSecondary),
+                              ),
+                          ],
                         ),
                       ),
                     ),
@@ -367,18 +553,20 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
 
               // Grid
               Expanded(
-                child: filteredDestinations.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text(
-                              'No destinations found\nTry a different search or adjust your filters.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: AppColors.textSecondary),
-                            ),
-                            const SizedBox(height: AppSpacing.md),
-                            TextButton(
+                child: _showHomestays
+                    ? _buildHomestaysGrid()
+                    : filteredDestinations.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Text(
+                                  'No destinations found\nTry a different search or adjust your filters.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: AppColors.textSecondary),
+                                ),
+                                const SizedBox(height: AppSpacing.md),
+                                TextButton(
                               onPressed: () {
                                 _searchController.clear();
                                 setState(() {
@@ -388,7 +576,7 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
                                   _sortBy = 'Recommended';
                                 });
                               },
-                              child: const Text('Clear Search'),
+                              child: const Text('Clear Filters'),
                             ),
                           ],
                         ),
@@ -428,6 +616,8 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
                             category: 'DESTINATION',
                             imageUrl: imageUrl,
                             width: double.infinity,
+                            isPopular: dest.isPopular,
+                            shortDescription: dest.shortDescription,
                             onTap: () {
                               Navigator.push(
                                 context,
@@ -447,6 +637,86 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildHomestaysGrid() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('homestays').where('status', isEqualTo: 'Active').snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return const Center(child: Text('Error loading homestays.'));
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final docs = snapshot.data?.docs ?? [];
+        
+        var filteredDocs = docs;
+        if (_searchQuery.isNotEmpty) {
+          final q = _searchQuery.toLowerCase();
+          filteredDocs = docs.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            final title = (data['title'] as String? ?? '').toLowerCase();
+            final location = (data['location'] as String? ?? '').toLowerCase();
+            return title.contains(q) || location.contains(q);
+          }).toList();
+        }
+
+        if (filteredDocs.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  _searchQuery.isNotEmpty ? 'No homestays found for "$_searchQuery".' : 'No homestays available right now.',
+                  style: const TextStyle(color: AppColors.textSecondary),
+                ),
+                if (_searchQuery.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  TextButton(
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() {
+                        _searchQuery = '';
+                      });
+                    },
+                    child: const Text('Clear Search'),
+                  ),
+                ],
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+          itemCount: filteredDocs.length,
+          itemBuilder: (context, index) {
+            final doc = filteredDocs[index];
+            final data = doc.data() as Map<String, dynamic>;
+            
+            return Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+              child: HomestayCard(
+                homestay: Homestay.fromMap(data, doc.id),
+                onViewDetailsTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => HomestayDetailsScreen(
+                        homestayId: doc.id,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

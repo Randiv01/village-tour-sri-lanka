@@ -12,6 +12,7 @@ import '../../../../services/auth_service.dart';
 import '../../../../services/cloudinary_service.dart';
 import 'edit_profile_screen.dart';
 import 'settings_screen.dart';
+import 'saved_homestays_screen.dart';
 
 class TravelerProfileScreen extends StatelessWidget {
   final VoidCallback? onBackTap;
@@ -152,8 +153,6 @@ class TravelerProfileScreen extends StatelessWidget {
         children: [
           _IdentityCard(userModel: userModel, firebaseAuthUser: currentUser),
           const SizedBox(height: AppSpacing.xxl),
-          _buildPersonalInformationSection(context, userModel, currentUser),
-          const SizedBox(height: AppSpacing.xxl),
           _buildAccountPreferencesSection(context, userModel, currentUser),
           const SizedBox(height: AppSpacing.xxl),
           _buildSignOutSection(context),
@@ -163,111 +162,31 @@ class TravelerProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPersonalInformationSection(BuildContext context, UserModel user, User firebaseAuthUser) {
+  Widget _buildAccountPreferencesSection(BuildContext context, UserModel user, User firebaseAuthUser) {
     final String email = user.email.isNotEmpty ? user.email : (firebaseAuthUser.email ?? 'Not added');
     final String phone = user.phoneNumber.isNotEmpty ? user.phoneNumber : 'Not added';
-    final String location = user.location.isNotEmpty ? user.location : 'Not added';
-    final String languages = (user.languages != null && user.languages!.isNotEmpty) ? user.languages!.join(', ') : 'Not added';
+    final int favCount = user.favorites.length;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Personal Information',
-              style: AppTextStyles.sectionHeading.copyWith(color: AppColors.primaryDark),
-            ),
-            TextButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => EditProfileScreen(userModel: user)),
-                );
-              },
-              icon: const Icon(Icons.edit_outlined, size: 16, color: AppColors.primary),
-              label: Text('Edit', style: AppTextStyles.labelLarge.copyWith(color: AppColors.primary)),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: AppRadius.cardRadius,
-            border: Border.all(color: AppColors.border, width: 0.5),
-          ),
-          child: Column(
-            children: [
-              _buildInfoRow(Icons.person_outline, 'Full Name', user.fullName.isNotEmpty ? user.fullName : (firebaseAuthUser.displayName ?? 'Traveler')),
-              const Divider(height: 1, color: AppColors.border),
-              _buildInfoRow(Icons.email_outlined, 'Email Address', email),
-              const Divider(height: 1, color: AppColors.border),
-              _buildInfoRow(Icons.phone_outlined, 'Phone Number', phone),
-              const Divider(height: 1, color: AppColors.border),
-              _buildInfoRow(Icons.location_on_outlined, 'Location', location),
-              if (languages != 'Not added') ...[
-                const Divider(height: 1, color: AppColors.border),
-                _buildInfoRow(Icons.language_outlined, 'Languages Spoken', languages),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInfoRow(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, size: 18, color: AppColors.primary),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary)),
-                const SizedBox(height: 2),
-                Text(value, style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w500)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAccountPreferencesSection(BuildContext context, UserModel user, User firebaseAuthUser) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Account & Settings',
+          'Account & Preferences',
           style: AppTextStyles.sectionHeading.copyWith(color: AppColors.primaryDark),
         ),
         const SizedBox(height: AppSpacing.md),
         Container(
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: Colors.white,
             borderRadius: AppRadius.cardRadius,
             border: Border.all(color: AppColors.border, width: 0.5),
           ),
           child: Column(
             children: [
               _buildPreferenceRow(
-                Icons.edit_outlined, 
-                'Edit Profile Details',
-                'Update your name, contact info & location',
+                Icons.person_outline,
+                'Personal Information',
+                '$email • $phone',
                 onTap: () {
                   Navigator.push(
                     context,
@@ -275,17 +194,38 @@ class TravelerProfileScreen extends StatelessWidget {
                   );
                 },
               ),
-              const Divider(height: 1),
+              const Divider(height: 1, color: AppColors.border),
               _buildPreferenceRow(
-                Icons.settings_outlined, 
-                'App Settings',
-                'Notifications, security & app options',
+                Icons.show_chart,
+                'Promoter & Referral Analytics',
+                'Track clicks, rewards & Rs. 4,500 available credit',
+                onTap: () {},
+              ),
+              const Divider(height: 1, color: AppColors.border),
+              _buildPreferenceRow(
+                Icons.favorite_border,
+                'Saved Sanctuary Homestays',
+                '$favCount wishlist items saved',
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                    MaterialPageRoute(builder: (_) => const SavedHomestaysScreen()),
                   );
                 },
+              ),
+              const Divider(height: 1, color: AppColors.border),
+              _buildPreferenceRow(
+                Icons.map_outlined,
+                'Downloaded Offline Guides',
+                'Galewela, Knuckles & Sigiriya trails (Active)',
+                onTap: () {},
+              ),
+              const Divider(height: 1, color: AppColors.border),
+              _buildPreferenceRow(
+                Icons.credit_card,
+                'Payment & Bank Accounts',
+                'Commercial Bank •••• 4821',
+                onTap: () {},
               ),
             ],
           ),
@@ -294,20 +234,20 @@ class TravelerProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPreferenceRow(IconData icon, String title, String subtitle, {VoidCallback? onTap}) {
+  Widget _buildPreferenceRow(IconData icon, String title, String subtitle, {Widget? trailingWidget, VoidCallback? onTap}) {
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
+      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 4),
       leading: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: AppColors.primary.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(10),
+          color: const Color(0xFFF3EBE1),
+          borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, color: AppColors.primaryDark, size: 20),
+        child: Icon(icon, color: const Color(0xFF5A7162), size: 20),
       ),
-      title: Text(title, style: AppTextStyles.labelLarge),
-      subtitle: Text(subtitle, style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary)),
-      trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 20),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primaryDark)),
+      subtitle: Text(subtitle, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+      trailing: trailingWidget ?? const Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 20),
       onTap: onTap ?? () {},
     );
   }

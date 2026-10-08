@@ -12,6 +12,7 @@ class UserModel {
   final List<String>? languages;
   final String? specialization;
   final String? bio;
+  final List<String> favorites;
   final bool isActive;
   final bool isEmailVerified;
   final bool isVerified;
@@ -30,6 +31,7 @@ class UserModel {
     this.languages,
     this.specialization,
     this.bio,
+    this.favorites = const [],
     this.isActive = true,
     this.isEmailVerified = false,
     this.isVerified = false,
@@ -59,6 +61,7 @@ class UserModel {
       languages: parsedLanguages,
       specialization: map['specialization'] ?? map['guideType'],
       bio: map['bio'] ?? map['description'],
+      favorites: List<String>.from(map['favorites'] ?? []),
       isActive: map['isActive'] ?? true,
       isEmailVerified: map['isEmailVerified'] ?? false,
       isVerified: map['isVerified'] ?? map['verified'] ?? false,
@@ -79,6 +82,7 @@ class UserModel {
       if (languages != null) 'languages': languages,
       if (specialization != null) 'specialization': specialization,
       if (bio != null) 'bio': bio,
+      if (favorites.isNotEmpty) 'favorites': favorites,
       'isActive': isActive,
       'isEmailVerified': isEmailVerified,
       'isVerified': isVerified,

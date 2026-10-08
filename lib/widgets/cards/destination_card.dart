@@ -12,6 +12,8 @@ class DestinationCard extends StatelessWidget {
   final double? width;
   final EdgeInsetsGeometry? margin;
   final VoidCallback? onTap;
+  final bool isPopular;
+  final String? shortDescription;
 
   const DestinationCard({
     super.key,
@@ -22,6 +24,8 @@ class DestinationCard extends StatelessWidget {
     this.width,
     this.margin,
     this.onTap,
+    this.isPopular = false,
+    this.shortDescription,
   });
 
   @override
@@ -80,7 +84,8 @@ class DestinationCard extends StatelessWidget {
                     end: Alignment.bottomCenter,
                     colors: [
                       Colors.transparent,
-                      Colors.black.withValues(alpha: 0.7),
+                      Colors.black.withValues(alpha: 0.4),
+                      Colors.black.withValues(alpha: 0.8),
                     ],
                   ),
                 ),
@@ -112,18 +117,66 @@ class DestinationCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     if (subtitle.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on, size: 12, color: AppColors.secondary),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              subtitle,
+                              style: AppTextStyles.caption.copyWith(
+                                color: Colors.white70,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    if (shortDescription != null && shortDescription!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
                       Text(
-                        subtitle,
+                        shortDescription!,
                         style: AppTextStyles.caption.copyWith(
-                          color: Colors.white70,
+                          color: Colors.white54,
+                          fontSize: 10,
                         ),
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ],
                 ),
               ),
+              if (isPopular)
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.star, size: 12, color: Colors.white),
+                        const SizedBox(width: 4),
+                        Text(
+                          'POPULAR',
+                          style: AppTextStyles.caption.copyWith(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
             ],
           ),
         ),

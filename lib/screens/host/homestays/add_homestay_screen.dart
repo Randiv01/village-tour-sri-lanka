@@ -2,13 +2,17 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../theme/app_spacing.dart';
 import '../../../../services/cloudinary_service.dart';
+import '../../../../models/homestay.dart';
+import '../../../../repositories/homestay_repository.dart';
 
 class AddHomestayScreen extends StatefulWidget {
   const AddHomestayScreen({super.key});
@@ -19,6 +23,7 @@ class AddHomestayScreen extends StatefulWidget {
 
 class _AddHomestayScreenState extends State<AddHomestayScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _homestayRepo = HomestayRepository();
   
   // Controllers
   final _titleController = TextEditingController();
@@ -28,10 +33,51 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
   final _guestsController = TextEditingController(text: '2');
   final _descriptionController = TextEditingController();
 
+  // Basic Info
+  String _propertyType = 'Entire Homestay';
+  final List<String> _propertyTypes = ['Entire Homestay', 'Private Room', 'Shared Room'];
+
+  // Amenities
+  final List<String> _availableAmenities = [
+    'Wi-Fi', 'Free Parking', 'Breakfast', 'Private Bathroom', 
+    'Hot Water', 'Air Conditioning', 'Fan', 'Kitchen', 'Garden', 'TV'
+  ];
+  final List<String> _selectedAmenities = [];
+
+  // House Rules
+  final List<String> _availableRules = [
+    'No Smoking', 'No Parties', 'Pets Allowed', 'Children Allowed'
+  ];
+  final List<String> _selectedRules = [];
+
+  // Availability Days
+  final Map<String, bool> _availableDays = {
+    'monday': true, 'tuesday': true, 'wednesday': true,
+    'thursday': true, 'friday': true, 'saturday': true, 'sunday': true,
+  };
+
+  // Unavailable Dates
+  final List<DateTime> _unavailableDates = [];
+
+  // Times
+  String _checkInTime = '2:00 PM';
+  String _checkOutTime = '11:00 AM';
+  final List<String> _timeOptions = [
+    '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', 
+    '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM'
+  ];
+
+  // Add-ons
+  final List<Map<String, dynamic>> _addOns = [];
+
   // Images
   final ImagePicker _picker = ImagePicker();
   final List<XFile> _selectedImages = [];
   final CloudinaryService _cloudinaryService = CloudinaryService();
+
+  // Map Location
+  LatLng? _selectedLocationPoint;
+  final MapController _mapController = MapController();
 
   bool _isSaving = false;
 
@@ -48,13 +94,9 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
 
   Future<void> _pickImages() async {
     try {
-      final List<XFile> images = await _picker.pickMultiImage(
-        imageQuality: 70, // compress to save bandwidth
-      );
-      
+      final List<XFile> images = await _picker.pickMultiImage(imageQuality: 70);
       if (images.isNotEmpty) {
         setState(() {
-          // Allow up to 10 images total
           int remainingSlots = 10 - _selectedImages.length;
           if (images.length > remainingSlots) {
             _selectedImages.addAll(images.take(remainingSlots));
@@ -75,6 +117,67 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
     setState(() {
       _selectedImages.removeAt(index);
     });
+  }
+
+  Future<void> _selectUnavailableDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().add(const Duration(days: 1)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null) {
+      setState(() {
+        // Avoid duplicates
+        if (!_unavailableDates.any((d) => d.year == picked.year && d.month == picked.month && d.day == picked.day)) {
+          _unavailableDates.add(picked);
+          _unavailableDates.sort();
+        }
+      });
+    }
+  }
+
+  void _showAddOnDialog() {
+    final titleCtrl = TextEditingController();
+    final priceCtrl = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add Optional Add-on'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleCtrl,
+              decoration: const InputDecoration(labelText: 'Title (e.g. Buffet Lunch)'),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: priceCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Price (Rs.)'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              final title = titleCtrl.text.trim();
+              final price = double.tryParse(priceCtrl.text.trim()) ?? 0.0;
+              if (title.isNotEmpty && price > 0) {
+                setState(() {
+                  _addOns.add({'title': title, 'price': price});
+                });
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _saveAndPublish() async {
@@ -109,21 +212,30 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
         }
       }
 
-      // 2. Save document to Firestore
-      final homestayData = {
-        'title': _titleController.text.trim(),
-        'location': _locationController.text.trim(),
-        'pricePerNight': double.tryParse(_priceController.text.trim()) ?? 0.0,
-        'roomsCount': int.tryParse(_roomsController.text.trim()) ?? 1,
-        'maxGuests': int.tryParse(_guestsController.text.trim()) ?? 1,
-        'description': _descriptionController.text.trim(),
-        'images': imageUrls,
-        'hostId': user.uid,
-        'status': 'Active', // Default status upon creation
-        'createdAt': FieldValue.serverTimestamp(),
-      };
+      // 2. Create Homestay Model
+      final homestay = Homestay(
+        id: '', // Will be assigned by Firestore
+        hostId: user.uid,
+        title: _titleController.text.trim(),
+        propertyType: _propertyType,
+        location: _locationController.text.trim(),
+        description: _descriptionController.text.trim(),
+        pricePerNight: double.tryParse(_priceController.text.trim()) ?? 0.0,
+        rooms: int.tryParse(_roomsController.text.trim()) ?? 1,
+        maxGuests: int.tryParse(_guestsController.text.trim()) ?? 1,
+        images: imageUrls,
+        amenities: _selectedAmenities,
+        houseRules: _selectedRules,
+        availableDays: _availableDays,
+        unavailableDates: _unavailableDates,
+        checkInTime: _checkInTime,
+        checkOutTime: _checkOutTime,
+        optionalAddOns: _addOns,
+        status: 'Active',
+      );
 
-      await FirebaseFirestore.instance.collection('homestays').add(homestayData);
+      // 3. Save to Firestore
+      await _homestayRepo.createHomestay(homestay);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -150,7 +262,7 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFBF9F6), // Slightly warm background matching image
+      backgroundColor: const Color(0xFFFBF9F6),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -170,46 +282,14 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
             onPressed: () => Navigator.pop(context),
           ),
         ),
-        title: Column(
-          children: [
-            const Text(
-              'HOST REGISTRY',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w900,
-                color: AppColors.secondary,
-                letterSpacing: 1.2,
-              ),
-            ),
-            Text(
-              'Add New Homestay',
-              style: AppTextStyles.sectionHeading.copyWith(
-                color: AppColors.primaryDark,
-                fontSize: 18,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          Container(
-            margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.border),
-            ),
-            alignment: Alignment.center,
-            child: const Text(
-              'Drafts',
-              style: TextStyle(
-                color: AppColors.primaryDark,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-              ),
-            ),
+        title: Text(
+          'Add New Homestay',
+          style: AppTextStyles.sectionHeading.copyWith(
+            color: AppColors.primaryDark,
+            fontSize: 18,
           ),
-        ],
+        ),
+        actions: const [],
       ),
       body: Stack(
         children: [
@@ -220,11 +300,44 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Column(
                   children: [
+                    _buildSectionHeader('1. Basic Information'),
                     _buildBasicInfoSection(),
                     const SizedBox(height: AppSpacing.lg),
+                    _buildMapSection(),
+                    const SizedBox(height: AppSpacing.xl),
+                    _buildSectionHeader('2. Accommodation'),
+                    _buildAccommodationSection(),
+                    const SizedBox(height: AppSpacing.xl),
+                    _buildSectionHeader('3. Amenities'),
+                    _buildAmenitiesSection(),
+                    const SizedBox(height: AppSpacing.xl),
+                    _buildSectionHeader('4. Gallery'),
                     _buildGallerySection(),
-                    const SizedBox(height: AppSpacing.lg),
+                    
+                    const SizedBox(height: AppSpacing.xl),
+                    _buildSectionHeader('5. Description'),
                     _buildDescriptionSection(),
+
+                    const SizedBox(height: AppSpacing.xl),
+                    _buildSectionHeader('6. Booking Availability'),
+                    _buildAvailabilitySection(),
+
+                    const SizedBox(height: AppSpacing.xl),
+                    _buildSectionHeader('7. Blackout Dates'),
+                    _buildUnavailableDatesSection(),
+
+                    const SizedBox(height: AppSpacing.xl),
+                    _buildSectionHeader('8. Check-in & Check-out'),
+                    _buildTimesSection(),
+
+                    const SizedBox(height: AppSpacing.xl),
+                    _buildSectionHeader('9. House Rules'),
+                    _buildHouseRulesSection(),
+
+                    const SizedBox(height: AppSpacing.xl),
+                    _buildSectionHeader('10. Optional Add-ons'),
+                    _buildAddOnsSection(),
+
                     const SizedBox(height: 100), // padding for bottom button
                   ],
                 ),
@@ -258,7 +371,7 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
                     : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: const [
-                          Text('Save and Publish Listing', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                          Text('Save and Publish', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                           SizedBox(width: 8),
                           Icon(Icons.arrow_forward, color: Colors.white, size: 20),
                         ],
@@ -272,7 +385,20 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
     );
   }
 
-  Widget _buildBasicInfoSection() {
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          title,
+          style: AppTextStyles.labelLarge.copyWith(color: AppColors.primaryDark),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionContainer({required Widget child}) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
@@ -280,40 +406,56 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.border, width: 0.5),
       ),
+      child: child,
+    );
+  }
+
+  Widget _buildBasicInfoSection() {
+    return _buildSectionContainer(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildFieldLabel('Property Title'),
-              const Text('Clear & authentic', style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
-            ],
-          ),
+          _buildFieldLabel('Property Title'),
           const SizedBox(height: 8),
           _buildTextField(
             controller: _titleController,
             hintText: 'e.g. Galewela Riverside Cottage',
-            validator: (value) => value == null || value.isEmpty ? 'Title is required' : null,
+            validator: (value) => value == null || value.isEmpty ? 'Required' : null,
           ),
           const SizedBox(height: AppSpacing.lg),
           
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildFieldLabel('Location / Village Name'),
-            ],
+          _buildFieldLabel('Property Type'),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            initialValue: _propertyType,
+            decoration: InputDecoration(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              filled: true,
+              fillColor: Colors.white,
+            ),
+            items: _propertyTypes.map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(),
+            onChanged: (val) => setState(() => _propertyType = val!),
           ),
+          const SizedBox(height: AppSpacing.lg),
+
+          _buildFieldLabel('Location / Village Name'),
           const SizedBox(height: 8),
           _buildTextField(
             controller: _locationController,
             hintText: 'e.g. Nilagama, Galewela',
             prefixIcon: const Icon(Icons.location_on_outlined, size: 18, color: AppColors.primaryDark),
-            suffixIcon: const Icon(Icons.my_location, size: 18, color: AppColors.secondary),
-            validator: (value) => value == null || value.isEmpty ? 'Location is required' : null,
+            validator: (value) => value == null || value.isEmpty ? 'Required' : null,
           ),
-          const SizedBox(height: AppSpacing.lg),
+        ],
+      ),
+    );
+  }
 
+  Widget _buildAccommodationSection() {
+    return _buildSectionContainer(
+      child: Column(
+        children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -324,21 +466,20 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
           const SizedBox(height: 8),
           _buildTextField(
             controller: _priceController,
-            hintText: '3,500',
+            hintText: '3500',
             keyboardType: TextInputType.number,
             prefixIcon: const Padding(
               padding: EdgeInsets.all(12.0),
               child: Text('Rs.', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryDark)),
             ),
-            suffixIcon: const Padding(
-              padding: EdgeInsets.all(12.0),
-              child: Text('/ night', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-            ),
-            validator: (value) => value == null || value.isEmpty ? 'Price is required' : null,
+            validator: (value) {
+              if (value == null || value.isEmpty) return 'Required';
+              final val = double.tryParse(value);
+              if (val == null || val <= 0) return 'Invalid price';
+              return null;
+            },
           ),
           const SizedBox(height: AppSpacing.lg),
-
-          // Extra fields for Rooms and Guests missing from mockup but needed for the Home Screen
           Row(
             children: [
               Expanded(
@@ -351,7 +492,12 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
                       controller: _roomsController,
                       hintText: '1',
                       keyboardType: TextInputType.number,
-                      validator: (value) => value == null || value.isEmpty ? 'Req' : null,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) return 'Req';
+                        final val = int.tryParse(value);
+                        if (val == null || val < 1) return '>=1';
+                        return null;
+                      },
                     ),
                   ],
                 ),
@@ -367,7 +513,12 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
                       controller: _guestsController,
                       hintText: '2',
                       keyboardType: TextInputType.number,
-                      validator: (value) => value == null || value.isEmpty ? 'Req' : null,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) return 'Req';
+                        final val = int.tryParse(value);
+                        if (val == null || val < 1) return '>=1';
+                        return null;
+                      },
                     ),
                   ],
                 ),
@@ -379,7 +530,7 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
     );
   }
 
-  Widget _buildGallerySection() {
+  Widget _buildMapSection() {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
@@ -393,18 +544,94 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Homestay Gallery', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryDark)),
-              Row(
+              const Text('Pin Location', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryDark)),
+              if (_selectedLocationPoint != null)
+                const Icon(Icons.check_circle, size: 16, color: Colors.green),
+            ],
+          ),
+          const SizedBox(height: 4),
+          const Text('Tap on the map to set your homestay location', style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+          const SizedBox(height: AppSpacing.md),
+          SizedBox(
+            height: 200,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: FlutterMap(
+                mapController: _mapController,
+                options: MapOptions(
+                  initialCenter: const LatLng(7.8731, 80.7718),
+                  initialZoom: 7.0,
+                  onTap: (tapPosition, point) {
+                    setState(() {
+                      _selectedLocationPoint = point;
+                    });
+                  },
+                ),
                 children: [
-                  const Icon(Icons.camera_alt_outlined, size: 14, color: AppColors.secondary),
-                  const SizedBox(width: 4),
-                  Text('${_selectedImages.length}/10 photos', style: const TextStyle(fontSize: 10, color: AppColors.secondary, fontWeight: FontWeight.bold)),
+                  TileLayer(
+                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.villagetoursrilanka.app',
+                  ),
+                  if (_selectedLocationPoint != null)
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: _selectedLocationPoint!,
+                          width: 40,
+                          height: 40,
+                          child: const Icon(Icons.location_on, color: AppColors.primary, size: 40),
+                        ),
+                      ],
+                    ),
                 ],
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAmenitiesSection() {
+    return _buildSectionContainer(
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: _availableAmenities.map((amenity) {
+          final isSelected = _selectedAmenities.contains(amenity);
+          return FilterChip(
+            label: Text(amenity),
+            selected: isSelected,
+            onSelected: (selected) {
+              setState(() {
+                if (selected) {
+                  _selectedAmenities.add(amenity);
+                } else {
+                  _selectedAmenities.remove(amenity);
+                }
+              });
+            },
+            selectedColor: AppColors.primaryDark.withValues(alpha: 0.2),
+            checkmarkColor: AppColors.primaryDark,
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildGallerySection() {
+    return _buildSectionContainer(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Gallery', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryDark)),
+              Text('${_selectedImages.length}/10 photos', style: const TextStyle(fontSize: 10, color: AppColors.secondary, fontWeight: FontWeight.bold)),
             ],
           ),
           const SizedBox(height: AppSpacing.md),
-          
           if (_selectedImages.isEmpty)
             GestureDetector(
               onTap: _pickImages,
@@ -414,100 +641,63 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
                 decoration: BoxDecoration(
                   color: AppColors.background,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFD3D8BE), style: BorderStyle.none), // We use dashed border visually if possible, but Container only supports solid. We'll use custom layout.
                 ),
                 child: Column(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                      ),
+                      decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), shape: BoxShape.circle),
                       child: const Icon(Icons.camera_alt_outlined, color: AppColors.primaryDark),
                     ),
                     const SizedBox(height: 12),
-                    const Text('Tap to add village photos', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryDark, fontSize: 12)),
-                    const SizedBox(height: 4),
-                    const Text('Living room, veranda, organic garden', style: TextStyle(color: AppColors.textSecondary, fontSize: 10)),
+                    const Text('Tap to add photos', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryDark, fontSize: 12)),
                   ],
                 ),
               ),
             )
           else
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
               children: [
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    for (int i = 0; i < _selectedImages.length; i++)
-                      Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.file(
-                              File(_selectedImages[i].path),
-                              width: 80,
-                              height: 80,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          Positioned(
-                            top: 4,
-                            right: 4,
-                            child: GestureDetector(
-                              onTap: () => _removeImage(i),
-                              child: Container(
-                                padding: const EdgeInsets.all(2),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.5),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(Icons.close, color: Colors.white, size: 14),
-                              ),
-                            ),
-                          ),
-                          if (i == 0)
-                            Positioned(
-                              bottom: 4,
-                              left: 4,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primaryDark,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Text('Cover', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
-                              ),
-                            ),
-                        ],
+                for (int i = 0; i < _selectedImages.length; i++)
+                  Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.file(File(_selectedImages[i].path), width: 80, height: 80, fit: BoxFit.cover),
                       ),
-                    
-                    if (_selectedImages.length < 10)
-                      GestureDetector(
-                        onTap: _pickImages,
-                        child: Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            color: AppColors.background,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.border),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: const [
-                              Icon(Icons.add, color: AppColors.textSecondary, size: 20),
-                              SizedBox(height: 4),
-                              Text('Add more', style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
-                            ],
+                      Positioned(
+                        top: 4, right: 4,
+                        child: GestureDetector(
+                          onTap: () => _removeImage(i),
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.5), shape: BoxShape.circle),
+                            child: const Icon(Icons.close, color: Colors.white, size: 14),
                           ),
                         ),
                       ),
-                  ],
-                ),
+                      if (i == 0)
+                        Positioned(
+                          bottom: 4, left: 4,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(color: AppColors.primaryDark, borderRadius: BorderRadius.circular(8)),
+                            child: const Text('Cover', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                    ],
+                  ),
+                if (_selectedImages.length < 10)
+                  GestureDetector(
+                    onTap: _pickImages,
+                    child: Container(
+                      width: 80, height: 80,
+                      decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+                      child: const Icon(Icons.add, color: AppColors.textSecondary),
+                    ),
+                  ),
               ],
             ),
         ],
@@ -516,59 +706,178 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
   }
 
   Widget _buildDescriptionSection() {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border, width: 0.5),
+    return _buildSectionContainer(
+      child: TextFormField(
+        controller: _descriptionController,
+        maxLines: 5,
+        maxLength: 500,
+        decoration: InputDecoration(
+          hintText: 'Describe your homestay...',
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          filled: true,
+          fillColor: Colors.white,
+        ),
+        validator: (value) => value == null || value.isEmpty ? 'Required' : null,
       ),
+    );
+  }
+
+  Widget _buildAvailabilitySection() {
+    final days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    return _buildSectionContainer(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          const Text('Select days when you accept bookings:', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: days.map((day) {
+              final isAvailable = _availableDays[day] ?? true;
+              return FilterChip(
+                label: Text(day.substring(0, 1).toUpperCase() + day.substring(1)),
+                selected: isAvailable,
+                onSelected: (val) => setState(() => _availableDays[day] = val),
+                selectedColor: AppColors.primaryDark.withValues(alpha: 0.2),
+                checkmarkColor: AppColors.primaryDark,
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUnavailableDatesSection() {
+    return _buildSectionContainer(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Select specific dates to block (blackout dates):', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              const Text('Description', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryDark)),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFAF1E3), // Warm yellow tint
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.secondary.withValues(alpha: 0.3)),
-                ),
-                child: Row(
-                  children: const [
-                    Icon(Icons.mic_none, size: 12, color: AppColors.secondary),
-                    SizedBox(width: 4),
-                    Text('Sinhala / English\nVoice', style: TextStyle(fontSize: 8, color: AppColors.secondary, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
-                  ],
-                ),
+              ..._unavailableDates.map((date) => Chip(
+                label: Text(DateFormat('MMM dd, yyyy').format(date)),
+                onDeleted: () => setState(() => _unavailableDates.remove(date)),
+              )),
+              ActionChip(
+                label: const Text('+ Add Date'),
+                onPressed: _selectUnavailableDate,
+                backgroundColor: AppColors.background,
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.md),
-          TextFormField(
-            controller: _descriptionController,
-            maxLines: 5,
-            decoration: InputDecoration(
-              hintText: 'Traditional eco-mud sanctuary surrounded by lush 30-acre fruit orchards...',
-              hintStyle: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.border),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.border),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.primaryDark),
-              ),
-              contentPadding: const EdgeInsets.all(12),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimesSection() {
+    return _buildSectionContainer(
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildFieldLabel('Check-in Time'),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  initialValue: _checkInTime,
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  items: _timeOptions.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+                  onChanged: (val) => setState(() => _checkInTime = val!),
+                ),
+              ],
             ),
-            validator: (value) => value == null || value.isEmpty ? 'Description is required' : null,
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildFieldLabel('Check-out Time'),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  initialValue: _checkOutTime,
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  items: _timeOptions.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+                  onChanged: (val) => setState(() => _checkOutTime = val!),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHouseRulesSection() {
+    return _buildSectionContainer(
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: _availableRules.map((rule) {
+          final isSelected = _selectedRules.contains(rule);
+          return FilterChip(
+            label: Text(rule),
+            selected: isSelected,
+            onSelected: (selected) {
+              setState(() {
+                if (selected) {
+                  _selectedRules.add(rule);
+                } else {
+                  _selectedRules.remove(rule);
+                }
+              });
+            },
+            selectedColor: AppColors.primaryDark.withValues(alpha: 0.2),
+            checkmarkColor: AppColors.primaryDark,
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildAddOnsSection() {
+    return _buildSectionContainer(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Offer optional extras (e.g. Meals, Activities)', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+          const SizedBox(height: 12),
+          if (_addOns.isNotEmpty)
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _addOns.length,
+              itemBuilder: (context, index) {
+                final addOn = _addOns[index];
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(addOn['title']),
+                  subtitle: Text('Rs. ${addOn['price']} / person'),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete_outline, color: AppColors.error),
+                    onPressed: () => setState(() => _addOns.removeAt(index)),
+                  ),
+                );
+              },
+            ),
+          OutlinedButton.icon(
+            onPressed: _showAddOnDialog,
+            icon: const Icon(Icons.add),
+            label: const Text('Add Optional Add-on'),
           ),
         ],
       ),
@@ -592,34 +901,17 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
     required String hintText,
     String? Function(String?)? validator,
     Widget? prefixIcon,
-    Widget? suffixIcon,
     TextInputType keyboardType = TextInputType.text,
   }) {
     return TextFormField(
       controller: controller,
       validator: validator,
       keyboardType: keyboardType,
-      style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
       decoration: InputDecoration(
         hintText: hintText,
-        hintStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
         prefixIcon: prefixIcon,
-        suffixIcon: suffixIcon,
-        prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-        suffixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 40),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.border, width: 1),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.border, width: 1),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primaryDark, width: 1.5),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
         fillColor: Colors.white,
       ),
