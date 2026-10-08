@@ -8,10 +8,11 @@ import '../../../../theme/app_spacing.dart';
 import 'widgets/analytics_stat_card.dart';
 import 'widgets/host_homestay_card.dart';
 import 'widgets/upcoming_booking_tile.dart';
+import '../promotions/my_promotions_screen.dart';
 import '../homestays/add_homestay_screen.dart';
 import '../homestays/update_homestay_screen.dart';
 import '../../common/homestays/homestay_details_screen.dart';
-import '../promotions/my_promotions_screen.dart';
+
 
 class HostHomeScreen extends StatelessWidget {
   const HostHomeScreen({super.key});
@@ -558,7 +559,12 @@ class HostHomeScreen extends StatelessWidget {
                 ),
               ),
               InkWell(
-                onTap: () {},
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const MyPromotionsScreen()),
+                  );
+                },
                 child: Row(
                   children: [
                     Text(

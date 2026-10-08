@@ -10,11 +10,16 @@ service cloud.firestore {
 
     // User profiles
     match /users/{uid} {
+
+      // Allow anyone to read profiles (needed for "Guided by" details)
       allow read: if true;
 
+      // User can create only their own profile
       allow create: if request.auth != null
                     && request.auth.uid == uid;
 
+      // User can update own profile without changing role
+      // OR admin can update any profile
       allow update: if request.auth != null
                     && (
                       (
@@ -25,6 +30,7 @@ service cloud.firestore {
                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"
                     );
 
+      // Currently disabled
       allow delete: if false;
     }
 
@@ -33,14 +39,21 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
-    // Homestays
+    // Homestays (Added from console)
     match /homestays/{document} {
+      // Anyone can view homestays
       allow read: if true;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.hostId;
-      allow update, delete: if request.auth != null && request.auth.uid == resource.data.hostId;
+
+      // Host can create their own homestay
+      allow create: if request.auth != null
+                    && request.auth.uid == request.resource.data.hostId;
+
+      // Only the owner can update/delete
+      allow update, delete: if request.auth != null
+                            && request.auth.uid == resource.data.hostId;
     }
 
-    // Tour Packages
+    // Tour Packages (Restored)
     match /tour_packages/{packageId} {
       allow read: if resource.data.status == 'active' || 
                     (request.auth != null && resource.data.guideId == request.auth.uid);
@@ -50,7 +63,7 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && resource.data.guideId == request.auth.uid;
     }
 
-    // Guide Bookings
+    // Guide Bookings (Restored)
     match /guide_bookings/{bookingId} {
       // Guides can read, update their own bookings
       allow read, update: if request.auth != null && resource.data.guideId == request.auth.uid;

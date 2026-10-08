@@ -9,8 +9,12 @@ class UserModel {
   final String? profileImageUrl;
   final String? country;
   final String? preferredLanguage;
+  final List<String>? languages;
+  final String? specialization;
+  final String? bio;
   final bool isActive;
   final bool isEmailVerified;
+  final bool isVerified;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -23,24 +27,41 @@ class UserModel {
     this.profileImageUrl,
     this.country,
     this.preferredLanguage,
+    this.languages,
+    this.specialization,
+    this.bio,
     this.isActive = true,
     this.isEmailVerified = false,
+    this.isVerified = false,
     this.createdAt,
     this.updatedAt,
   });
 
+  String get location => (country != null && country!.isNotEmpty) ? country! : '';
+
   factory UserModel.fromMap(Map<String, dynamic> map, String documentId) {
+    List<String>? parsedLanguages;
+    if (map['languages'] is List) {
+      parsedLanguages = (map['languages'] as List).map((e) => e.toString()).toList();
+    } else if (map['languages'] is String && (map['languages'] as String).isNotEmpty) {
+      parsedLanguages = (map['languages'] as String).split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    }
+
     return UserModel(
       uid: documentId,
       email: map['email'] ?? '',
       fullName: map['fullName'] ?? '',
       phoneNumber: map['phoneNumber'] ?? '',
       role: map['role'] ?? 'traveler',
-      profileImageUrl: map['profileImageUrl'],
-      country: map['country'],
+      profileImageUrl: map['profileImageUrl'] ?? map['profileImage'],
+      country: map['country'] ?? map['location'],
       preferredLanguage: map['preferredLanguage'],
+      languages: parsedLanguages,
+      specialization: map['specialization'] ?? map['guideType'],
+      bio: map['bio'] ?? map['description'],
       isActive: map['isActive'] ?? true,
       isEmailVerified: map['isEmailVerified'] ?? false,
+      isVerified: map['isVerified'] ?? map['verified'] ?? false,
       createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
       updatedAt: (map['updatedAt'] as Timestamp?)?.toDate(),
     );
@@ -55,8 +76,12 @@ class UserModel {
       'profileImageUrl': profileImageUrl,
       'country': country,
       'preferredLanguage': preferredLanguage,
+      if (languages != null) 'languages': languages,
+      if (specialization != null) 'specialization': specialization,
+      if (bio != null) 'bio': bio,
       'isActive': isActive,
       'isEmailVerified': isEmailVerified,
+      'isVerified': isVerified,
       'createdAt': createdAt != null
           ? Timestamp.fromDate(createdAt!)
           : FieldValue.serverTimestamp(),
