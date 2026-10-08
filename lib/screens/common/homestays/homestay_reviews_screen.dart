@@ -1,10 +1,13 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../theme/app_spacing.dart';
+import '../../../../services/cloudinary_service.dart';
 
 class HomestayReviewsScreen extends StatefulWidget {
   final String homestayId;
@@ -29,6 +32,9 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
   int _rating = 0;
   List<String> _selectedTags = [];
   bool _isSubmitting = false;
+  List<XFile> _selectedPhotos = [];
+  List<String> _existingPhotoUrls = [];
+  String _selectedFilter = 'All';
 
   final List<String> _availableTags = [
     'Hospitality',
@@ -39,6 +45,8 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
   ];
 
   String? _currentUserId;
+  final ScrollController _scrollController = ScrollController();
+  bool _isEditing = false;
 
   @override
   void initState() {
@@ -49,6 +57,7 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
   @override
   void dispose() {
     _reviewController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -59,6 +68,32 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
       } else {
         _selectedTags.add(tag);
       }
+    });
+  }
+
+  Future<void> _pickPhotos() async {
+    final ImagePicker picker = ImagePicker();
+    final List<XFile>? images = await picker.pickMultiImage();
+    if (images != null) {
+      if (_selectedPhotos.length + _existingPhotoUrls.length + images.length > 5) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Maximum 5 photos allowed.')));
+        return;
+      }
+      setState(() {
+        _selectedPhotos.addAll(images);
+      });
+    }
+  }
+
+  void _removePhoto(int index) {
+    setState(() {
+      _selectedPhotos.removeAt(index);
+    });
+  }
+  
+  void _removeExistingPhoto(int index) {
+    setState(() {
+      _existingPhotoUrls.removeAt(index);
     });
   }
 
@@ -84,13 +119,26 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
       final userDoc = await FirebaseFirestore.instance.collection('users').doc(_currentUserId).get();
       final userData = userDoc.data();
 
+      // Upload photos
+      List<String> finalPhotoUrls = List.from(_existingPhotoUrls);
+      if (_selectedPhotos.isNotEmpty) {
+        final cloudinaryService = CloudinaryService();
+        for (var photo in _selectedPhotos) {
+          final result = await cloudinaryService.uploadImage(photo);
+          if (result != null) {
+            finalPhotoUrls.add(result.secureUrl);
+          }
+        }
+      }
+
       final reviewData = {
         'userId': _currentUserId,
         'userName': userData?['fullName'] ?? 'Guest',
         'rating': _rating,
         'tags': _selectedTags,
         'reviewText': _reviewController.text,
-        'timestamp': FieldValue.serverTimestamp(),
+        'images': finalPhotoUrls,
+        'timestamp': FieldValue.serverTimestamp(), // Always update timestamp on edit
       };
 
       await FirebaseFirestore.instance
@@ -98,15 +146,18 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
           .doc(widget.homestayId)
           .collection('reviews')
           .doc(_currentUserId) // User can only have one review per homestay
-          .set(reviewData);
+          .set(reviewData, SetOptions(merge: true));
 
       if (!mounted) return;
       setState(() {
         _rating = 0;
         _selectedTags = [];
         _reviewController.clear();
+        _selectedPhotos = [];
+        _existingPhotoUrls = [];
+        _isEditing = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Review submitted successfully!')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_isEditing ? 'Review updated successfully!' : 'Review submitted successfully!')));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to submit review: $e')));
@@ -129,11 +180,31 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
           .doc(_currentUserId)
           .delete();
       if (!mounted) return;
+      setState(() {
+        _isEditing = false;
+        _rating = 0;
+        _selectedTags = [];
+        _reviewController.clear();
+        _selectedPhotos = [];
+        _existingPhotoUrls = [];
+      });
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Review deleted.')));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to delete review: $e')));
     }
+  }
+
+  void _editReview(Map<String, dynamic> data) {
+    setState(() {
+      _isEditing = true;
+      _rating = data['rating'] ?? 0;
+      _selectedTags = List<String>.from(data['tags'] ?? []);
+      _reviewController.text = data['reviewText'] ?? '';
+      _existingPhotoUrls = List<String>.from(data['images'] ?? []);
+      _selectedPhotos = [];
+    });
+    _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
   }
 
   @override
@@ -145,20 +216,53 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
           children: [
             _buildAppBar(),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildOverallRatingSection(),
-                    const SizedBox(height: AppSpacing.lg),
-                    _buildWriteReviewSection(),
-                    const SizedBox(height: AppSpacing.xl),
-                    _buildReviewList(),
-                  ],
-                ),
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('homestays')
+                    .doc(widget.homestayId)
+                    .collection('reviews')
+                    .orderBy('timestamp', descending: true)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  final reviews = snapshot.data?.docs ?? [];
+                  return SingleChildScrollView(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildOverallRatingSection(reviews),
+                        const SizedBox(height: AppSpacing.lg),
+                        _buildWriteReviewSection(),
+                        const SizedBox(height: AppSpacing.xl),
+                        _buildReviewList(reviews),
+                      ],
+                    ),
+                  );
+                }
               ),
             ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: Container(
+        decoration: const BoxDecoration(
+          border: Border(top: BorderSide(color: AppColors.border, width: 0.5)),
+          color: Colors.white,
+        ),
+        child: BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: Colors.white,
+          selectedItemColor: AppColors.primaryDark,
+          unselectedItemColor: AppColors.textSecondary,
+          selectedFontSize: 10,
+          unselectedFontSize: 10,
+          currentIndex: 1, // Assume Explore is selected since we're viewing a homestay
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
+            BottomNavigationBarItem(icon: Icon(Icons.explore_outlined), label: 'Explore'),
+            BottomNavigationBarItem(icon: Icon(Icons.calendar_today_outlined), label: 'Bookings'),
+            BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
           ],
         ),
       ),
@@ -215,7 +319,27 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
     );
   }
 
-  Widget _buildOverallRatingSection() {
+  Widget _buildOverallRatingSection(List<QueryDocumentSnapshot> reviews) {
+    int totalReviews = reviews.length;
+    double averageRating = 0;
+    
+    if (totalReviews > 0) {
+      double sum = 0;
+      for (var doc in reviews) {
+        final data = doc.data() as Map<String, dynamic>;
+        sum += (data['rating'] ?? 0).toDouble();
+      }
+      averageRating = sum / totalReviews;
+    }
+
+    // Mock category scores for demonstration based on overall average, bounded
+    double baseScore = averageRating > 0 ? averageRating : 5.0;
+    double hospitality = baseScore > 4.9 ? 5.0 : baseScore + 0.1;
+    double authenticity = baseScore;
+    double food = baseScore;
+    double cleanliness = baseScore > 1 ? baseScore - 0.1 : baseScore;
+    double value = baseScore;
+
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
@@ -234,9 +358,9 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Text(
-                        '4.9',
-                        style: TextStyle(
+                      Text(
+                        totalReviews > 0 ? averageRating.toStringAsFixed(1) : '0.0',
+                        style: const TextStyle(
                           fontSize: 36,
                           fontWeight: FontWeight.bold,
                           color: AppColors.primaryDark,
@@ -245,12 +369,12 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
                       ),
                       const SizedBox(width: 8),
                       Row(
-                        children: List.generate(5, (index) => const Icon(Icons.star, color: Colors.amber, size: 18)),
+                        children: List.generate(5, (index) => Icon(Icons.star, color: index < averageRating.round() ? Colors.amber : AppColors.border, size: 18)),
                       ),
                     ],
                   ),
                   const SizedBox(height: 4),
-                  const Text('128 verified guest reviews', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                  Text('$totalReviews verified guest reviews', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                 ],
               ),
               Container(
@@ -278,11 +402,11 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
             ],
           ),
           const SizedBox(height: 24),
-          _buildRatingBar('Hospitality & Warmth', 5.0),
-          _buildRatingBar('Authenticity & Culture', 4.9),
-          _buildRatingBar('Claypot Food & Dining', 4.9),
-          _buildRatingBar('Mudhouse Cleanliness', 4.8),
-          _buildRatingBar('Value for Money', 4.9),
+          _buildRatingBar('Hospitality & Warmth', hospitality > 5.0 ? 5.0 : hospitality),
+          _buildRatingBar('Authenticity & Culture', authenticity),
+          _buildRatingBar('Claypot Food & Dining', food),
+          _buildRatingBar('Mudhouse Cleanliness', cleanliness),
+          _buildRatingBar('Value for Money', value),
         ],
       ),
     );
@@ -311,7 +435,7 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Text(rating.toString(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primaryDark)),
+                Text(rating.toStringAsFixed(1), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primaryDark)),
               ],
             ),
           ),
@@ -452,30 +576,67 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
           const SizedBox(height: AppSpacing.lg),
           const Text('Add photos of your stay / meals (Max 5):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primaryDark)),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: Container(
-                  height: 100,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: const Color(0xFFE0D8C3), style: BorderStyle.solid), // Dashed normally, but solid for simplicity
-                    borderRadius: BorderRadius.circular(12),
-                    color: Colors.white,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Icon(Icons.camera_alt_outlined, color: AppColors.textSecondary),
-                      SizedBox(height: 4),
-                      Text('+ Add more photos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primaryDark)),
-                      Text('JPEG, PNG up to 10MB', style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
-                    ],
-                  ),
-                ),
+          if (_existingPhotoUrls.isNotEmpty || _selectedPhotos.isNotEmpty) ...[
+            SizedBox(
+              height: 100,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  ..._existingPhotoUrls.asMap().entries.map((entry) => _buildPhotoPreview(
+                        url: entry.value,
+                        onRemove: () => _removeExistingPhoto(entry.key),
+                      )),
+                  ..._selectedPhotos.asMap().entries.map((entry) => _buildPhotoPreview(
+                        file: entry.value,
+                        onRemove: () => _removePhoto(entry.key),
+                      )),
+                ],
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 8),
+          ],
+          if (_existingPhotoUrls.length + _selectedPhotos.length < 5)
+            GestureDetector(
+              onTap: _pickPhotos,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      height: 100,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: const Color(0xFFE0D8C3), style: BorderStyle.solid),
+                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.white,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.camera_alt_outlined, color: AppColors.textSecondary),
+                          SizedBox(height: 4),
+                          Text('+ Add more photos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primaryDark)),
+                          Text('JPEG, PNG up to 10MB', style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           const SizedBox(height: AppSpacing.lg),
+          if (_isEditing)
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _isEditing = false;
+                  _rating = 0;
+                  _selectedTags = [];
+                  _reviewController.clear();
+                  _selectedPhotos = [];
+                  _existingPhotoUrls = [];
+                });
+              },
+              child: const Center(child: Text('Cancel Edit', style: TextStyle(color: Colors.red))),
+            ),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -487,7 +648,7 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
               ),
               child: _isSubmitting 
                   ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Text('Submit Guest Review →', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  : Text(_isEditing ? 'Update Guest Review →' : 'Submit Guest Review →', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ),
         ],
@@ -495,7 +656,67 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
     );
   }
 
-  Widget _buildReviewList() {
+  Widget _buildPhotoPreview({String? url, XFile? file, required VoidCallback onRemove}) {
+    return Container(
+      width: 100,
+      margin: const EdgeInsets.only(right: 8),
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: url != null 
+              ? Image.network(url, width: 100, height: 100, fit: BoxFit.cover)
+              : Image.file(File(file!.path), width: 100, height: 100, fit: BoxFit.cover),
+          ),
+          Positioned(
+            top: 4,
+            right: 4,
+            child: GestureDetector(
+              onTap: onRemove,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: Colors.black54,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close, color: Colors.white, size: 14),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReviewList(List<QueryDocumentSnapshot> allReviews) {
+    int photoReviewsCount = allReviews.where((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      final images = data['images'] as List<dynamic>? ?? [];
+      return images.isNotEmpty;
+    }).length;
+
+    List<QueryDocumentSnapshot> filteredReviews = List.from(allReviews);
+
+    if (_selectedFilter == 'With Photos') {
+      filteredReviews = filteredReviews.where((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        final images = data['images'] as List<dynamic>? ?? [];
+        return images.isNotEmpty;
+      }).toList();
+    } else if (_selectedFilter == 'Highest Rated') {
+      filteredReviews.sort((a, b) {
+        final aRating = (a.data() as Map<String, dynamic>)['rating'] ?? 0;
+        final bRating = (b.data() as Map<String, dynamic>)['rating'] ?? 0;
+        return bRating.compareTo(aRating);
+      });
+    } else if (_selectedFilter == 'Lowest Rated') {
+      filteredReviews.sort((a, b) {
+        final aRating = (a.data() as Map<String, dynamic>)['rating'] ?? 0;
+        final bRating = (b.data() as Map<String, dynamic>)['rating'] ?? 0;
+        return aRating.compareTo(bRating);
+      });
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -511,61 +732,50 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
           scrollDirection: Axis.horizontal,
           child: Row(
             children: [
-              _buildFilterChip('All (128)', true),
-              _buildFilterChip('With Photos (42)', false),
-              _buildFilterChip('Highest Rated', false),
-              _buildFilterChip('Lowest Rated', false),
+              _buildFilterChip('All (${allReviews.length})', 'All'),
+              _buildFilterChip('With Photos ($photoReviewsCount)', 'With Photos'),
+              _buildFilterChip('Highest Rated', 'Highest Rated'),
+              _buildFilterChip('Lowest Rated', 'Lowest Rated'),
             ],
           ),
         ),
         const SizedBox(height: 16),
-        StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection('homestays')
-              .doc(widget.homestayId)
-              .collection('reviews')
-              .orderBy('timestamp', descending: true)
-              .snapshots(),
-          builder: (context, snapshot) {
-            if (snapshot.hasError) {
-              return Text('Error: ${snapshot.error}');
-            }
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            final reviews = snapshot.data?.docs ?? [];
-            if (reviews.isEmpty) {
-              return const Center(child: Padding(
-                padding: EdgeInsets.all(24.0),
-                child: Text('No reviews yet. Be the first to review!'),
-              ));
-            }
-
-            return Column(
-              children: reviews.map((doc) => _buildReviewCard(doc)).toList(),
-            );
-          },
-        ),
+        if (filteredReviews.isEmpty)
+          const Center(child: Padding(
+            padding: EdgeInsets.all(24.0),
+            child: Text('No reviews found for this filter.'),
+          ))
+        else
+          Column(
+            children: filteredReviews.map((doc) => _buildReviewCard(doc)).toList(),
+          ),
       ],
     );
   }
 
-  Widget _buildFilterChip(String label, bool isSelected) {
-    return Container(
-      margin: const EdgeInsets.only(right: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: isSelected ? const Color(0xFF1E6B52) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: isSelected ? const Color(0xFF1E6B52) : AppColors.border),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: isSelected ? Colors.white : AppColors.textSecondary,
-          fontSize: 12,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+  Widget _buildFilterChip(String label, String filterValue) {
+    bool isSelected = _selectedFilter == filterValue;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedFilter = filterValue;
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF1E6B52) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: isSelected ? const Color(0xFF1E6B52) : AppColors.border),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : AppColors.textSecondary,
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
         ),
       ),
     );
@@ -580,6 +790,8 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
       timestamp = (data['timestamp'] as Timestamp).toDate();
     }
     final formattedDate = DateFormat('MMM yyyy').format(timestamp);
+    
+    final images = data['images'] as List<dynamic>? ?? [];
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -639,6 +851,11 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
                   if (isMyReview) ...[
                     const SizedBox(width: 8),
                     GestureDetector(
+                      onTap: () => _editReview(data),
+                      child: const Icon(Icons.edit_outlined, color: Color(0xFF1E6B52), size: 20),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
                       onTap: _deleteReview,
                       child: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
                     ),
@@ -652,6 +869,25 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
             '"${data['reviewText'] ?? ''}"',
             style: const TextStyle(fontSize: 13, height: 1.5, color: AppColors.primaryDark),
           ),
+          if (images.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 80,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: images.length,
+                itemBuilder: (context, index) {
+                  return Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(images[index], width: 80, height: 80, fit: BoxFit.cover),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
           if (data['hostResponse'] != null && data['hostResponse'].toString().isNotEmpty) ...[
             const SizedBox(height: 12),
             Container(
