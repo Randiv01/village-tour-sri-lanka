@@ -20,6 +20,7 @@ import '../destinations/explore_destinations_screen.dart';
 import '../destinations/destination_details_screen.dart';
 import '../../common/auth/auth_guard.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../common/homestays/homestay_details_screen.dart';
 
 class TravelerHomeScreen extends StatefulWidget {
   final VoidCallback? onProfileTap;
@@ -739,24 +740,63 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
           subtitle: 'Stay with verified rural artisan families',
         ),
         const SizedBox(height: AppSpacing.md),
-        const HomestayCard(
-          title: 'Nilagama Traditional Mud House',
-          location: 'Nilagama, Bambaragaswewa, Galewela',
-          rating: '4.9',
-          reviews: '(48)',
-          price: 'Rs. 3,500',
-          features: ['Organic Farm & Bullock Cart', 'Catamaran Lake Ride'],
-          imagePath: 'assets/images/onboarding/onboarding_01.png',
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        const HomestayCard(
-          title: 'Lakeside Eco Sanctuary & Camp',
-          location: 'Bats Lake, Galewela, Central Province',
-          rating: '4.8',
-          reviews: '(34)',
-          price: 'Rs. 4,500',
-          features: ['Camping', 'Bird Watching'],
-          imagePath: 'assets/images/onboarding/onboarding_02.png',
+        StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance.collection('homestays').where('status', isEqualTo: 'Active').snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return const Padding(
+                padding: EdgeInsets.all(AppSpacing.lg),
+                child: Text('Error loading homestays'),
+              );
+            }
+
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Padding(
+                padding: EdgeInsets.all(AppSpacing.xxl),
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+
+            final docs = snapshot.data?.docs ?? [];
+            if (docs.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                child: Text('No homestays available right now.', style: TextStyle(color: AppColors.textSecondary)),
+              );
+            }
+
+            return Column(
+              children: docs.map((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                final images = List<String>.from(data['images'] ?? []);
+                final imageUrl = images.isNotEmpty ? images.first : 'https://i.pravatar.cc/300';
+                
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+                  child: HomestayCard(
+                    title: data['title'] ?? 'Homestay',
+                    location: data['location'] ?? 'Location',
+                    rating: '4.9',
+                    reviews: '(0)',
+                    price: 'Rs. ${data['pricePerNight'] ?? 0}',
+                    features: const ['Verified Host', 'Nature & Village'],
+                    imagePath: imageUrl,
+                    onViewDetailsTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => HomestayDetailsScreen(
+                            homestayId: doc.id,
+                            homestayData: data,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              }).toList(),
+            );
+          },
         ),
       ],
     );
