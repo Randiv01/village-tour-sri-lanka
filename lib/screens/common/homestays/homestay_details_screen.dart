@@ -9,8 +9,6 @@ import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../theme/app_spacing.dart';
 import '../auth/auth_guard.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../models/homestay.dart';
 import '../../../../models/homestay_booking.dart';
 import '../../../../repositories/homestay_repository.dart';
@@ -36,12 +34,9 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
   int _currentImageIndex = 0;
   final _homestayRepo = HomestayRepository();
   final _bookingRepo = HomestayBookingRepository();
-  final _auth = FirebaseAuth.instance;
-  final _firestore = FirebaseFirestore.instance;
 
   Homestay? _homestay;
   Map<String, dynamic>? _hostData;
-  List<String> _images = [];
   List<HomestayBooking> _activeBookings = [];
   bool _isLoading = true;
   bool _isFavorite = false;
@@ -540,10 +535,6 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
         const Divider(height: 1, color: AppColors.border),
       ],
     );
-        ),
-        const Divider(height: 1, color: AppColors.border),
-      ],
-    );
   }
 
   Future<void> _handleMessageHost() async {
@@ -573,7 +564,7 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
       return;
     }
 
-    final hostId = widget.homestayData['hostId'];
+    final hostId = _homestay?.hostId;
     if (hostId == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Host information not available.')));
       return;
@@ -593,9 +584,9 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
             hostName: hostInfo['fullName'] ?? 'Host',
             hostImage: hostInfo['profileImage'] ?? hostInfo['profileImageUrl'] ?? '',
             hostLanguages: hostInfo['languages'] != null ? (hostInfo['languages'] as List).join(' & ') : 'English',
-            homestayId: widget.homestayData['id'] ?? 'unknown_id',
-            homestayTitle: widget.homestayData['title'] ?? 'Homestay',
-            homestayPrice: 'Rs. ${widget.homestayData['pricePerNight'] ?? 0}/night',
+            homestayId: _homestay?.id ?? 'unknown_id',
+            homestayTitle: _homestay?.title ?? 'Homestay',
+            homestayPrice: 'Rs. ${_homestay?.pricePerNight ?? 0}/night',
           ),
         ),
       );
