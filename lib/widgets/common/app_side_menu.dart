@@ -5,6 +5,9 @@ import '../../theme/app_text_styles.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_radius.dart';
 import '../../screens/traveler/experiences/buffet_lunch_experience_screen.dart';
+import '../../screens/traveler/experiences/cookery_experience_screen.dart';
+import '../../screens/traveler/profile/settings_screen.dart';
+import '../../screens/traveler/packages/traveler_tour_packages_screen.dart';
 
 class AppSideMenu extends StatelessWidget {
   const AppSideMenu({super.key});
@@ -121,11 +124,29 @@ class AppSideMenu extends StatelessWidget {
                     Icons.menu_book,
                     'Cookery Experience',
                     'Clay-pot curries & coconut grinding',
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const CookeryExperienceScreen(),
+                        ),
+                      );
+                    },
                   ),
                   _buildMenuItem(
                     Icons.explore,
-                    'Tour Guides and Vehicles',
-                    'Catamaran rides, Bullock cart & Crafts',
+                    'Tour Packages & Guides',
+                    'Discover authentic village experiences',
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const TravelerTourPackagesScreen(),
+                        ),
+                      );
+                    },
                   ),
                   _buildMenuItem(
                     Icons.image_outlined,
@@ -156,6 +177,15 @@ class AppSideMenu extends StatelessWidget {
                     Icons.settings_outlined,
                     'Settings & Privacy',
                     '',
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SettingsScreen(),
+                        ),
+                      );
+                    },
                   ),
 
                   const SizedBox(height: AppSpacing.xxl),
