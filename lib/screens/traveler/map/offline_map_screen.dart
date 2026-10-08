@@ -11,6 +11,8 @@ import '../../../../theme/app_spacing.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../utils/cloudinary_utils.dart';
 import '../destinations/destination_details_screen.dart';
+import '../../common/homestays/homestay_details_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CachedTileProvider extends TileProvider {
   CachedTileProvider();
@@ -38,6 +40,10 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
 
   List<Destination> _destinations = [];
   Destination? _selectedDest;
+  
+  List<Map<String, dynamic>> _homestays = [];
+  Map<String, dynamic>? _selectedHomestay;
+
   bool _isLoading = true;
   Position? _currentPosition;
   bool _locationPermissionDenied = false;
@@ -57,8 +63,17 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
   Future<void> _loadData() async {
     try {
       final dests = await _repository.getActiveDestinationsStream().first;
+      final homestaysSnapshot = await FirebaseFirestore.instance.collection('homestays').where('status', isEqualTo: 'Active').get();
+      
+      final loadedHomestays = homestaysSnapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return data;
+      }).where((d) => d['latitude'] != null && d['longitude'] != null).toList();
+
       setState(() {
         _destinations = dests.where((d) => d.latitude != null && d.longitude != null).toList();
+        _homestays = loadedHomestays;
         _isLoading = false;
       });
     } catch (e) {
@@ -102,6 +117,7 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
   void _showAllDestinations() {
     setState(() {
       _selectedDest = null;
+      _selectedHomestay = null;
     });
     _mapController.move(_sriLankaCenter, _defaultZoom);
   }
@@ -255,6 +271,127 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
     );
   }
 
+  void _showHomestayInfo(Map<String, dynamic> homestay) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildHomestayBottomInfoCard(homestay),
+    );
+  }
+
+  Widget _buildHomestayBottomInfoCard(Map<String, dynamic> homestay) {
+    final images = List<String>.from(homestay['images'] ?? []);
+    String imageUrl = images.isNotEmpty ? images.first : '';
+    imageUrl = CloudinaryUtils.getOptimizedUrl(imageUrl, width: 200, height: 200);
+
+    return Container(
+      margin: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          )
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              if (imageUrl.isNotEmpty)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    imageUrl,
+                    width: 60,
+                    height: 60,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.home, size: 40),
+                  ),
+                )
+              else
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: AppColors.softSecondarySurface,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.home, color: AppColors.textSecondary),
+                ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      homestay['title'] ?? 'Homestay',
+                      style: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.bold),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.location_on, size: 14, color: AppColors.secondary),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            homestay['location'] ?? 'Location',
+                            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.secondary),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            homestay['description'] ?? '',
+            style: AppTextStyles.bodyMedium,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.purple,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: () {
+                Navigator.pop(context); // Close bottom sheet
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => HomestayDetailsScreen(
+                      homestayId: homestay['id'],
+                      homestayData: homestay,
+                    ),
+                  ),
+                );
+              },
+              child: const Text('View Homestay', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -331,25 +468,68 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
                         ],
                       ),
                     MarkerLayer(
-                      markers: _destinations.map((dest) {
-                        final isSelected = _selectedDest?.id == dest.id;
-                        return Marker(
-                          point: LatLng(dest.latitude!, dest.longitude!),
-                          width: isSelected ? 50 : 40,
-                          height: isSelected ? 50 : 40,
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() => _selectedDest = dest);
-                              _showDestinationInfo(dest);
-                            },
-                            child: Icon(
-                              Icons.location_on,
-                              color: isSelected ? AppColors.primaryDark : AppColors.primary,
-                              size: isSelected ? 50 : 40,
+                      markers: [
+                        ..._destinations.map((dest) {
+                          final isSelected = _selectedDest?.id == dest.id;
+                          return Marker(
+                            point: LatLng(dest.latitude!, dest.longitude!),
+                            width: isSelected ? 50 : 40,
+                            height: isSelected ? 50 : 40,
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _selectedDest = dest;
+                                  _selectedHomestay = null;
+                                });
+                                _showDestinationInfo(dest);
+                              },
+                              child: Icon(
+                                Icons.location_on,
+                                color: isSelected ? AppColors.primaryDark : AppColors.primary,
+                                size: isSelected ? 50 : 40,
+                              ),
                             ),
-                          ),
-                        );
-                      }).toList(),
+                          );
+                        }),
+                        ..._homestays.map((homestay) {
+                          final isSelected = _selectedHomestay?['id'] == homestay['id'];
+                          return Marker(
+                            point: LatLng(
+                              (homestay['latitude'] as num).toDouble(),
+                              (homestay['longitude'] as num).toDouble()
+                            ),
+                            width: isSelected ? 50 : 40,
+                            height: isSelected ? 50 : 40,
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _selectedHomestay = homestay;
+                                  _selectedDest = null;
+                                });
+                                _showHomestayInfo(homestay);
+                              },
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.location_on,
+                                    color: isSelected ? Colors.deepPurple : Colors.purple,
+                                    size: isSelected ? 50 : 40,
+                                  ),
+                                  Positioned(
+                                    top: isSelected ? 10 : 8,
+                                    child: Icon(
+                                      Icons.home,
+                                      color: Colors.white,
+                                      size: isSelected ? 16 : 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }),
+                      ],
                     ),
                   ],
                 ),

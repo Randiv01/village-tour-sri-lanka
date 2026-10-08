@@ -3,7 +3,15 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+
+import '../../../../theme/app_colors.dart';
+import '../../../../theme/app_text_styles.dart';
 
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
@@ -72,6 +80,10 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
   final ImagePicker _picker = ImagePicker();
   final List<XFile> _selectedImages = [];
   final CloudinaryService _cloudinaryService = CloudinaryService();
+
+  // Map Location
+  LatLng? _selectedLocationPoint;
+  final MapController _mapController = MapController();
 
   bool _isSaving = false;
 
@@ -213,6 +225,8 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
         title: _titleController.text.trim(),
         propertyType: _propertyType,
         location: _locationController.text.trim(),
+        latitude: _selectedLocationPoint?.latitude,
+        longitude: _selectedLocationPoint?.longitude,
         description: _descriptionController.text.trim(),
         pricePerNight: double.tryParse(_priceController.text.trim()) ?? 0.0,
         rooms: int.tryParse(_roomsController.text.trim()) ?? 1,
@@ -296,15 +310,17 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
                   children: [
                     _buildSectionHeader('1. Basic Information'),
                     _buildBasicInfoSection(),
-                    
+                  children: [
+                    _buildSectionHeader('1. Basic Information'),
+                    _buildBasicInfoSection(),
+                    const SizedBox(height: AppSpacing.lg),
+                    _buildMapSection(),
                     const SizedBox(height: AppSpacing.xl),
                     _buildSectionHeader('2. Accommodation'),
                     _buildAccommodationSection(),
-                    
                     const SizedBox(height: AppSpacing.xl),
                     _buildSectionHeader('3. Amenities'),
                     _buildAmenitiesSection(),
-
                     const SizedBox(height: AppSpacing.xl),
                     _buildSectionHeader('4. Gallery'),
                     _buildGallerySection(),
@@ -525,6 +541,68 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
     );
   }
 
+  Widget _buildMapSection() {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border, width: 0.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Pin Location', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryDark)),
+              if (_selectedLocationPoint != null)
+                const Icon(Icons.check_circle, size: 16, color: Colors.green),
+            ],
+          ),
+          const SizedBox(height: 4),
+          const Text('Tap on the map to set your homestay location', style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+          const SizedBox(height: AppSpacing.md),
+          SizedBox(
+            height: 200,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: FlutterMap(
+                mapController: _mapController,
+                options: MapOptions(
+                  initialCenter: const LatLng(7.8731, 80.7718),
+                  initialZoom: 7.0,
+                  onTap: (tapPosition, point) {
+                    setState(() {
+                      _selectedLocationPoint = point;
+                    });
+                  },
+                ),
+                children: [
+                  TileLayer(
+                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.villagetoursrilanka.app',
+                  ),
+                  if (_selectedLocationPoint != null)
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: _selectedLocationPoint!,
+                          width: 40,
+                          height: 40,
+                          child: const Icon(Icons.location_on, color: AppColors.primary, size: 40),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAmenitiesSection() {
     return _buildSectionContainer(
       child: Wrap(
@@ -548,6 +626,9 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
             checkmarkColor: AppColors.primaryDark,
           );
         }).toList(),
+      ),
+    );
+  }
       ),
     );
   }

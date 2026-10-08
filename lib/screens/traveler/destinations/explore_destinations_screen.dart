@@ -9,8 +9,11 @@ import '../../../../theme/app_spacing.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../utils/cloudinary_utils.dart';
 import '../../../../widgets/cards/destination_card.dart';
+import '../../../../widgets/cards/homestay_card.dart';
 import '../map/offline_map_screen.dart';
 import 'destination_details_screen.dart';
+import '../../common/homestays/homestay_details_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ExploreDestinationsScreen extends StatefulWidget {
   const ExploreDestinationsScreen({super.key});
@@ -27,6 +30,7 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
   String _searchQuery = '';
   String? _selectedLocation;
   bool _popularOnly = false;
+  bool _showHomestays = false;
   String _sortBy = 'Recommended';
 
   int get _activeFilterCount {
@@ -410,9 +414,64 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
                 ),
               ),
 
-              // Filters Row
+              // Tabs (Destinations / Homestays)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() => _showHomestays = false),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            decoration: BoxDecoration(
+                              color: !_showHomestays ? AppColors.softSecondarySurface : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Destinations',
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.labelLarge.copyWith(
+                                color: !_showHomestays ? AppColors.primaryDark : AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() => _showHomestays = true),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            decoration: BoxDecoration(
+                              color: _showHomestays ? AppColors.softSecondarySurface : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Homestays',
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.labelLarge.copyWith(
+                                color: _showHomestays ? AppColors.primaryDark : AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Filters Row
+              if (!_showHomestays)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
                 child: Row(
                   children: [
                     Expanded(
@@ -493,18 +552,20 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
 
               // Grid
               Expanded(
-                child: filteredDestinations.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text(
-                              'No destinations found\nTry a different search or adjust your filters.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: AppColors.textSecondary),
-                            ),
-                            const SizedBox(height: AppSpacing.md),
-                            TextButton(
+                child: _showHomestays
+                    ? _buildHomestaysGrid()
+                    : filteredDestinations.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Text(
+                                  'No destinations found\nTry a different search or adjust your filters.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: AppColors.textSecondary),
+                                ),
+                                const SizedBox(height: AppSpacing.md),
+                                TextButton(
                               onPressed: () {
                                 _searchController.clear();
                                 setState(() {
@@ -575,6 +636,95 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildHomestaysGrid() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('homestays').where('status', isEqualTo: 'Active').snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return const Center(child: Text('Error loading homestays.'));
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final docs = snapshot.data?.docs ?? [];
+        
+        var filteredDocs = docs;
+        if (_searchQuery.isNotEmpty) {
+          final q = _searchQuery.toLowerCase();
+          filteredDocs = docs.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            final title = (data['title'] as String? ?? '').toLowerCase();
+            final location = (data['location'] as String? ?? '').toLowerCase();
+            return title.contains(q) || location.contains(q);
+          }).toList();
+        }
+
+        if (filteredDocs.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  _searchQuery.isNotEmpty ? 'No homestays found for "$_searchQuery".' : 'No homestays available right now.',
+                  style: const TextStyle(color: AppColors.textSecondary),
+                ),
+                if (_searchQuery.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  TextButton(
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() {
+                        _searchQuery = '';
+                      });
+                    },
+                    child: const Text('Clear Search'),
+                  ),
+                ],
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+          itemCount: filteredDocs.length,
+          itemBuilder: (context, index) {
+            final doc = filteredDocs[index];
+            final data = doc.data() as Map<String, dynamic>;
+            final images = List<String>.from(data['images'] ?? []);
+            final imageUrl = images.isNotEmpty ? images.first : 'https://i.pravatar.cc/300';
+            
+            return Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+              child: HomestayCard(
+                title: data['title'] ?? 'Homestay',
+                location: data['location'] ?? 'Location',
+                rating: '4.9',
+                reviews: '(0)',
+                price: 'Rs. ${data['pricePerNight'] ?? 0}',
+                features: const ['Verified Host', 'Nature & Village'],
+                imagePath: imageUrl,
+                onViewDetailsTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => HomestayDetailsScreen(
+                        homestayId: doc.id,
+                        homestayData: data,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
