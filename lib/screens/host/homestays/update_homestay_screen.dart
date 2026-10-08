@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
@@ -40,6 +42,10 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
   List<String> _networkImages = [];
   final List<XFile> _selectedLocalImages = [];
 
+  // Map Location
+  LatLng? _selectedLocationPoint;
+  final MapController _mapController = MapController();
+
   bool _isSaving = false;
   bool _isDeleting = false;
 
@@ -52,6 +58,13 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
     
     if (widget.homestayData['images'] != null) {
       _networkImages = List<String>.from(widget.homestayData['images']);
+    }
+    
+    if (widget.homestayData['latitude'] != null && widget.homestayData['longitude'] != null) {
+      _selectedLocationPoint = LatLng(
+        (widget.homestayData['latitude'] as num).toDouble(),
+        (widget.homestayData['longitude'] as num).toDouble(),
+      );
     }
   }
 
@@ -179,6 +192,8 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
       final updates = {
         'title': _titleController.text.trim(),
         'pricePerNight': double.tryParse(_priceController.text.trim()) ?? 0.0,
+        'latitude': _selectedLocationPoint?.latitude,
+        'longitude': _selectedLocationPoint?.longitude,
         'images': allImageUrls,
         'status': _isAvailable ? 'Active' : 'Inactive',
         'updatedAt': FieldValue.serverTimestamp(),
@@ -225,6 +240,8 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
                     _buildAvailabilitySection(),
                     const SizedBox(height: AppSpacing.lg),
                     _buildTitleSection(),
+                    const SizedBox(height: AppSpacing.lg),
+                    _buildMapSection(),
                     const SizedBox(height: AppSpacing.lg),
                     _buildPriceSection(),
                     const SizedBox(height: AppSpacing.lg),
@@ -486,6 +503,68 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
               child: const Text('/ night', style: TextStyle(fontSize: 12, color: AppColors.primaryDark, fontWeight: FontWeight.bold)),
             ),
             validator: (value) => value == null || value.isEmpty ? 'Price is required' : null,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMapSection() {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border, width: 0.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Pin Location', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryDark)),
+              if (_selectedLocationPoint != null)
+                const Icon(Icons.check_circle, size: 16, color: Colors.green),
+            ],
+          ),
+          const SizedBox(height: 4),
+          const Text('Tap on the map to update your homestay location', style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+          const SizedBox(height: AppSpacing.md),
+          SizedBox(
+            height: 200,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: FlutterMap(
+                mapController: _mapController,
+                options: MapOptions(
+                  initialCenter: _selectedLocationPoint ?? const LatLng(7.8731, 80.7718),
+                  initialZoom: _selectedLocationPoint != null ? 12.0 : 7.0,
+                  onTap: (tapPosition, point) {
+                    setState(() {
+                      _selectedLocationPoint = point;
+                    });
+                  },
+                ),
+                children: [
+                  TileLayer(
+                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.villagetoursrilanka.app',
+                  ),
+                  if (_selectedLocationPoint != null)
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: _selectedLocationPoint!,
+                          width: 40,
+                          height: 40,
+                          child: const Icon(Icons.location_on, color: AppColors.primary, size: 40),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
           ),
         ],
       ),

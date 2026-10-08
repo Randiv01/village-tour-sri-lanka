@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
@@ -32,6 +34,10 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
   final ImagePicker _picker = ImagePicker();
   final List<XFile> _selectedImages = [];
   final CloudinaryService _cloudinaryService = CloudinaryService();
+
+  // Map Location
+  LatLng? _selectedLocationPoint;
+  final MapController _mapController = MapController();
 
   bool _isSaving = false;
 
@@ -113,6 +119,8 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
       final homestayData = {
         'title': _titleController.text.trim(),
         'location': _locationController.text.trim(),
+        'latitude': _selectedLocationPoint?.latitude,
+        'longitude': _selectedLocationPoint?.longitude,
         'pricePerNight': double.tryParse(_priceController.text.trim()) ?? 0.0,
         'roomsCount': int.tryParse(_roomsController.text.trim()) ?? 1,
         'maxGuests': int.tryParse(_guestsController.text.trim()) ?? 1,
@@ -221,6 +229,8 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
                 child: Column(
                   children: [
                     _buildBasicInfoSection(),
+                    const SizedBox(height: AppSpacing.lg),
+                    _buildMapSection(),
                     const SizedBox(height: AppSpacing.lg),
                     _buildGallerySection(),
                     const SizedBox(height: AppSpacing.lg),
@@ -373,6 +383,68 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMapSection() {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border, width: 0.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Pin Location', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryDark)),
+              if (_selectedLocationPoint != null)
+                const Icon(Icons.check_circle, size: 16, color: Colors.green),
+            ],
+          ),
+          const SizedBox(height: 4),
+          const Text('Tap on the map to set your homestay location', style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+          const SizedBox(height: AppSpacing.md),
+          SizedBox(
+            height: 200,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: FlutterMap(
+                mapController: _mapController,
+                options: MapOptions(
+                  initialCenter: const LatLng(7.8731, 80.7718),
+                  initialZoom: 7.0,
+                  onTap: (tapPosition, point) {
+                    setState(() {
+                      _selectedLocationPoint = point;
+                    });
+                  },
+                ),
+                children: [
+                  TileLayer(
+                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.villagetoursrilanka.app',
+                  ),
+                  if (_selectedLocationPoint != null)
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: _selectedLocationPoint!,
+                          width: 40,
+                          height: 40,
+                          child: const Icon(Icons.location_on, color: AppColors.primary, size: 40),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
