@@ -9,13 +9,16 @@ import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../theme/app_spacing.dart';
 import '../auth/auth_guard.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../models/homestay.dart';
 import '../../../../models/homestay_booking.dart';
 import '../../../../repositories/homestay_repository.dart';
 import '../../../../repositories/homestay_booking_repository.dart';
+import '../auth/sign_in_screen.dart';
+import '../../traveler/chat/traveler_host_chat_screen.dart';
 
 enum DateState { available, booked, pending, unavailable, past }
-
 class HomestayDetailsScreen extends StatefulWidget {
   final String homestayId;
 
@@ -31,16 +34,19 @@ class HomestayDetailsScreen extends StatefulWidget {
 class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
   late PageController _pageController;
   int _currentImageIndex = 0;
-  
   final _homestayRepo = HomestayRepository();
   final _bookingRepo = HomestayBookingRepository();
-  
+  final _auth = FirebaseAuth.instance;
+  final _firestore = FirebaseFirestore.instance;
+
   Homestay? _homestay;
   Map<String, dynamic>? _hostData;
+  List<String> _images = [];
   List<HomestayBooking> _activeBookings = [];
   bool _isLoading = true;
   bool _isFavorite = false;
   int _activeTabIndex = 0;
+  int _selectedTabIndex = 0;
   String? _error;
 
   // Booking states
@@ -487,47 +493,115 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
   }
 
   Widget _buildTabsSection() {
-    Widget buildTab(String text, int index) {
-      final isActive = _activeTabIndex == index;
-      return Expanded(
-        child: GestureDetector(
-          onTap: () => setState(() => _activeTabIndex = index),
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Text(
-                  text,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                    color: isActive ? AppColors.primaryDark : AppColors.textSecondary,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 6),
-              if (isActive)
-                Container(height: 3, color: AppColors.primaryDark)
-              else
-                const SizedBox(height: 3),
-            ],
-          ),
-        ),
-      );
-    }
+    final tabs = ['Overview', 'Amenities', 'Reviews', 'Host'];
+
     return Column(
       children: [
         Row(
-          children: [
-            buildTab('Overview', 0),
-            buildTab('Amenities', 1),
-            buildTab('Reviews', 2),
-          ],
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: List.generate(tabs.length, (index) {
+            final isSelected = _selectedTabIndex == index;
+            return Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedTabIndex = index;
+                    _activeTabIndex = index;
+                  });
+                  if (tabs[index] == 'Host') {
+                    _handleMessageHost();
+                  }
+                },
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Text(
+                        tabs[index],
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isSelected ? AppColors.primaryDark : AppColors.textSecondary,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    if (isSelected)
+                      Container(height: 3, width: 40, color: AppColors.primaryDark)
+                    else
+                      const SizedBox(height: 3),
+                  ],
+                ),
+              ),
+            );
+          }),
         ),
         const Divider(height: 1, color: AppColors.border),
       ],
     );
+        ),
+        const Divider(height: 1, color: AppColors.border),
+      ],
+    );
+  }
+
+  Future<void> _handleMessageHost() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Login Required', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryDark)),
+          content: const Text('You need to be logged in to send a message to the host. Would you like to log in now?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const SignInScreen()));
+              },
+              child: const Text('Log In'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    final hostId = widget.homestayData['hostId'];
+    if (hostId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Host information not available.')));
+      return;
+    }
+
+    try {
+      final hostDoc = await FirebaseFirestore.instance.collection('users').doc(hostId).get();
+      if (!hostDoc.exists) return;
+      final hostInfo = hostDoc.data()!;
+
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => TravelerHostChatScreen(
+            hostId: hostId,
+            hostName: hostInfo['fullName'] ?? 'Host',
+            hostImage: hostInfo['profileImage'] ?? hostInfo['profileImageUrl'] ?? '',
+            hostLanguages: hostInfo['languages'] != null ? (hostInfo['languages'] as List).join(' & ') : 'English',
+            homestayId: widget.homestayData['id'] ?? 'unknown_id',
+            homestayTitle: widget.homestayData['title'] ?? 'Homestay',
+            homestayPrice: 'Rs. ${widget.homestayData['pricePerNight'] ?? 0}/night',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
   }
 
   Widget _buildOverviewText() {
