@@ -4,6 +4,7 @@ import '../../../../widgets/common/app_bottom_navigation.dart';
 import '../../../../widgets/common/app_side_menu.dart';
 import '../home/traveler_home_screen.dart';
 import '../../common/auth/auth_guard.dart';
+import '../profile/traveler_profile_screen.dart';
 
 class TravelerMainScreen extends StatefulWidget {
   final int initialIndex;
@@ -22,11 +23,23 @@ class _TravelerMainScreenState extends State<TravelerMainScreen> {
     _currentIndex = widget.initialIndex;
   }
 
-  final List<Widget> _pages = [
-    const TravelerHomeScreen(),
+  List<Widget> get _pages => [
+    TravelerHomeScreen(
+      onProfileTap: () {
+        setState(() {
+          _currentIndex = 3;
+        });
+      },
+    ),
     const Scaffold(body: Center(child: Text('Explore Screen'))),
     const Scaffold(body: Center(child: Text('Bookings Screen'))),
-    const Scaffold(body: Center(child: Text('Profile Screen'))),
+    TravelerProfileScreen(
+      onBackTap: () {
+        setState(() {
+          _currentIndex = 0;
+        });
+      },
+    ),
   ];
 
   @override
