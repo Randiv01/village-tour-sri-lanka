@@ -234,6 +234,30 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
     }
   }
 
+  void _showConfirmationDialog(double totalAmount, int nights) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirm Request', style: TextStyle(color: AppColors.primaryDark)),
+        content: Text('Are you sure you want to request a booking for $nights night(s)?\n\nTotal: Rs. $totalAmount'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _submitRequest(totalAmount, nights);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryDark),
+            child: const Text('Confirm', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _submitRequest(double totalAmount, int nights) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -508,25 +532,16 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
             ],
           ),
         ),
-        if (_hostData?['isVerified'] == true)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.verified_rounded, size: 14, color: Colors.blue),
-                const SizedBox(width: 4),
-                Text(
-                  'Verified Host',
-                  style: TextStyle(color: AppColors.primaryDark, fontSize: 11, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-          ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.star_rounded, color: AppColors.tertiary, size: 16),
+            const SizedBox(width: 4),
+            const Text('New', style: TextStyle(color: AppColors.primaryDark, fontSize: 13, fontWeight: FontWeight.bold)),
+            const SizedBox(width: 4),
+            Text('(No reviews)', style: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.7), fontSize: 12)),
+          ],
+        ),
       ],
     );
   }
@@ -582,21 +597,22 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
   Widget _buildPriceAndRatings() {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            const Icon(Icons.star_rounded, color: AppColors.tertiary, size: 18),
-            const SizedBox(width: 4),
-            const Text('New', style: TextStyle(color: AppColors.primaryDark, fontSize: 14, fontWeight: FontWeight.bold)),
-            const SizedBox(width: 6),
-            Text('(No reviews yet)', style: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.7), fontSize: 12)),
-          ],
+        Expanded(
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              if (_hostData?['isSuperhost'] == true)
+                _buildInfoChip(Icons.workspace_premium_rounded, 'Superhost', isPrimary: true),
+              _buildInfoChip(Icons.home_rounded, _homestay!.propertyType),
+              _buildInfoChip(Icons.meeting_room_rounded, '${_homestay!.rooms} Room${_homestay!.rooms > 1 ? 's' : ''}'),
+              _buildInfoChip(Icons.people_rounded, 'Max ${_homestay!.maxGuests} Guest${_homestay!.maxGuests > 1 ? 's' : ''}'),
+            ],
+          ),
         ),
-        if (_hostData?['isSuperhost'] == true) ...[
-          const Padding(padding: EdgeInsets.symmetric(horizontal: 8.0), child: Text('•', style: TextStyle(color: AppColors.textSecondary))),
-          const Text('Superhost', style: TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.bold, decoration: TextDecoration.underline)),
-        ],
-        const Spacer(),
+        const SizedBox(width: 16),
         Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
@@ -713,13 +729,13 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
     }
   }
 
-  Widget _buildInfoChip(IconData icon, String label) {
+  Widget _buildInfoChip(IconData icon, String label, {bool isPrimary = false}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isPrimary ? AppColors.primary.withValues(alpha: 0.1) : Colors.white,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: isPrimary ? AppColors.primary.withValues(alpha: 0.3) : AppColors.border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -736,19 +752,6 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              _buildInfoChip(Icons.home_rounded, _homestay!.propertyType),
-              const SizedBox(width: 8),
-              _buildInfoChip(Icons.meeting_room_rounded, '${_homestay!.rooms} Room${_homestay!.rooms > 1 ? 's' : ''}'),
-              const SizedBox(width: 8),
-              _buildInfoChip(Icons.people_rounded, 'Max ${_homestay!.maxGuests} Guest${_homestay!.maxGuests > 1 ? 's' : ''}'),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppSpacing.xl),
         
         Text('About this place', style: AppTextStyles.sectionHeading.copyWith(color: AppColors.primaryDark, fontSize: 18)),
         const SizedBox(height: AppSpacing.sm),
@@ -1319,7 +1322,7 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
                 onPressed: canBook && !_isSubmitting ? () {
                   AuthGuard.requireAuth(
                     context: context,
-                    onAuthenticated: () => _submitRequest(totalAmount, nights),
+                    onAuthenticated: () => _showConfirmationDialog(totalAmount, nights),
                   );
                 } : null,
                 style: ElevatedButton.styleFrom(
@@ -1329,7 +1332,7 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
                 ),
                 child: _isSubmitting 
                     ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text('Book Now', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 16)),
+                    : const Text('Request Booking', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 16)),
               ),
             ),
           ],
