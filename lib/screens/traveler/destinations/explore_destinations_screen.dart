@@ -362,7 +362,7 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
                             const Icon(Icons.explore, color: Colors.white, size: 28),
                             const SizedBox(width: 8),
                             Text(
-                              'Explore Map',
+                              'Explore Offline Map',
                               style: AppTextStyles.sectionHeading.copyWith(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,

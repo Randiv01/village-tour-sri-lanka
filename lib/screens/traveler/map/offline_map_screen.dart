@@ -27,8 +27,13 @@ class CachedTileProvider extends TileProvider {
 
 class OfflineMapScreen extends StatefulWidget {
   final Destination? selectedDestination;
+  final bool showOnlySelected;
 
-  const OfflineMapScreen({super.key, this.selectedDestination});
+  const OfflineMapScreen({
+    super.key,
+    this.selectedDestination,
+    this.showOnlySelected = false,
+  });
 
   @override
   State<OfflineMapScreen> createState() => _OfflineMapScreenState();
@@ -71,13 +76,22 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
         return data;
       }).where((d) => d['latitude'] != null && d['longitude'] != null).toList();
 
-      setState(() {
-        _destinations = dests.where((d) => d.latitude != null && d.longitude != null).toList();
-        _homestays = loadedHomestays;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          if (widget.showOnlySelected && widget.selectedDestination != null) {
+            _destinations = [widget.selectedDestination!];
+            _homestays = [];
+          } else {
+            _destinations = dests.where((d) => d.latitude != null && d.longitude != null).toList();
+            _homestays = loadedHomestays;
+          }
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -92,13 +106,13 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        setState(() => _locationPermissionDenied = true);
+        if (mounted) setState(() => _locationPermissionDenied = true);
         return;
       }
     }
     
     if (permission == LocationPermission.deniedForever) {
-      setState(() => _locationPermissionDenied = true);
+      if (mounted) setState(() => _locationPermissionDenied = true);
       return;
     }
 
@@ -429,28 +443,58 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
           ),
         ],
       ),
-      body: _isLoading
+        body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Stack(
-              children: [
-                FlutterMap(
-                  mapController: _mapController,
-                  options: MapOptions(
-                    initialCenter: widget.selectedDestination != null &&
-                            widget.selectedDestination!.latitude != null &&
-                            widget.selectedDestination!.longitude != null
-                        ? LatLng(widget.selectedDestination!.latitude!, widget.selectedDestination!.longitude!)
-                        : _sriLankaCenter,
-                    initialZoom: widget.selectedDestination != null ? 12.0 : _defaultZoom,
-                    minZoom: 6,
-                    maxZoom: 18,
-                  ),
+          : Builder(
+              builder: (context) {
+                LatLng? currentLoc = _currentPosition != null 
+                    ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude) 
+                    : null;
+                LatLng? destLoc = widget.selectedDestination != null && widget.selectedDestination!.latitude != null
+                    ? LatLng(widget.selectedDestination!.latitude!, widget.selectedDestination!.longitude!)
+                    : null;
+                
+                final points = <LatLng>[];
+                if (destLoc != null) points.add(destLoc);
+                if (currentLoc != null) points.add(currentLoc);
+
+                final bounds = widget.showOnlySelected && points.length > 1 && points[0] != points[1]
+                    ? LatLngBounds.fromPoints(points)
+                    : null;
+
+                return Stack(
                   children: [
+                    FlutterMap(
+                      mapController: _mapController,
+                      options: MapOptions(
+                        initialCenter: destLoc ?? _sriLankaCenter,
+                        initialZoom: destLoc != null ? 12.0 : _defaultZoom,
+                        initialCameraFit: bounds != null
+                            ? CameraFit.bounds(
+                                bounds: bounds,
+                                padding: const EdgeInsets.all(80),
+                              )
+                            : null,
+                        minZoom: 6,
+                        maxZoom: 18,
+                      ),
+                      children: [
                     TileLayer(
                       urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                       userAgentPackageName: 'com.villagetoursrilanka.app',
                       tileProvider: CachedTileProvider(),
                     ),
+                    if (widget.showOnlySelected && currentLoc != null && destLoc != null)
+                      PolylineLayer(
+                        polylines: [
+                          Polyline(
+                            points: [currentLoc, destLoc],
+                            strokeWidth: 4.0,
+                            color: AppColors.primary,
+                            pattern: const StrokePattern.dotted(),
+                          ),
+                        ],
+                      ),
                     if (_currentPosition != null)
                       MarkerLayer(
                         markers: [
@@ -575,7 +619,8 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
                   ),
                 ),
               ],
-            ),
+            );
+          }),
     );
   }
 }
