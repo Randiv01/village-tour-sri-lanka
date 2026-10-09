@@ -100,7 +100,7 @@ class _DestinationDetailsScreenState extends State<DestinationDetailsScreen> {
     }
     if (permission == LocationPermission.deniedForever) return;
     try {
-      final position = await Geolocator.getCurrentPosition();
+      final position = await Geolocator.getCurrentPosition(locationSettings: const LocationSettings(accuracy: LocationAccuracy.best));
       if (mounted) {
         setState(() {
           _currentPosition = position;

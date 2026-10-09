@@ -117,7 +117,7 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
     }
 
     try {
-      final position = await Geolocator.getCurrentPosition();
+      final position = await Geolocator.getCurrentPosition(locationSettings: const LocationSettings(accuracy: LocationAccuracy.best));
       if (mounted) {
         setState(() {
           _currentPosition = position;
