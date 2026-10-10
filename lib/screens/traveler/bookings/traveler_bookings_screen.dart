@@ -11,6 +11,7 @@ import '../../../../theme/app_spacing.dart';
 import '../../../../models/guide_booking.dart';
 import '../../../../models/homestay_booking.dart';
 import '../../../../services/payment_service.dart';
+import '../../../../services/email_service.dart';
 
 class UnifiedBooking {
   final String id;
@@ -26,6 +27,9 @@ class UnifiedBooking {
   final String? rejectionReason;
   final DateTime createdAt;
   final String userId;
+  final String guestName;
+  final String guestEmail;
+  final String hostId;
 
   UnifiedBooking({
     required this.id,
@@ -41,6 +45,9 @@ class UnifiedBooking {
     this.rejectionReason,
     required this.createdAt,
     required this.userId,
+    required this.guestName,
+    required this.guestEmail,
+    required this.hostId,
   });
 }
 
@@ -109,6 +116,9 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
               rejectionReason: b.rejectionReason,
               createdAt: b.createdAt ?? DateTime.now(),
               userId: b.guestId,
+              guestName: b.guestName,
+              guestEmail: b.guestEmail,
+              hostId: b.guideId,
             );
           }).toList();
           _emitCombined();
@@ -135,6 +145,9 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
               rejectionReason: b.rejectionReason,
               createdAt: b.createdAt ?? DateTime.now(),
               userId: b.travelerId,
+              guestName: b.travelerName,
+              guestEmail: b.travelerEmail,
+              hostId: b.hostId,
             );
           }).toList();
           _emitCombined();
@@ -589,6 +602,24 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
             statusField: 'cancelled',
             'updatedAt': FieldValue.serverTimestamp(),
           });
+
+      // ✉️ Send Cancel Emails
+      EmailService.notifyTravelerStatusUpdate(
+        toEmail: booking.guestEmail,
+        customerName: booking.guestName,
+        bookingId: booking.id,
+        status: 'cancelled',
+      );
+      FirebaseFirestore.instance.collection('users').doc(booking.hostId).get().then((doc) {
+        if (doc.exists && doc.data()?['email'] != null) {
+          EmailService.notifyHostBookingCancelled(
+            hostEmail: doc.data()!['email'],
+            hostName: doc.data()?['name'] ?? 'Host',
+            bookingId: booking.id,
+            travelerName: booking.guestName,
+          );
+        }
+      });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Booking request cancelled.')),

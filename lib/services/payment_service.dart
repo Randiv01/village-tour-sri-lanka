@@ -6,7 +6,8 @@ import '../../models/payment.dart';
 import '../../repositories/payment_repository.dart';
 import '../../repositories/guide_booking_repository.dart';
 import '../../repositories/homestay_booking_repository.dart';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../services/email_service.dart';
 import 'dart:math';
 
 class PaymentService {
@@ -97,6 +98,28 @@ class PaymentService {
           transactionId: mockTxId,
           paidAt: now,
         );
+
+        // ✉️ Send Payment Emails for Tour
+        final booking = await _bookingRepo.getBooking(bookingId);
+        if (booking != null) {
+          EmailService.notifyTravelerPaymentConfirmed(
+            toEmail: booking.guestEmail,
+            customerName: booking.guestName,
+            bookingId: bookingId,
+            amount: '$currency $amount',
+          );
+          
+          FirebaseFirestore.instance.collection('users').doc(booking.guideId).get().then((doc) {
+            if (doc.exists && doc.data()?['email'] != null) {
+              EmailService.notifyHostPaymentReceived(
+                hostEmail: doc.data()!['email'],
+                hostName: doc.data()?['name'] ?? 'Guide',
+                bookingId: bookingId,
+                amount: '$currency $amount',
+              );
+            }
+          });
+        }
       } else if (bookingType == 'homestay') {
         await _homestayBookingRepo.updateBookingStatus(
           bookingId,
@@ -105,6 +128,28 @@ class PaymentService {
           transactionId: mockTxId,
           paidAt: now,
         );
+
+        // ✉️ Send Payment Emails for Homestay
+        final booking = await _homestayBookingRepo.getBookingById(bookingId);
+        if (booking != null) {
+          EmailService.notifyTravelerPaymentConfirmed(
+            toEmail: booking.travelerEmail,
+            customerName: booking.travelerName,
+            bookingId: bookingId,
+            amount: '$currency $amount',
+          );
+          
+          FirebaseFirestore.instance.collection('users').doc(booking.hostId).get().then((doc) {
+            if (doc.exists && doc.data()?['email'] != null) {
+              EmailService.notifyHostPaymentReceived(
+                hostEmail: doc.data()!['email'],
+                hostName: doc.data()?['name'] ?? 'Host',
+                bookingId: bookingId,
+                amount: '$currency $amount',
+              );
+            }
+          });
+        }
       }
       onComplete(true, mockTxId);
     }

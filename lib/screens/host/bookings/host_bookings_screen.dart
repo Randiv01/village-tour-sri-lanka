@@ -140,154 +140,160 @@ class _HostBookingsScreenState extends State<HostBookingsScreen> {
   }
 
   Widget _buildBookingCard(HomestayBooking booking) {
-    final dateFormat = DateFormat('MMM dd, yyyy');
-    final checkIn = dateFormat.format(booking.checkInDate);
-    final checkOut = dateFormat.format(booking.checkOutDate);
+    final checkIn = DateFormat('MMM dd, yyyy').format(booking.checkInDate);
+    final checkOut = DateFormat('MMM dd, yyyy').format(booking.checkOutDate);
 
     Color statusColor = AppColors.border;
-    IconData statusIcon = Icons.info_outline;
-
+    Color bgColor = Colors.transparent;
+    
     switch (booking.bookingStatus) {
       case 'pending':
         statusColor = Colors.orange;
-        statusIcon = Icons.hourglass_empty;
+        bgColor = Colors.orange.withValues(alpha: 0.1);
         break;
       case 'accepted':
         statusColor = Colors.blue;
-        statusIcon = Icons.payment;
+        bgColor = Colors.blue.withValues(alpha: 0.1);
         break;
       case 'confirmed':
         statusColor = Colors.green;
-        statusIcon = Icons.check_circle;
+        bgColor = Colors.green.withValues(alpha: 0.1);
         break;
       case 'rejected':
       case 'cancelled':
         statusColor = AppColors.error;
-        statusIcon = Icons.cancel;
+        bgColor = AppColors.error.withValues(alpha: 0.1);
         break;
     }
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: AppSpacing.md),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 2,
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => HostBookingDetailsScreen(booking: booking),
-            ),
-          );
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      booking.homestayTitle,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: AppColors.primaryDark,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(statusIcon, size: 12, color: statusColor),
-                        const SizedBox(width: 4),
-                        Text(
-                          booking.bookingStatus.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: statusColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.person_outline,
-                    size: 16,
-                    color: AppColors.textSecondary,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    booking.travelerName,
-                    style: const TextStyle(color: AppColors.textPrimary),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.calendar_today_outlined,
-                    size: 16,
-                    color: AppColors.textSecondary,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '$checkIn - $checkOut',
-                    style: const TextStyle(color: AppColors.textPrimary),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.group_outlined,
-                        size: 16,
-                        color: AppColors.textSecondary,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${booking.guestCount} Guests',
-                        style: const TextStyle(color: AppColors.textPrimary),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    'Rs. ${booking.totalAmount}',
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HostBookingDetailsScreen(booking: booking),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: AppSpacing.md),
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    booking.homestayTitle,
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                       color: AppColors.primaryDark,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ],
-              ),
-            ],
-          ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: bgColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    booking.bookingStatus.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: statusColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              children: [
+                const Icon(
+                  Icons.person_outline,
+                  size: 16,
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '${booking.travelerName} (${booking.guestCount} Guests)',
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(
+                  Icons.calendar_today_outlined,
+                  size: 16,
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '$checkIn - $checkOut',
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            const Divider(height: 1),
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Total Amount',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    Text(
+                      'LKR ${NumberFormat('#,##0').format(booking.totalAmount)}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: AppColors.primaryDark,
+                      ),
+                    ),
+                  ],
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => HostBookingDetailsScreen(booking: booking),
+                      ),
+                    );
+                  },
+                  child: const Text('View Details'),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

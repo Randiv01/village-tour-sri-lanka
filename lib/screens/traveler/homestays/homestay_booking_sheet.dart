@@ -8,6 +8,7 @@ import '../../../../theme/app_spacing.dart';
 import '../../../../models/homestay.dart';
 import '../../../../models/homestay_booking.dart';
 import '../../../../repositories/homestay_booking_repository.dart';
+import '../../../../services/email_service.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -520,7 +521,7 @@ class _HomestayBookingSheetState extends State<HomestayBookingSheet> {
           .get();
       if (!userDoc.exists) throw Exception('User profile not found');
       final userData = userDoc.data() as Map<String, dynamic>;
-      final userName = userData['name'] ?? 'Traveler';
+      final userName = userData['fullName'] ?? userData['name'] ?? 'Traveler';
       final userEmail = userData['email'] ?? user.email ?? '';
 
       final booking = HomestayBooking(
@@ -543,7 +544,32 @@ class _HomestayBookingSheetState extends State<HomestayBookingSheet> {
         bookingStatus: 'pending',
       );
 
-      await _bookingRepo.createBooking(booking);
+      final newBookingId = await _bookingRepo.createBooking(booking);
+
+      // ✉️ Send Emails
+      EmailService.notifyTravelerBookingRequested(
+        toEmail: booking.travelerEmail,
+        customerName: booking.travelerName,
+        bookingId: newBookingId,
+        type: 'Homestay',
+      );
+
+      // Fetch host details to send email
+      FirebaseFirestore.instance.collection('users').doc(booking.hostId).get().then((doc) {
+        if (doc.exists) {
+          final hostEmail = doc.data()?['email'];
+          final hostName = doc.data()?['name'] ?? doc.data()?['fullName'] ?? 'Host';
+          if (hostEmail != null) {
+            EmailService.notifyHostNewBookingRequest(
+              hostEmail: hostEmail,
+              hostName: hostName,
+              bookingId: newBookingId,
+              travelerName: booking.travelerName,
+              dates: '${DateFormat('MMM dd').format(booking.checkInDate)} - ${DateFormat('MMM dd, yyyy').format(booking.checkOutDate)}',
+            );
+          }
+        }
+      });
 
       if (mounted) {
         Navigator.pop(context);

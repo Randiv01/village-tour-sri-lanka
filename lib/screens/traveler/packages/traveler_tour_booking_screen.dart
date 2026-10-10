@@ -9,6 +9,7 @@ import '../../../theme/app_spacing.dart';
 import '../../../models/tour_package.dart';
 import '../../../models/guide_booking.dart';
 import '../../../repositories/guide_booking_repository.dart';
+import '../../../services/email_service.dart';
 
 class TravelerTourBookingScreen extends StatefulWidget {
   final TourPackage package;
@@ -207,7 +208,7 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
         packageId: widget.package.id,
         packageTitle: widget.package.title,
         guestId: user.uid,
-        guestName: userData['fullName'] ?? user.displayName ?? 'Traveler',
+        guestName: userData['fullName'] ?? userData['name'] ?? user.displayName ?? 'Traveler',
         guestEmail: userData['email'] ?? user.email ?? '',
         guestPhone: userData['phoneNumber'],
         guestProfileUrl: userData['profileImageUrl'],
@@ -219,7 +220,32 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
         paymentStatus: 'unpaid',
       );
 
-      await _bookingRepo.createBooking(booking);
+      final newBookingId = await _bookingRepo.createBooking(booking);
+
+      // ✉️ Send Emails
+      EmailService.notifyTravelerBookingRequested(
+        toEmail: booking.guestEmail,
+        customerName: booking.guestName,
+        bookingId: newBookingId,
+        type: 'Tour',
+      );
+
+      // Fetch guide details to send email
+      FirebaseFirestore.instance.collection('users').doc(booking.guideId).get().then((doc) {
+        if (doc.exists) {
+          final guideEmail = doc.data()?['email'];
+          final guideName = doc.data()?['name'] ?? doc.data()?['fullName'] ?? 'Guide';
+          if (guideEmail != null) {
+            EmailService.notifyHostNewBookingRequest(
+              hostEmail: guideEmail,
+              hostName: guideName,
+              bookingId: newBookingId,
+              travelerName: booking.guestName,
+              dates: '${DateFormat('MMM dd').format(booking.startDate)} - ${DateFormat('MMM dd, yyyy').format(booking.endDate)}',
+            );
+          }
+        }
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(
