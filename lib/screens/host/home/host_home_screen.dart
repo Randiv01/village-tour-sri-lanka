@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../../../../services/auth_service.dart';
 
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
@@ -31,7 +30,9 @@ class HostHomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SingleChildScrollView(
+      body: SafeArea(
+        bottom: false,
+        child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -46,6 +47,7 @@ class HostHomeScreen extends StatelessWidget {
             const SizedBox(height: AppSpacing.xxl),
           ],
         ),
+      ),
       ),
     );
   }
@@ -168,16 +170,8 @@ class HostHomeScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: AppSpacing.md),
-                        PopupMenuButton<String>(
-                          onSelected: (value) async {
-                            if (value == 'sign_out') {
-                              await AuthService().signOut();
-                            }
-                          },
-                          offset: const Offset(0, 50),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                        GestureDetector(
+                          onTap: onGoToProfile,
                           child: CircleAvatar(
                             radius: 20,
                             backgroundImage:
@@ -192,45 +186,6 @@ class HostHomeScreen extends StatelessWidget {
                                   )
                                 : null,
                           ),
-                          itemBuilder: (context) => [
-                            PopupMenuItem(
-                              value: 'profile',
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.person_outline,
-                                    size: 20,
-                                    color: AppColors.primaryDark,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    'My Profile',
-                                    style: AppTextStyles.bodyMedium,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const PopupMenuDivider(),
-                            PopupMenuItem(
-                              value: 'sign_out',
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.logout,
-                                    size: 20,
-                                    color: Colors.red,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    'Sign Out',
-                                    style: AppTextStyles.bodyMedium.copyWith(
-                                      color: Colors.red,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
                         ),
                       ],
                     ),
@@ -272,20 +227,7 @@ class HostHomeScreen extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 8.0),
-                          child: Icon(
-                            Icons.circle,
-                            size: 4,
-                            color: AppColors.secondary,
-                          ),
-                        ),
-                        Text(
-                          'Nilagama',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.secondary,
-                          ),
-                        ),
+
                       ],
                     ),
                   ],
@@ -849,6 +791,12 @@ class _CurrencyOverviewStat extends StatelessWidget {
     );
   }
 }
+
+
+
+
+
+
 
 
 

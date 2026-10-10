@@ -59,7 +59,7 @@ class _HostBookingsScreenState extends State<HostBookingsScreen>
             Tab(text: 'Pending'),
             Tab(text: 'Accepted'),
             Tab(text: 'Confirmed'),
-            Tab(text: 'All'),
+            Tab(text: 'Rejected'),
           ],
         ),
       ),
@@ -77,6 +77,7 @@ class _HostBookingsScreenState extends State<HostBookingsScreen>
           final pending = allBookings.where((b) => b.bookingStatus == 'pending').toList();
           final accepted = allBookings.where((b) => b.bookingStatus == 'accepted').toList();
           final confirmed = allBookings.where((b) => b.bookingStatus == 'confirmed').toList();
+          final rejected = allBookings.where((b) => b.bookingStatus == 'rejected' || b.bookingStatus == 'cancelled').toList();
 
           return TabBarView(
             controller: _tabController,
@@ -84,7 +85,7 @@ class _HostBookingsScreenState extends State<HostBookingsScreen>
               _buildBookingList(pending, 'No pending bookings.'),
               _buildBookingList(accepted, 'No accepted bookings.'),
               _buildBookingList(confirmed, 'No confirmed bookings.'),
-              _buildBookingList(allBookings, 'No bookings found.'),
+              _buildBookingList(rejected, 'No rejected bookings.'),
             ],
           );
         },
