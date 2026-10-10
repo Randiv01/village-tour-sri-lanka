@@ -298,86 +298,98 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
 
           final filteredDestinations = _filterAndSort(allDestinations);
 
-          return Column(
-            children: [
-              // Map Preview
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const OfflineMapScreen(),
-                    ),
-                  );
-                },
-                child: Container(
-                  height: 160,
-                  margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    color: AppColors.softSecondarySurface,
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      // Non-interactive map
-                      FlutterMap(
-                        options: const MapOptions(
-                          initialCenter: LatLng(7.8731, 80.7718),
-                          initialZoom: 6.5,
-                          interactionOptions: InteractionOptions(
-                            flags: InteractiveFlag.none,
+          return NestedScrollView(
+            headerSliverBuilder: (context, innerBoxIsScrolled) {
+              return [
+                SliverAppBar(
+                  expandedHeight: 180,
+                  collapsedHeight: 0,
+                  toolbarHeight: 0,
+                  pinned: false,
+                  floating: true,
+                  backgroundColor: AppColors.background,
+                  flexibleSpace: FlexibleSpaceBar(
+                    background: GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const OfflineMapScreen(),
                           ),
-                        ),
-                        children: [
-                          TileLayer(
-                            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                            userAgentPackageName: 'com.villagetoursrilanka.app',
-                            tileProvider: CachedTileProvider(),
-                          ),
-                        ],
-                      ),
-                      // Gradient overlay
-                      Container(
+                        );
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withValues(alpha: 0.6),
-                            ],
-                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          color: AppColors.softSecondarySurface,
                         ),
-                      ),
-                      // Text and icon
-                      Positioned(
-                        bottom: 16,
-                        left: 16,
-                        right: 16,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                        clipBehavior: Clip.antiAlias,
+                        child: Stack(
+                          fit: StackFit.expand,
                           children: [
-                            const Icon(Icons.explore, color: Colors.white, size: 28),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Explore Offline Map',
-                              style: AppTextStyles.sectionHeading.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 22,
+                            // Non-interactive map
+                            FlutterMap(
+                              options: const MapOptions(
+                                initialCenter: LatLng(7.8731, 80.7718),
+                                initialZoom: 6.5,
+                                interactionOptions: InteractionOptions(
+                                  flags: InteractiveFlag.none,
+                                ),
+                              ),
+                              children: [
+                                TileLayer(
+                                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                  userAgentPackageName: 'com.villagetoursrilanka.app',
+                                  tileProvider: CachedTileProvider(),
+                                ),
+                              ],
+                            ),
+                            // Gradient overlay
+                            Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.transparent,
+                                    Colors.black.withValues(alpha: 0.6),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            // Text and icon
+                            Positioned(
+                              bottom: 16,
+                              left: 16,
+                              right: 16,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.explore, color: Colors.white, size: 28),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Explore Offline Map',
+                                    style: AppTextStyles.sectionHeading.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 22,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
-
-              // Search Bar
+              ];
+            },
+            body: Column(
+              children: [
+                // Search Bar
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                 child: TextField(
@@ -634,8 +646,9 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
                       ),
               ),
             ],
-          );
-        },
+          ),
+        );
+      },
       ),
     );
   }
