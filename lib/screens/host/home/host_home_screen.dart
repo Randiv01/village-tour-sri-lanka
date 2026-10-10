@@ -7,7 +7,6 @@ import '../../../../services/auth_service.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../theme/app_spacing.dart';
-import 'widgets/analytics_stat_card.dart';
 import 'widgets/host_homestay_card.dart';
 import 'widgets/upcoming_booking_tile.dart';
 import '../homestays/add_homestay_screen.dart';
@@ -15,13 +14,18 @@ import '../homestays/update_homestay_screen.dart';
 import '../../common/homestays/homestay_details_screen.dart';
 import '../../../../models/homestay.dart';
 import '../../../../models/homestay_booking.dart';
+import '../../../../repositories/homestay_repository.dart';
+import '../../../../repositories/homestay_booking_repository.dart';
 import '../bookings/host_bookings_screen.dart';
 import '../notifications/host_notifications_screen.dart';
+import 'package:intl/intl.dart';
+import '../../../../theme/app_radius.dart';
 
 class HostHomeScreen extends StatelessWidget {
   final VoidCallback? onGoToBookings;
+  final VoidCallback? onGoToProfile;
 
-  const HostHomeScreen({super.key, this.onGoToBookings});
+  const HostHomeScreen({super.key, this.onGoToBookings, this.onGoToProfile});
 
   @override
   Widget build(BuildContext context) {
@@ -295,79 +299,85 @@ class HostHomeScreen extends StatelessWidget {
   }
 
   Widget _buildAnalyticsRow() {
-    return Padding(
-      padding: const EdgeInsets.only(left: AppSpacing.lg),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        clipBehavior: Clip.none,
-        child: Row(
-          children: [
-            AnalyticsStatCard(
-              topIcon: Icons.payments_outlined,
-              title: "This Month's Revenue",
-              value: "Rs. 48,500",
-              width: 165,
-              bottomWidget: Row(
-                children: [
-                  const Icon(Icons.trending_up, size: 14, color: Colors.green),
-                  const SizedBox(width: 4),
-                  Text(
-                    "+18.4%",
-                    style: TextStyle(
-                      color: Colors.green[700],
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Text(
-                    "vs last month",
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    if (uid.isEmpty) return const SizedBox.shrink();
+
+    final homestayRepo = HomestayRepository();
+    final bookingRepo = HomestayBookingRepository();
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: Row(
+            children: [
+              Expanded(
+                child: _OverviewStat(
+                  title: 'Active\nHomestays',
+                  stream: homestayRepo
+                      .getHostHomestays(uid)
+                      .map((l) => l.where((h) => h.status == 'Active').length),
+                  icon: Icons.home_work_outlined,
+                ),
               ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            AnalyticsStatCard(
-              topIcon: Icons.calendar_today_outlined,
-              title: "Upcoming Guests",
-              value: "6",
-              width: 130,
-              bottomWidget: const Text(
-                "Next 7 days",
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: _OverviewStat(
+                  title: 'Pending\nBookings',
+                  stream: bookingRepo
+                      .getHostBookings(uid)
+                      .map((l) => l.where((b) => b.bookingStatus == 'pending').length),
+                  icon: Icons.pending_actions,
+                ),
               ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            AnalyticsStatCard(
-              topIcon: Icons.king_bed_outlined,
-              title: "Occupancy Rate",
-              value: "70%",
-              width: 140,
-              bottomWidget: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: 0.7,
-                      backgroundColor: AppColors.softSecondarySurface,
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        Colors.green,
-                      ),
-                      minHeight: 6,
-                    ),
-                  ),
-                ],
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: _OverviewStat(
+                  title: 'Upcoming\nBookings',
+                  stream: bookingRepo
+                      .getHostBookings(uid)
+                      .map((l) => l.where((b) => b.bookingStatus == 'accepted' || b.bookingStatus == 'confirmed').length),
+                  icon: Icons.calendar_month_outlined,
+                ),
               ),
-            ),
-            const SizedBox(width: AppSpacing.lg), // right padding
-          ],
+            ],
+          ),
         ),
-      ),
+        const SizedBox(height: AppSpacing.md),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: Row(
+            children: [
+              Expanded(
+                child: _CurrencyOverviewStat(
+                  title: 'Total Earnings',
+                  stream: bookingRepo.getHostBookings(uid).map((bookings) =>
+                      bookings
+                          .where((b) => b.paymentStatus == 'paid')
+                          .fold(0.0, (total, b) => total + b.totalAmount)),
+                  icon: Icons.account_balance_wallet,
+                  iconColor: Colors.green,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: _CurrencyOverviewStat(
+                  title: 'Pending Payments',
+                  stream: bookingRepo.getHostBookings(uid).map((bookings) =>
+                      bookings
+                          .where((b) =>
+                              b.paymentStatus != 'paid' &&
+                              b.bookingStatus != 'rejected' &&
+                              b.bookingStatus != 'cancelled')
+                          .fold(0.0, (total, b) => total + b.totalAmount)),
+                  icon: Icons.pending,
+                  iconColor: Colors.orange,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -736,6 +746,111 @@ class HostHomeScreen extends StatelessWidget {
       ),
     );
   }
-
-
 }
+
+class _OverviewStat extends StatelessWidget {
+  final String title;
+  final Stream<int> stream;
+  final IconData icon;
+  const _OverviewStat({
+    required this.title,
+    required this.stream,
+    required this.icon,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppRadius.cardRadius,
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: AppColors.secondary, size: 24),
+          const SizedBox(height: AppSpacing.sm),
+          StreamBuilder<int>(
+            stream: stream,
+            builder: (context, snapshot) {
+              final count = snapshot.data ?? 0;
+              return Text(
+                '$count',
+                style: AppTextStyles.screenHeading.copyWith(
+                  color: AppColors.primaryDark,
+                  height: 1.1,
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CurrencyOverviewStat extends StatelessWidget {
+  final String title;
+  final Stream<double> stream;
+  final IconData icon;
+  final Color iconColor;
+  const _CurrencyOverviewStat({
+    required this.title,
+    required this.stream,
+    required this.icon,
+    this.iconColor = AppColors.secondary,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppRadius.cardRadius,
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: iconColor, size: 24),
+          const SizedBox(height: AppSpacing.sm),
+          StreamBuilder<double>(
+            stream: stream,
+            builder: (context, snapshot) {
+              final amount = snapshot.data ?? 0.0;
+              return Text(
+                'Rs. ${NumberFormat('#,##0').format(amount)}',
+                style: AppTextStyles.labelLarge.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryDark,
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+
+
+

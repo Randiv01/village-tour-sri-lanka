@@ -3,11 +3,10 @@ import 'package:mailer/mailer.dart';
 import 'package:mailer/smtp_server.dart';
 
 class EmailService {
-  // ⚠️ YOUR CREDENTIALS HERE
   static const String _username = 'sliitprojects2025@gmail.com';
   static const String _appPassword = 'tvcc qrzf upzl vwkk';
   static const String _companyName = 'Village Tour Sri Lanka';
-  static const String _logoUrl = 'https://res.cloudinary.com/dxsho3nak/image/upload/v1791643405/app_logo_50.png'; // Sample travel logo
+  static const String _logoUrl = 'https://res.cloudinary.com/dxsho3nak/image/upload/v1791643405/app_logo_50.png'; 
 
   static SmtpServer get _smtpServer => gmail(_username, _appPassword);
 

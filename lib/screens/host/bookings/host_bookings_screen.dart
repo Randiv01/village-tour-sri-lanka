@@ -16,125 +16,113 @@ class HostBookingsScreen extends StatefulWidget {
   State<HostBookingsScreen> createState() => _HostBookingsScreenState();
 }
 
-class _HostBookingsScreenState extends State<HostBookingsScreen> {
+class _HostBookingsScreenState extends State<HostBookingsScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
   final _bookingRepo = HomestayBookingRepository();
   final String _hostId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
-  String _statusFilter = 'pending'; // 'pending', 'accepted', 'confirmed', 'all'
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 4, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F6EF),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.background,
         elevation: 0,
         title: Text(
           'Manage Bookings',
-          style: AppTextStyles.sectionHeading.copyWith(
+          style: AppTextStyles.screenHeading.copyWith(
             color: AppColors.primaryDark,
-            fontSize: 20,
           ),
         ),
+        centerTitle: true,
+        bottom: TabBar(
+          controller: _tabController,
+          labelColor: AppColors.primary,
+          unselectedLabelColor: AppColors.textSecondary,
+          indicatorColor: AppColors.primary,
+          isScrollable: true,
+          tabAlignment: TabAlignment.center,
+          tabs: const [
+            Tab(text: 'Pending'),
+            Tab(text: 'Accepted'),
+            Tab(text: 'Confirmed'),
+            Tab(text: 'All'),
+          ],
+        ),
       ),
-      body: Column(
-        children: [
-          _buildFilterTabs(),
-          Expanded(child: _buildBookingsList()),
-        ],
+      body: StreamBuilder<List<HomestayBooking>>(
+        stream: _bookingRepo.getHostBookings(_hostId),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+
+          final allBookings = snapshot.data ?? [];
+          final pending = allBookings.where((b) => b.bookingStatus == 'pending').toList();
+          final accepted = allBookings.where((b) => b.bookingStatus == 'accepted').toList();
+          final confirmed = allBookings.where((b) => b.bookingStatus == 'confirmed').toList();
+
+          return TabBarView(
+            controller: _tabController,
+            children: [
+              _buildBookingList(pending, 'No pending bookings.'),
+              _buildBookingList(accepted, 'No accepted bookings.'),
+              _buildBookingList(confirmed, 'No confirmed bookings.'),
+              _buildBookingList(allBookings, 'No bookings found.'),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildFilterTabs() {
-    final tabs = [
-      {'label': 'Pending', 'value': 'pending'},
-      {'label': 'Accepted (Unpaid)', 'value': 'accepted'},
-      {'label': 'Confirmed', 'value': 'confirmed'},
-      {'label': 'All', 'value': 'all'},
-    ];
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.sm,
-      ),
-      child: Row(
-        children: tabs.map((tab) {
-          final isSelected = _statusFilter == tab['value'];
-          return Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: ChoiceChip(
-              label: Text(tab['label']!),
-              selected: isSelected,
-              onSelected: (selected) {
-                if (selected) setState(() => _statusFilter = tab['value']!);
-              },
-              selectedColor: AppColors.primaryDark,
-              labelStyle: TextStyle(
-                color: isSelected ? Colors.white : AppColors.textSecondary,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+  Widget _buildBookingList(List<HomestayBooking> bookings, String emptyMessage) {
+    if (bookings.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xxl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.event_note,
+                size: 64,
+                color: AppColors.primary.withValues(alpha: 0.3),
               ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildBookingsList() {
-    if (_hostId.isEmpty) {
-      return const Center(child: Text('User not logged in'));
-    }
-
-    return StreamBuilder<List<HomestayBooking>>(
-      stream: _bookingRepo.getHostBookings(_hostId),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
-        }
-
-        var bookings = snapshot.data ?? [];
-
-        // Apply filter
-        if (_statusFilter != 'all') {
-          bookings = bookings
-              .where((b) => b.bookingStatus == _statusFilter)
-              .toList();
-        }
-
-        if (bookings.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.event_busy, size: 64, color: AppColors.border),
-                const SizedBox(height: 16),
-                Text(
-                  'No $_statusFilter bookings',
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 16,
-                  ),
+              const SizedBox(height: AppSpacing.lg),
+              Text(
+                emptyMessage,
+                style: AppTextStyles.bodyLarge.copyWith(
+                  color: AppColors.textSecondary,
                 ),
-              ],
-            ),
-          );
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          itemCount: bookings.length,
-          itemBuilder: (context, index) {
-            final booking = bookings[index];
-            return _buildBookingCard(booking);
-          },
-        );
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      itemCount: bookings.length,
+      itemBuilder: (context, index) {
+        final booking = bookings[index];
+        return _buildBookingCard(booking);
       },
     );
   }
@@ -299,3 +287,5 @@ class _HostBookingsScreenState extends State<HostBookingsScreen> {
     );
   }
 }
+
+

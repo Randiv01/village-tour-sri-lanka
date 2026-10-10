@@ -25,11 +25,18 @@ class _HostMainScreenState extends State<HostMainScreen> {
   }
 
   List<Widget> get _pages => [
-    HostHomeScreen(onGoToBookings: () {
-      setState(() {
-        _currentIndex = 2;
-      });
-    }),
+    HostHomeScreen(
+      onGoToBookings: () {
+        setState(() {
+          _currentIndex = 2;
+        });
+      },
+      onGoToProfile: () {
+        setState(() {
+          _currentIndex = 3;
+        });
+      },
+    ),
     const ManageHomestaysScreen(),
     const HostBookingsScreen(),
     const HostProfileScreen(),
