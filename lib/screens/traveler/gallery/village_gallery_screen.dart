@@ -4,6 +4,10 @@ import '../../../theme/app_spacing.dart';
 import '../../../theme/app_text_styles.dart';
 import '../../../models/gallery_image.dart';
 import '../../../repositories/gallery_repository.dart';
+import 'package:share_plus/share_plus.dart';
+import '../../../widgets/common/app_bottom_navigation.dart';
+import '../main/traveler_main_screen.dart';
+import '../../common/auth/auth_guard.dart';
 
 class VillageGalleryScreen extends StatefulWidget {
   const VillageGalleryScreen({super.key});
@@ -149,6 +153,35 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
           },
         ),
       ),
+      bottomNavigationBar: AppBottomNavigation(
+        currentIndex: 1,
+        onTap: (index) {
+          if (index == 1) {
+            // Already on explore/gallery
+            return;
+          }
+          if (index == 2 || index == 3) {
+            AuthGuard.requireAuth(
+              context: context,
+              onAuthenticated: () {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(
+                    builder: (context) => TravelerMainScreen(initialIndex: index),
+                  ),
+                  (route) => false,
+                );
+              },
+            );
+          } else {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (context) => TravelerMainScreen(initialIndex: index),
+              ),
+              (route) => false,
+            );
+          }
+        },
+      ),
     );
   }
 
@@ -184,7 +217,10 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
           ),
           _buildIconButton(
             icon: Icons.share_outlined,
-            onTap: () {},
+            onTap: () {
+              // ignore: deprecated_member_use
+              Share.share('Check out these amazing village experiences at Village Tour Sri Lanka!');
+            },
           ),
         ],
       ),

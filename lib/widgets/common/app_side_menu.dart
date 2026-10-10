@@ -151,7 +151,7 @@ class AppSideMenu extends StatelessWidget {
                   ),
                   _buildMenuItem(
                     Icons.image_outlined,
-                    'Village Gallery',
+                    'Gallery and expiriance',
                     'Lake flora, wildlife & visitor stories',
                     onTap: () {
                       Navigator.of(context).pop();
