@@ -69,9 +69,8 @@ class HostHomeScreen extends StatelessWidget {
     return Stack(
       children: [
         // Background landscape image with fade
-        Container(
-          height: 240,
-          width: double.infinity,
+        Positioned.fill(
+          child: Container(
           decoration: const BoxDecoration(
             image: DecorationImage(
               image: AssetImage(
@@ -95,6 +94,7 @@ class HostHomeScreen extends StatelessWidget {
               ),
             ),
           ),
+        ),
         ),
 
         // SafeArea content
