@@ -489,7 +489,7 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
   }
 
   Widget _buildTabsSection() {
-    final tabs = ['Overview', 'Amenities', 'Reviews', 'Host'];
+    final tabs = ['Overview', 'Amenities', 'Reviews'];
 
     return Column(
       children: [
@@ -712,7 +712,7 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
             AuthGuard.requireAuth(
               context: context,
               onAuthenticated: () {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Chat feature coming soon!')));
+                _handleMessageHost();
               },
             );
           },

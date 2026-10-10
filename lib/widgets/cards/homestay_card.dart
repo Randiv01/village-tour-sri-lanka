@@ -36,34 +36,43 @@ class _HomestayCardState extends State<HomestayCard> {
   Future<void> _loadStats() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
 
-    // Load reviews
-    final reviewsSnap = await FirebaseFirestore.instance
-        .collection('homestay_reviews')
-        .where('homestayId', isEqualTo: widget.homestay.id)
-        .get();
+    try {
+      // Load reviews
+      final reviewsSnap = await FirebaseFirestore.instance
+          .collection('homestay_reviews')
+          .where('homestayId', isEqualTo: widget.homestay.id)
+          .get();
 
-    double total = 0;
-    for (final doc in reviewsSnap.docs) {
-      total += (doc.data()['rating'] as num?)?.toDouble() ?? 0;
-    }
-    final count = reviewsSnap.docs.length;
-    final avg = count > 0 ? total / count : 0.0;
+      double total = 0;
+      for (final doc in reviewsSnap.docs) {
+        total += (doc.data()['rating'] as num?)?.toDouble() ?? 0;
+      }
+      final count = reviewsSnap.docs.length;
+      final avg = count > 0 ? total / count : 0.0;
 
-    // Load favorite state
-    bool isFav = false;
-    if (uid != null) {
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
-      final favorites = List<String>.from(userDoc.data()?['favorites'] ?? []);
-      isFav = favorites.contains(widget.homestay.id);
-    }
+      // Load favorite state
+      bool isFav = false;
+      if (uid != null) {
+        final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+        final favorites = List<String>.from(userDoc.data()?['favorites'] ?? []);
+        isFav = favorites.contains(widget.homestay.id);
+      }
 
-    if (mounted) {
-      setState(() {
-        _reviewCount = count;
-        _avgRating = avg;
-        _isFavorite = isFav;
-        _loadedStats = true;
-      });
+      if (mounted) {
+        setState(() {
+          _reviewCount = count;
+          _avgRating = avg;
+          _isFavorite = isFav;
+          _loadedStats = true;
+        });
+      }
+    } catch (e) {
+      // Fail silently and use defaults if there's a permission error
+      if (mounted) {
+        setState(() {
+          _loadedStats = true;
+        });
+      }
     }
   }
 

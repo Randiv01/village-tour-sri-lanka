@@ -73,9 +73,10 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
 
   Future<void> _pickPhotos() async {
     final ImagePicker picker = ImagePicker();
-    final List<XFile>? images = await picker.pickMultiImage();
-    if (images != null) {
+    final List<XFile> images = await picker.pickMultiImage();
+    if (images.isNotEmpty) {
       if (_selectedPhotos.length + _existingPhotoUrls.length + images.length > 5) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Maximum 5 photos allowed.')));
         return;
       }
@@ -132,7 +133,8 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
       }
 
       final reviewData = {
-        'userId': _currentUserId,
+        'travelerId': _currentUserId,
+        'homestayId': widget.homestayId,
         'userName': userData?['fullName'] ?? 'Guest',
         'rating': _rating,
         'tags': _selectedTags,
@@ -142,10 +144,8 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
       };
 
       await FirebaseFirestore.instance
-          .collection('homestays')
-          .doc(widget.homestayId)
-          .collection('reviews')
-          .doc(_currentUserId) // User can only have one review per homestay
+          .collection('homestay_reviews')
+          .doc('${widget.homestayId}_$_currentUserId') // User can only have one review per homestay
           .set(reviewData, SetOptions(merge: true));
 
       if (!mounted) return;
@@ -174,10 +174,8 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
     if (_currentUserId == null) return;
     try {
       await FirebaseFirestore.instance
-          .collection('homestays')
-          .doc(widget.homestayId)
-          .collection('reviews')
-          .doc(_currentUserId)
+          .collection('homestay_reviews')
+          .doc('${widget.homestayId}_$_currentUserId')
           .delete();
       if (!mounted) return;
       setState(() {
@@ -218,10 +216,10 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
-                    .collection('homestays')
-                    .doc(widget.homestayId)
-                    .collection('reviews')
-                    .orderBy('timestamp', descending: true)
+                    .collection('homestay_reviews')
+                    .where('homestayId', isEqualTo: widget.homestayId)
+                    // Note: Cannot use orderBy('timestamp', descending: true) 
+                    // without a composite index when using where()
                     .snapshots(),
                 builder: (context, snapshot) {
                   final reviews = snapshot.data?.docs ?? [];
@@ -696,6 +694,16 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
     }).length;
 
     List<QueryDocumentSnapshot> filteredReviews = List.from(allReviews);
+    
+    // Default sort by timestamp descending
+    filteredReviews.sort((a, b) {
+      final aData = a.data() as Map<String, dynamic>;
+      final bData = b.data() as Map<String, dynamic>;
+      final aTime = aData['timestamp'] as Timestamp?;
+      final bTime = bData['timestamp'] as Timestamp?;
+      if (aTime == null || bTime == null) return 0;
+      return bTime.compareTo(aTime);
+    });
 
     if (_selectedFilter == 'With Photos') {
       filteredReviews = filteredReviews.where((doc) {
@@ -783,7 +791,7 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
 
   Widget _buildReviewCard(QueryDocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    final isMyReview = doc.id == _currentUserId;
+    final isMyReview = data['travelerId'] == _currentUserId;
 
     DateTime timestamp = DateTime.now();
     if (data['timestamp'] != null) {
