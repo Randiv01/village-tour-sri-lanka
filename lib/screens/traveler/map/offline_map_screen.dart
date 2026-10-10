@@ -277,14 +277,14 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
                       if (await canLaunchUrl(Uri.parse(url))) {
                         await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
                       } else {
-                        if (context.mounted) {
+                        if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Could not open map directions.')),
                           );
                         }
                       }
                     } else {
-                      if (context.mounted) {
+                      if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Destination location is unknown.')),
                         );
@@ -431,14 +431,14 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
                       if (await canLaunchUrl(Uri.parse(url))) {
                         await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
                       } else {
-                        if (context.mounted) {
+                        if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Could not open map directions.')),
                           );
                         }
                       }
                     } else {
-                      if (context.mounted) {
+                      if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Homestay location is unknown.')),
                         );
