@@ -28,6 +28,19 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
   final DestinationRepository _repository = DestinationRepository();
   final TextEditingController _searchController = TextEditingController();
 
+  late Stream<List<Destination>> _destinationsStream;
+  late Stream<QuerySnapshot> _homestaysStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _destinationsStream = _repository.getActiveDestinationsStream();
+    _homestaysStream = FirebaseFirestore.instance
+        .collection('homestays')
+        .where('status', isEqualTo: 'Active')
+        .snapshots();
+  }
+
   String _searchQuery = '';
   String? _selectedLocation;
   bool _popularOnly = false;
@@ -260,7 +273,7 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
         ),
       ),
       body: StreamBuilder<List<Destination>>(
-        stream: _repository.getActiveDestinationsStream(),
+        stream: _destinationsStream,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(
@@ -400,10 +413,13 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
                     });
                   },
                   decoration: InputDecoration(
-                    hintText: 'Search destinations...',
+                    hintText: 'Search destinations, homestays...',
                     prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
+                    suffixIcon: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_searchQuery.isNotEmpty)
+                          IconButton(
                             icon: const Icon(Icons.clear),
                             onPressed: () {
                               _searchController.clear();
@@ -411,8 +427,41 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
                                 _searchQuery = '';
                               });
                             },
-                          )
-                        : null,
+                          ),
+                        Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.tune),
+                              tooltip: 'Filter',
+                              onPressed: () => _showFilterSheet(allDestinations),
+                            ),
+                            if (_activeFilterCount > 0)
+                              Positioned(
+                                right: 8,
+                                top: 8,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.primary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Text(
+                                    '$_activeFilterCount',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                      ],
+                    ),
                     filled: true,
                     fillColor: AppColors.surface,
                     border: OutlineInputBorder(
@@ -485,83 +534,46 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
               if (!_showHomestays)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            if (_selectedLocation != null && _selectedLocation != 'All Locations') ...[
-                              ActionChip(
-                                label: Text(_selectedLocation!),
-                                onPressed: () => setState(() => _selectedLocation = null),
-                                avatar: const Icon(Icons.close, size: 16),
-                                backgroundColor: AppColors.softSecondarySurface,
-                              ),
-                              const SizedBox(width: AppSpacing.sm),
-                            ],
-                            if (_popularOnly) ...[
-                              ActionChip(
-                                label: const Text('Popular'),
-                                onPressed: () => setState(() => _popularOnly = false),
-                                avatar: const Icon(Icons.close, size: 16),
-                                backgroundColor: AppColors.softSecondarySurface,
-                              ),
-                              const SizedBox(width: AppSpacing.sm),
-                            ],
-                            if (_sortBy != 'Recommended') ...[
-                              ActionChip(
-                                label: Text('Sort: $_sortBy'),
-                                onPressed: () => setState(() => _sortBy = 'Recommended'),
-                                avatar: const Icon(Icons.close, size: 16),
-                                backgroundColor: AppColors.softSecondarySurface,
-                              ),
-                              const SizedBox(width: AppSpacing.sm),
-                            ],
-                            if (_activeFilterCount == 0)
-                              Text(
-                                'All Destinations',
-                                style: AppTextStyles.labelLarge.copyWith(color: AppColors.textSecondary),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Stack(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
                       children: [
-                        IconButton(
-                          icon: const Icon(Icons.tune),
-                          tooltip: 'Filter destinations',
-                          onPressed: () => _showFilterSheet(allDestinations),
-                        ),
-                        if (_activeFilterCount > 0)
-                          Positioned(
-                            right: 8,
-                            top: 8,
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: const BoxDecoration(
-                                color: AppColors.primary,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Text(
-                                '$_activeFilterCount',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
+                        if (_selectedLocation != null && _selectedLocation != 'All Locations') ...[
+                          ActionChip(
+                            label: Text(_selectedLocation!),
+                            onPressed: () => setState(() => _selectedLocation = null),
+                            avatar: const Icon(Icons.close, size: 16),
+                            backgroundColor: AppColors.softSecondarySurface,
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                        ],
+                        if (_popularOnly) ...[
+                          ActionChip(
+                            label: const Text('Popular'),
+                            onPressed: () => setState(() => _popularOnly = false),
+                            avatar: const Icon(Icons.close, size: 16),
+                            backgroundColor: AppColors.softSecondarySurface,
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                        ],
+                        if (_sortBy != 'Recommended') ...[
+                          ActionChip(
+                            label: Text('Sort: $_sortBy'),
+                            onPressed: () => setState(() => _sortBy = 'Recommended'),
+                            avatar: const Icon(Icons.close, size: 16),
+                            backgroundColor: AppColors.softSecondarySurface,
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                        ],
+                        if (_activeFilterCount == 0)
+                          Text(
+                            'All Destinations',
+                            style: AppTextStyles.labelLarge.copyWith(color: AppColors.textSecondary),
                           ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
 
               // Grid
               Expanded(
@@ -655,7 +667,7 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
 
   Widget _buildHomestaysGrid() {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('homestays').where('status', isEqualTo: 'Active').snapshots(),
+      stream: _homestaysStream,
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return const Center(child: Text('Error loading homestays.'));
