@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../map/offline_map_screen.dart';
 import '../../../../models/destination.dart';
@@ -28,6 +35,10 @@ class _DestinationDetailsScreenState extends State<DestinationDetailsScreen> {
   bool _isLoading = false;
   bool _notFound = false;
   bool _notActive = false;
+  
+  bool _isFavorite = false;
+  Position? _currentPosition;
+  final MapController _mapController = MapController();
 
   @override
   void initState() {
@@ -35,6 +46,7 @@ class _DestinationDetailsScreenState extends State<DestinationDetailsScreen> {
     _currentDestination = widget.destination;
     _pageController = PageController();
     _refreshDestination();
+    _getCurrentLocation();
   }
 
   @override
@@ -58,6 +70,83 @@ class _DestinationDetailsScreenState extends State<DestinationDetailsScreen> {
           }
         }
       });
+    }
+
+    bool isFav = false;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      try {
+        final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+        if (userDoc.exists) {
+          final favs = List<String>.from(userDoc.data()?['favoriteDestinations'] ?? []);
+          isFav = favs.contains(_currentDestination.id);
+        }
+      } catch (_) {}
+    }
+    if (mounted) {
+      setState(() {
+        _isFavorite = isFav;
+      });
+    }
+  }
+
+  Future<void> _getCurrentLocation() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) return;
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) return;
+    }
+    if (permission == LocationPermission.deniedForever) return;
+    try {
+      final position = await Geolocator.getCurrentPosition(locationSettings: const LocationSettings(accuracy: LocationAccuracy.best));
+      if (mounted) {
+        setState(() {
+          _currentPosition = position;
+        });
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please sign in to favorite.')));
+      return;
+    }
+    final newFav = !_isFavorite;
+    setState(() => _isFavorite = newFav);
+    try {
+      final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+      if (newFav) {
+        await userRef.update({'favoriteDestinations': FieldValue.arrayUnion([_currentDestination.id])});
+      } else {
+        await userRef.update({'favoriteDestinations': FieldValue.arrayRemove([_currentDestination.id])});
+      }
+    } catch (e) {
+      setState(() => _isFavorite = !newFav);
+    }
+  }
+
+  void _shareDestination() {
+    // ignore: deprecated_member_use
+    Share.share('Village Tour Sri Lanka\n\nDestination:\n${_currentDestination.name}\n\nLocation:\n${_currentDestination.locationName}\n\nExplore this destination on Village Tour Sri Lanka.');
+  }
+
+  Future<void> _openInGoogleMaps() async {
+    final query = Uri.encodeComponent(_currentDestination.name);
+    final url = Uri.parse('https://www.google.com/maps/search/?api=1&query=$query');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open Google Maps')),
+        );
+      }
     }
   }
 
@@ -117,119 +206,135 @@ class _DestinationDetailsScreenState extends State<DestinationDetailsScreen> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark,
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: const Color(0xFFF8F6EF),
+        appBar: AppBar(
+          backgroundColor: const Color(0xFFF8F6EF),
+          elevation: 0,
+          iconTheme: const IconThemeData(color: AppColors.primaryDark),
+          centerTitle: true,
+          title: Text(
+            'Destination Details',
+            style: AppTextStyles.screenHeading.copyWith(color: AppColors.primaryDark, fontSize: 20),
+          ),
+          actions: [
+            IconButton(
+              icon: Icon(_isFavorite ? Icons.favorite : Icons.favorite_border, color: _isFavorite ? Colors.red : AppColors.primaryDark),
+              onPressed: _toggleFavorite,
+            ),
+            IconButton(
+              icon: const Icon(Icons.share, color: AppColors.primaryDark),
+              onPressed: _shareDestination,
+            ),
+          ],
+        ),
         body: SafeArea(
           bottom: false,
-          child: Stack(
-            children: [
-              CustomScrollView(
-                slivers: [
-                  _buildSliverAppBar(images),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Loading indicator if refreshing in background
-                          if (_isLoading)
-                            const Padding(
-                              padding: EdgeInsets.only(bottom: AppSpacing.sm),
-                              child: LinearProgressIndicator(),
-                            ),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildImageCarousel(images),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: AppSpacing.lg),
+                      // Loading indicator if refreshing in background
+                      if (_isLoading)
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: AppSpacing.sm),
+                          child: LinearProgressIndicator(color: AppColors.primaryDark),
+                        ),
 
-                          Text(
-                            _currentDestination.name,
-                            style: AppTextStyles.screenHeading.copyWith(
-                              color: AppColors.primaryDark,
-                            ),
+                      Text(
+                        _currentDestination.name,
+                        style: AppTextStyles.screenHeading.copyWith(
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.location_on,
+                            size: 16,
+                            color: AppColors.secondary,
                           ),
-                          const SizedBox(height: AppSpacing.xs),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.location_on,
-                                size: 16,
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              _currentDestination.locationName,
+                              style: AppTextStyles.bodyMedium.copyWith(
                                 color: AppColors.secondary,
                               ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  _currentDestination.locationName,
-                                  style: AppTextStyles.bodyMedium.copyWith(
-                                    color: AppColors.secondary,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: AppSpacing.lg),
-                          Text(
-                            _currentDestination.shortDescription,
-                            style: AppTextStyles.bodyLarge.copyWith(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w500,
                             ),
                           ),
-                          const SizedBox(height: AppSpacing.xl),
-                          Text(
-                            'About this place',
-                            style: AppTextStyles.sectionHeading.copyWith(
-                              color: AppColors.primaryDark,
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.sm),
-                          Text(
-                            _currentDestination.description,
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: AppColors.textSecondary,
-                              height: 1.6,
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.xxl),
-                          _buildLocationSection(),
-                          const SizedBox(
-                            height: AppSpacing.xxl * 2,
-                          ), // Extra padding at bottom
                         ],
                       ),
-                    ),
+                      const SizedBox(height: AppSpacing.lg),
+                      Text(
+                        _currentDestination.shortDescription,
+                        style: AppTextStyles.bodyLarge.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                      Text(
+                        'About this place',
+                        style: AppTextStyles.sectionHeading.copyWith(
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        _currentDestination.description,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textSecondary,
+                          height: 1.6,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xxl),
+                      _buildLocationSection(),
+                      const SizedBox(
+                        height: AppSpacing.xxl * 2,
+                      ), // Extra padding at bottom
+                    ],
                   ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildSliverAppBar(List<String> images) {
-    return SliverAppBar(
-      expandedHeight: 350.0,
-      pinned: true,
-      backgroundColor:
-          AppColors.background, // Match the safe area color when collapsed
-      iconTheme: const IconThemeData(
-        color: AppColors.primaryDark,
-      ), // Dark icon when collapsed
-      leading: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: CircleAvatar(
-          backgroundColor: Colors.white.withValues(alpha: 0.7),
-          child: IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppColors.primaryDark),
-            onPressed: () => Navigator.of(context).pop(),
-            padding: EdgeInsets.zero,
-          ),
-        ),
-      ),
-      flexibleSpace: FlexibleSpaceBar(
-        background: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (images.isNotEmpty)
-              GestureDetector(
+  Widget _buildImageCarousel(List<String> images) {
+    if (images.isEmpty) {
+      return Container(
+        height: 280,
+        color: AppColors.primaryDark.withValues(alpha: 0.1),
+        width: double.infinity,
+        child: const Center(child: Icon(Icons.terrain, size: 64, color: AppColors.textSecondary)),
+      );
+    }
+    
+    return SizedBox(
+      height: 280,
+      child: Stack(
+        children: [
+          PageView.builder(
+            controller: _pageController,
+            itemCount: images.length,
+            onPageChanged: (index) {
+              setState(() {
+                _currentImageIndex = index;
+              });
+            },
+            itemBuilder: (context, index) {
+              return GestureDetector(
                 onTap: () {
                   Navigator.push(
                     context,
@@ -241,156 +346,100 @@ class _DestinationDetailsScreenState extends State<DestinationDetailsScreen> {
                     ),
                   );
                 },
-                child: PageView.builder(
-                  controller: _pageController,
-                  itemCount: images.length,
-                  onPageChanged: (index) {
-                    setState(() {
-                      _currentImageIndex = index;
-                    });
-                  },
-                  itemBuilder: (context, index) {
-                    final optUrl = CloudinaryUtils.getOptimizedUrl(
-                      images[index],
-                      width: 800,
-                      height: 800,
-                    );
-                    return Image.network(
-                      optUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          const Icon(Icons.broken_image),
-                    );
-                  },
-                ),
-              )
-            else
-              Container(
-                color: AppColors.softSecondarySurface,
-                child: const Icon(
-                  Icons.terrain,
-                  size: 80,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-
-            // Navigation Arrows
-            if (images.length > 1) ...[
-              Positioned(
-                left: 8,
-                top: 0,
-                bottom: 0,
-                child: Center(
-                  child: IconButton(
-                    icon: const Icon(
-                      Icons.chevron_left,
-                      color: Colors.white,
-                      size: 36,
-                    ),
-                    onPressed: () {
-                      if (_currentImageIndex > 0) {
-                        _pageController.previousPage(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                        );
-                      }
-                    },
+                child: Hero(
+                  tag: 'gallery_image_$index',
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.network(
+                        CloudinaryUtils.getOptimizedUrl(
+                          images[index],
+                          width: 800,
+                          height: 800,
+                        ),
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(Icons.broken_image),
+                      ),
+                      // Cinematic bottom gradient
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            stops: const [0.42, 1.0],
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withValues(alpha: 0.72),
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Subtle top gradient
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            stops: const [0.0, 0.28],
+                            colors: [
+                              Colors.black.withValues(alpha: 0.40),
+                              Colors.transparent,
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              Positioned(
-                right: 8,
-                top: 0,
-                bottom: 0,
-                child: Center(
-                  child: IconButton(
-                    icon: const Icon(
-                      Icons.chevron_right,
-                      color: Colors.white,
-                      size: 36,
-                    ),
-                    onPressed: () {
-                      if (_currentImageIndex < images.length - 1) {
-                        _pageController.nextPage(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                        );
-                      }
-                    },
-                  ),
-                ),
-              ),
-            ],
-
-            // Image Gradient Overlay for top buttons
+              );
+            },
+          ),
+          if (images.length > 1)
             Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-
-              height: 100,
+              bottom: 16,
+              right: 16,
               child: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Colors.black54, Colors.transparent],
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.45),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4)],
+                ),
+                child: Text(
+                  '${_currentImageIndex + 1} / ${images.length}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                    letterSpacing: 1.2,
                   ),
                 ),
               ),
             ),
-
-            // Image Counter
-            if (images.length > 1)
-              Positioned(
-                bottom: 16,
-                right: 16,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    '${_currentImageIndex + 1} / ${images.length}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
+          if (images.length > 1)
+            Positioned(
+              bottom: 22,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  images.length,
+                  (index) => Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    width: _currentImageIndex == index ? 20 : 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: _currentImageIndex == index ? Colors.white : Colors.white.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(3),
                     ),
                   ),
                 ),
               ),
-
-            // Dots Indicator
-            if (images.length > 1)
-              Positioned(
-                bottom: 16,
-                left: 0,
-                right: 0,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    images.length,
-                    (index) => Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 3),
-                      width: _currentImageIndex == index ? 8 : 6,
-                      height: _currentImageIndex == index ? 8 : 6,
-                      decoration: BoxDecoration(
-                        color: _currentImageIndex == index
-                            ? Colors.white
-                            : Colors.white54,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
@@ -401,86 +450,172 @@ class _DestinationDetailsScreenState extends State<DestinationDetailsScreen> {
       return const SizedBox.shrink();
     }
 
+    final destLocation = LatLng(_currentDestination.latitude!, _currentDestination.longitude!);
+    LatLng? currentLoc = _currentPosition != null 
+        ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
+        : null;
+
+    final points = <LatLng>[destLocation];
+    if (currentLoc != null) {
+      points.add(currentLoc);
+    }
+    final bounds = points.length > 1 && points[0] != points[1]
+        ? LatLngBounds.fromPoints(points)
+        : null;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Location',
+          'Location & Directions',
           style: AppTextStyles.sectionHeading.copyWith(
             color: AppColors.primaryDark,
           ),
         ),
         const SizedBox(height: AppSpacing.md),
         Container(
-          height: 200,
+          height: 250,
           width: double.infinity,
           decoration: BoxDecoration(
             color: AppColors.softSecondarySurface,
             borderRadius: BorderRadius.circular(16),
-          ),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // Map placeholder
-              const Center(
-                child: Icon(
-                  Icons.map_outlined,
-                  size: 48,
-                  color: AppColors.textSecondary,
-                ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
-              // Content overlay
-              Positioned(
-                bottom: 16,
-                left: 16,
-                right: 16,
-                child: Row(
-                  children: [
-                    const Icon(Icons.location_on, color: AppColors.primary),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _currentDestination.locationName,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                FlutterMap(
+                  mapController: _mapController,
+                  options: MapOptions(
+                    initialCenter: destLocation,
+                    initialZoom: 13.0,
+                    initialCameraFit: bounds != null
+                        ? CameraFit.bounds(
+                            bounds: bounds,
+                            padding: const EdgeInsets.all(40),
+                          )
+                        : null,
+                    interactionOptions: const InteractionOptions(
+                      flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
                     ),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
+                  ),
+                  children: [
+                    TileLayer(
+                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'com.villagetoursrilanka.app',
+                      tileProvider: CachedTileProvider(),
+                    ),
+                    if (currentLoc != null)
+                      PolylineLayer(
+                        polylines: [
+                          Polyline(
+                            points: [currentLoc, destLocation],
+                            strokeWidth: 4.0,
+                            color: AppColors.primary,
+                            pattern: const StrokePattern.dotted(),
+                          ),
+                        ],
                       ),
-                      onPressed: () {
-                        final lat = _currentDestination.latitude;
-                        final lng = _currentDestination.longitude;
-                        if (lat == null || lng == null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Map location is not available for this destination.'),
-                            ),
-                          );
-                          return;
-                        }
-
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => OfflineMapScreen(
-                              selectedDestination: _currentDestination,
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: destLocation,
+                          width: 40,
+                          height: 40,
+                          child: const Icon(
+                            Icons.location_on,
+                            color: AppColors.primary,
+                            size: 40,
+                          ),
+                        ),
+                        if (currentLoc != null)
+                          Marker(
+                            point: currentLoc,
+                            width: 30,
+                            height: 30,
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                color: Colors.blue,
+                                shape: BoxShape.circle,
+                                boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                              ),
+                              child: const Icon(
+                                Icons.person,
+                                color: Colors.white,
+                                size: 20,
+                              ),
                             ),
                           ),
-                        );
-                      },
-                      child: const Text('View on Offline Map'),
+                      ],
                     ),
                   ],
                 ),
-              ),
-            ],
+                Positioned(
+                  bottom: 12,
+                  right: 12,
+                  child: Row(
+                    children: [
+                      FloatingActionButton.small(
+                        heroTag: 'googleMapsBtn',
+                        backgroundColor: Colors.white,
+                        onPressed: _openInGoogleMaps,
+                        child: const Icon(Icons.map, color: AppColors.primaryDark),
+                      ),
+                      const SizedBox(width: 8),
+                      FloatingActionButton.small(
+                        heroTag: 'fullscreenBtn',
+                        backgroundColor: Colors.white,
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => OfflineMapScreen(
+                                selectedDestination: _currentDestination,
+                                showOnlySelected: true,
+                              ),
+                            ),
+                          );
+                        },
+                        child: const Icon(Icons.fullscreen, color: AppColors.primaryDark),
+                      ),
+                    ],
+                  ),
+                ),
+                if (currentLoc == null)
+                   Positioned(
+                    top: 12,
+                    left: 12,
+                    right: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.info_outline, size: 16, color: AppColors.secondary),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Enable location services to see directions',
+                              style: TextStyle(fontSize: 12, color: AppColors.textPrimary),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ],

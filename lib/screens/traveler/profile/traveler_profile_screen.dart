@@ -165,7 +165,7 @@ class TravelerProfileScreen extends StatelessWidget {
   Widget _buildAccountPreferencesSection(BuildContext context, UserModel user, User firebaseAuthUser) {
     final String email = user.email.isNotEmpty ? user.email : (firebaseAuthUser.email ?? 'Not added');
     final String phone = user.phoneNumber.isNotEmpty ? user.phoneNumber : 'Not added';
-    final int favCount = user.favorites.length;
+    final int favCount = user.favorites.length + user.favoriteDestinations.length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -204,12 +204,12 @@ class TravelerProfileScreen extends StatelessWidget {
               const Divider(height: 1, color: AppColors.border),
               _buildPreferenceRow(
                 Icons.favorite_border,
-                'Saved Sanctuary Homestays',
+                'Saved Favorites',
                 '$favCount wishlist items saved',
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const SavedHomestaysScreen()),
+                    MaterialPageRoute(builder: (_) => const SavedItemsScreen()),
                   );
                 },
               ),

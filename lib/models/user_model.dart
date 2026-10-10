@@ -13,6 +13,7 @@ class UserModel {
   final String? specialization;
   final String? bio;
   final List<String> favorites;
+  final List<String> favoriteDestinations;
   final bool isActive;
   final bool isEmailVerified;
   final bool isVerified;
@@ -32,6 +33,7 @@ class UserModel {
     this.specialization,
     this.bio,
     this.favorites = const [],
+    this.favoriteDestinations = const [],
     this.isActive = true,
     this.isEmailVerified = false,
     this.isVerified = false,
@@ -62,6 +64,7 @@ class UserModel {
       specialization: map['specialization'] ?? map['guideType'],
       bio: map['bio'] ?? map['description'],
       favorites: List<String>.from(map['favorites'] ?? []),
+      favoriteDestinations: List<String>.from(map['favoriteDestinations'] ?? []),
       isActive: map['isActive'] ?? true,
       isEmailVerified: map['isEmailVerified'] ?? false,
       isVerified: map['isVerified'] ?? map['verified'] ?? false,
@@ -83,6 +86,7 @@ class UserModel {
       if (specialization != null) 'specialization': specialization,
       if (bio != null) 'bio': bio,
       if (favorites.isNotEmpty) 'favorites': favorites,
+      if (favoriteDestinations.isNotEmpty) 'favoriteDestinations': favoriteDestinations,
       'isActive': isActive,
       'isEmailVerified': isEmailVerified,
       'isVerified': isVerified,

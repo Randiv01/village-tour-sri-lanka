@@ -52,47 +52,53 @@ class _HomestayCardState extends State<HomestayCard>
   Future<void> _loadStats() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
 
-    final reviewsSnap = await FirebaseFirestore.instance
-        .collection('homestay_reviews')
-        .where('homestayId', isEqualTo: widget.homestay.id)
-        .get();
-
-    double total = 0;
-    for (final doc in reviewsSnap.docs) {
-      total += (doc.data()['rating'] as num?)?.toDouble() ?? 0;
-    }
-    final count = reviewsSnap.docs.length;
-    final avg = count > 0 ? total / count : 0.0;
-
-    bool isFav = false;
-    if (uid != null) {
-      final userDoc =
-          await FirebaseFirestore.instance.collection('users').doc(uid).get();
-      final favorites =
-          List<String>.from(userDoc.data()?['favorites'] ?? []);
-      isFav = favorites.contains(widget.homestay.id);
-    }
-
-    bool isHostVerified = false;
     try {
-      final hostDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.homestay.hostId)
+      final reviewsSnap = await FirebaseFirestore.instance
+          .collection('homestay_reviews')
+          .where('homestayId', isEqualTo: widget.homestay.id)
           .get();
-      if (hostDoc.exists) {
-        isHostVerified = hostDoc.data()?['isVerified'] == true ||
-            hostDoc.data()?['verified'] == true;
-      }
-    } catch (_) {}
 
-    if (mounted) {
-      setState(() {
-        _reviewCount = count;
-        _avgRating = avg;
-        _isFavorite = isFav;
-        _isHostVerified = isHostVerified;
-        _loadedStats = true;
-      });
+      double total = 0;
+      for (final doc in reviewsSnap.docs) {
+        total += (doc.data()['rating'] as num?)?.toDouble() ?? 0;
+      }
+      final count = reviewsSnap.docs.length;
+      final avg = count > 0 ? total / count : 0.0;
+
+      bool isFav = false;
+      if (uid != null) {
+        final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+        final favorites = List<String>.from(userDoc.data()?['favorites'] ?? []);
+        isFav = favorites.contains(widget.homestay.id);
+      }
+
+      bool isHostVerified = false;
+      try {
+        final hostDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(widget.homestay.hostId)
+            .get();
+        if (hostDoc.exists) {
+          isHostVerified = hostDoc.data()?['isVerified'] == true ||
+              hostDoc.data()?['verified'] == true;
+        }
+      } catch (_) {}
+
+      if (mounted) {
+        setState(() {
+          _reviewCount = count;
+          _avgRating = avg;
+          _isFavorite = isFav;
+          _isHostVerified = isHostVerified;
+          _loadedStats = true;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loadedStats = true;
+        });
+      }
     }
   }
 

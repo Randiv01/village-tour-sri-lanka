@@ -15,6 +15,7 @@ import '../../../../repositories/homestay_repository.dart';
 import '../../../../repositories/homestay_booking_repository.dart';
 import '../auth/sign_in_screen.dart';
 import '../../traveler/chat/traveler_host_chat_screen.dart';
+import 'homestay_reviews_screen.dart';
 
 enum DateState { available, booked, pending, unavailable, past }
 class HomestayDetailsScreen extends StatefulWidget {
@@ -390,19 +391,27 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
                           _buildAmenitiesList(),
                           const SizedBox(height: AppSpacing.lg),
                         ] else if (_activeTabIndex == 2) ...[
-                          const Text('No reviews yet.', style: TextStyle(color: AppColors.textSecondary)),
+                          HomestayReviewsScreen(
+                            homestayId: widget.homestayId,
+                            homestayTitle: _homestay!.title,
+                            homestayLocation: _homestay!.location,
+                            hostName: _hostData != null ? (_hostData!['name'] ?? _hostData!['fullName'] ?? 'Host') : 'Host',
+                            isEmbedded: true,
+                          ),
                           const SizedBox(height: AppSpacing.lg),
                         ],
-                        const SizedBox(height: AppSpacing.xl),
-                        _buildInlineCalendar(nights),
-                        const SizedBox(height: AppSpacing.xl),
-                        if (_homestay!.optionalAddOns.isNotEmpty) ...[
-                          _buildAddOnsSection(),
+                        if (_activeTabIndex != 2) ...[
                           const SizedBox(height: AppSpacing.xl),
+                          _buildInlineCalendar(nights),
+                          const SizedBox(height: AppSpacing.xl),
+                          if (_homestay!.optionalAddOns.isNotEmpty) ...[
+                            _buildAddOnsSection(),
+                            const SizedBox(height: AppSpacing.xl),
+                          ],
+                          _buildGuestsSection(),
+                          const SizedBox(height: AppSpacing.xl),
+                          if (nights > 0) _buildPaymentSummary(nights, accommodationAmount, addOnAmount, totalAmount),
                         ],
-                        _buildGuestsSection(),
-                        const SizedBox(height: AppSpacing.xl),
-                        if (nights > 0) _buildPaymentSummary(nights, accommodationAmount, addOnAmount, totalAmount),
                         const SizedBox(height: AppSpacing.xxl),
                       ],
                     ),
@@ -532,15 +541,41 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
             ],
           ),
         ),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.star_rounded, color: AppColors.tertiary, size: 16),
-            const SizedBox(width: 4),
-            const Text('New', style: TextStyle(color: AppColors.primaryDark, fontSize: 13, fontWeight: FontWeight.bold)),
-            const SizedBox(width: 4),
-            Text('(No reviews)', style: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.7), fontSize: 12)),
-          ],
+        StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('homestay_reviews')
+              .where('homestayId', isEqualTo: widget.homestayId)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.star_rounded, color: AppColors.tertiary, size: 16),
+                  const SizedBox(width: 4),
+                  const Text('New', style: TextStyle(color: AppColors.primaryDark, fontSize: 13, fontWeight: FontWeight.bold)),
+                  const SizedBox(width: 4),
+                  Text('(No reviews)', style: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.7), fontSize: 12)),
+                ],
+              );
+            }
+            final docs = snapshot.data!.docs;
+            double total = 0;
+            for (var doc in docs) {
+              total += (doc.data() as Map<String, dynamic>)['rating'] ?? 0.0;
+            }
+            final avg = total / docs.length;
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.star_rounded, color: AppColors.tertiary, size: 16),
+                const SizedBox(width: 4),
+                Text(avg.toStringAsFixed(1), style: const TextStyle(color: AppColors.primaryDark, fontSize: 13, fontWeight: FontWeight.bold)),
+                const SizedBox(width: 4),
+                Text('(${docs.length} review${docs.length > 1 ? 's' : ''})', style: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.7), fontSize: 12)),
+              ],
+            );
+          },
         ),
       ],
     );

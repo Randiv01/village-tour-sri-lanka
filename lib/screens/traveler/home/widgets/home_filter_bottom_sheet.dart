@@ -136,7 +136,7 @@ class _HomeFilterBottomSheetState extends State<HomeFilterBottomSheet> {
     }
 
     try {
-      final position = await Geolocator.getCurrentPosition();
+      final position = await Geolocator.getCurrentPosition(locationSettings: const LocationSettings(accuracy: LocationAccuracy.best));
       if (mounted) {
         setState(() {
           _useLocation = true;
