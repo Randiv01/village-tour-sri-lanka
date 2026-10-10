@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../../../services/auth_service.dart';
 
 import '../../../../theme/app_colors.dart';
@@ -68,7 +69,9 @@ class HostHomeScreen extends StatelessWidget {
           width: double.infinity,
           decoration: const BoxDecoration(
             image: DecorationImage(
-              image: AssetImage('assets/images/sign-in/auth_rural_landscape.png'),
+              image: AssetImage(
+                'assets/images/sign-in/auth_rural_landscape.png',
+              ),
               fit: BoxFit.cover,
               alignment: Alignment.topCenter,
             ),
@@ -88,17 +91,20 @@ class HostHomeScreen extends StatelessWidget {
             ),
           ),
         ),
-        
+
         // SafeArea content
         SafeArea(
           child: StreamBuilder<DocumentSnapshot>(
-            stream: FirebaseAuth.instance.currentUser != null 
-                ? FirebaseFirestore.instance.collection('users').doc(FirebaseAuth.instance.currentUser!.uid).snapshots()
+            stream: FirebaseAuth.instance.currentUser != null
+                ? FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(FirebaseAuth.instance.currentUser!.uid)
+                      .snapshots()
                 : null,
             builder: (context, snapshot) {
               String? avatarUrl;
               String firstName = 'Host';
-              
+
               if (snapshot.hasData && snapshot.data!.data() != null) {
                 final data = snapshot.data!.data() as Map<String, dynamic>;
                 avatarUrl = data['profileImageUrl'] as String?;
@@ -107,7 +113,10 @@ class HostHomeScreen extends StatelessWidget {
               }
 
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.md,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -119,7 +128,9 @@ class HostHomeScreen extends StatelessWidget {
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (_) => const HostNotificationsScreen()),
+                              MaterialPageRoute(
+                                builder: (_) => const HostNotificationsScreen(),
+                              ),
                             );
                           },
                           child: Container(
@@ -133,7 +144,10 @@ class HostHomeScreen extends StatelessWidget {
                             ),
                             child: Stack(
                               children: [
-                                const Icon(Icons.notifications_none, color: AppColors.primaryDark),
+                                const Icon(
+                                  Icons.notifications_none,
+                                  color: AppColors.primaryDark,
+                                ),
                                 Positioned(
                                   right: 2,
                                   top: 2,
@@ -158,15 +172,21 @@ class HostHomeScreen extends StatelessWidget {
                             }
                           },
                           offset: const Offset(0, 50),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                           child: CircleAvatar(
                             radius: 20,
-                            backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty 
-                                ? NetworkImage(avatarUrl) 
+                            backgroundImage:
+                                avatarUrl != null && avatarUrl.isNotEmpty
+                                ? NetworkImage(avatarUrl)
                                 : null,
                             backgroundColor: AppColors.softSecondarySurface,
                             child: (avatarUrl == null || avatarUrl.isEmpty)
-                                ? const Icon(Icons.person, color: AppColors.textSecondary)
+                                ? const Icon(
+                                    Icons.person,
+                                    color: AppColors.textSecondary,
+                                  )
                                 : null,
                           ),
                           itemBuilder: (context) => [
@@ -174,9 +194,16 @@ class HostHomeScreen extends StatelessWidget {
                               value: 'profile',
                               child: Row(
                                 children: [
-                                  const Icon(Icons.person_outline, size: 20, color: AppColors.primaryDark),
+                                  const Icon(
+                                    Icons.person_outline,
+                                    size: 20,
+                                    color: AppColors.primaryDark,
+                                  ),
                                   const SizedBox(width: 12),
-                                  Text('My Profile', style: AppTextStyles.bodyMedium),
+                                  Text(
+                                    'My Profile',
+                                    style: AppTextStyles.bodyMedium,
+                                  ),
                                 ],
                               ),
                             ),
@@ -185,9 +212,18 @@ class HostHomeScreen extends StatelessWidget {
                               value: 'sign_out',
                               child: Row(
                                 children: [
-                                  const Icon(Icons.logout, size: 20, color: Colors.red),
+                                  const Icon(
+                                    Icons.logout,
+                                    size: 20,
+                                    color: Colors.red,
+                                  ),
                                   const SizedBox(width: 12),
-                                  Text('Sign Out', style: AppTextStyles.bodyMedium.copyWith(color: Colors.red)),
+                                  Text(
+                                    'Sign Out',
+                                    style: AppTextStyles.bodyMedium.copyWith(
+                                      color: Colors.red,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -195,9 +231,9 @@ class HostHomeScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    
+
                     const SizedBox(height: AppSpacing.xl),
-                    
+
                     // Welcome Text
                     Text(
                       _getGreeting(),
@@ -235,7 +271,11 @@ class HostHomeScreen extends StatelessWidget {
                         ),
                         const Padding(
                           padding: EdgeInsets.symmetric(horizontal: 8.0),
-                          child: Icon(Icons.circle, size: 4, color: AppColors.secondary),
+                          child: Icon(
+                            Icons.circle,
+                            size: 4,
+                            color: AppColors.secondary,
+                          ),
                         ),
                         Text(
                           'Nilagama',
@@ -283,7 +323,10 @@ class HostHomeScreen extends StatelessWidget {
                   const SizedBox(width: 4),
                   const Text(
                     "vs last month",
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 10),
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 10,
+                    ),
                   ),
                 ],
               ),
@@ -313,7 +356,9 @@ class HostHomeScreen extends StatelessWidget {
                     child: LinearProgressIndicator(
                       value: 0.7,
                       backgroundColor: AppColors.softSecondarySurface,
-                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        Colors.green,
+                      ),
                       minHeight: 6,
                     ),
                   ),
@@ -348,7 +393,12 @@ class HostHomeScreen extends StatelessWidget {
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
             onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const AddHomestayScreen()));
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AddHomestayScreen(),
+                ),
+              );
             },
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.md),
@@ -386,7 +436,10 @@ class HostHomeScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+                  const Icon(
+                    Icons.chevron_right,
+                    color: AppColors.textSecondary,
+                  ),
                 ],
               ),
             ),
@@ -399,8 +452,11 @@ class HostHomeScreen extends StatelessWidget {
   Widget _buildMyHomestaysSection() {
     final user = FirebaseAuth.instance.currentUser;
     return StreamBuilder<QuerySnapshot>(
-      stream: user != null 
-          ? FirebaseFirestore.instance.collection('homestays').where('hostId', isEqualTo: user.uid).snapshots()
+      stream: user != null
+          ? FirebaseFirestore.instance
+                .collection('homestays')
+                .where('hostId', isEqualTo: user.uid)
+                .snapshots()
           : null,
       builder: (context, snapshot) {
         int listedCount = 0;
@@ -409,24 +465,28 @@ class HostHomeScreen extends StatelessWidget {
         if (snapshot.hasData) {
           final docs = snapshot.data!.docs;
           listedCount = docs.length;
-          
+
           for (var doc in docs) {
             final data = doc.data() as Map<String, dynamic>;
             final images = List<String>.from(data['images'] ?? []);
-            final imageUrl = images.isNotEmpty ? images.first : 'assets/images/onboarding/onboarding_01.png';
-            
+            final imageUrl = images.isNotEmpty
+                ? images.first
+                : 'assets/images/onboarding/onboarding_01.png';
+
             homestayCards.add(
               HostHomestayCard(
                 title: data['title'] ?? 'Unnamed Homestay',
                 location: data['location'] ?? 'Unknown Location',
-                roomsInfo: '${data['roomsCount'] ?? 1} Rooms  |  Up to ${data['maxGuests'] ?? 2} Guests',
-                priceInfo: 'Rs. ${data['pricePerNight']?.toString() ?? '0'}/night',
+                roomsInfo:
+                    '${data['roomsCount'] ?? 1} Rooms  |  Up to ${data['maxGuests'] ?? 2} Guests',
+                priceInfo:
+                    'Rs. ${data['pricePerNight']?.toString() ?? '0'}/night',
                 occupancyInfo: '0% Booked', // placeholder logic
                 status: data['status'] ?? 'Active',
-                imageUrl: imageUrl, 
+                imageUrl: imageUrl,
                 onTapManage: () {
                   Navigator.push(
-                    context, 
+                    context,
                     MaterialPageRoute(
                       builder: (context) => UpdateHomestayScreen(
                         homestay: Homestay.fromMap(data, doc.id),
@@ -436,24 +496,28 @@ class HostHomeScreen extends StatelessWidget {
                 },
                 onTapCard: () {
                   Navigator.push(
-                    context, 
+                    context,
                     MaterialPageRoute(
-                      builder: (context) => HomestayDetailsScreen(
-                        homestayId: doc.id,
-                      ),
+                      builder: (context) =>
+                          HomestayDetailsScreen(homestayId: doc.id),
                     ),
                   );
                 },
-              )
+              ),
             );
           }
         }
 
         if (homestayCards.isEmpty) {
-          homestayCards.add(const Padding(
-            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: Text('No homestays listed yet.', style: TextStyle(color: AppColors.textSecondary)),
-          ));
+          homestayCards.add(
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: Text(
+                'No homestays listed yet.',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+            ),
+          );
         } else {
           homestayCards.add(const SizedBox(width: 8)); // Right padding
         }
@@ -478,7 +542,10 @@ class HostHomeScreen extends StatelessWidget {
                       ),
                       const SizedBox(width: AppSpacing.md),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
@@ -505,7 +572,11 @@ class HostHomeScreen extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const Icon(Icons.chevron_right, size: 16, color: AppColors.secondary),
+                        const Icon(
+                          Icons.chevron_right,
+                          size: 16,
+                          color: AppColors.secondary,
+                        ),
                       ],
                     ),
                   ),
@@ -518,20 +589,31 @@ class HostHomeScreen extends StatelessWidget {
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.only(left: AppSpacing.lg),
                 clipBehavior: Clip.none,
-                child: Row(
-                  children: homestayCards,
-                ),
+                child: Row(children: homestayCards),
               )
             else
               ...homestayCards,
           ],
         );
-      }
+      },
     );
   }
 
   String _getMonth(int month) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return months[month - 1];
   }
 
@@ -554,7 +636,12 @@ class HostHomeScreen extends StatelessWidget {
               ),
               InkWell(
                 onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const HostBookingsScreen()));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const HostBookingsScreen(),
+                    ),
+                  );
                 },
                 child: Row(
                   children: [
@@ -565,7 +652,11 @@ class HostHomeScreen extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const Icon(Icons.chevron_right, size: 16, color: AppColors.secondary),
+                    const Icon(
+                      Icons.chevron_right,
+                      size: 16,
+                      color: AppColors.secondary,
+                    ),
                   ],
                 ),
               ),
@@ -573,43 +664,70 @@ class HostHomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           StreamBuilder<QuerySnapshot>(
-            stream: user != null 
+            stream: user != null
                 ? FirebaseFirestore.instance
-                    .collection('homestay_bookings')
-                    .where('hostId', isEqualTo: user.uid)
-                    .snapshots()
+                      .collection('homestay_bookings')
+                      .where('hostId', isEqualTo: user.uid)
+                      .snapshots()
                 : null,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: Padding(padding: EdgeInsets.all(AppSpacing.md), child: CircularProgressIndicator()));
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(AppSpacing.md),
+                    child: CircularProgressIndicator(),
+                  ),
+                );
               }
               if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return const Text('No upcoming bookings at the moment.', style: TextStyle(color: AppColors.textSecondary));
+                return const Text(
+                  'No upcoming bookings at the moment.',
+                  style: TextStyle(color: AppColors.textSecondary),
+                );
               }
 
               final now = DateTime.now();
-              final bookings = snapshot.data!.docs.map((doc) {
-                return HomestayBooking.fromMap(doc.data() as Map<String, dynamic>, doc.id);
-              }).where((b) => b.checkOutDate.isAfter(now) && b.bookingStatus != 'cancelled' && b.bookingStatus != 'rejected').toList();
-              
+              final bookings = snapshot.data!.docs
+                  .map((doc) {
+                    return HomestayBooking.fromMap(
+                      doc.data() as Map<String, dynamic>,
+                      doc.id,
+                    );
+                  })
+                  .where(
+                    (b) =>
+                        b.checkOutDate.isAfter(now) &&
+                        b.bookingStatus != 'cancelled' &&
+                        b.bookingStatus != 'rejected',
+                  )
+                  .toList();
+
               bookings.sort((a, b) => a.checkInDate.compareTo(b.checkInDate));
 
               if (bookings.isEmpty) {
-                return const Text('No upcoming bookings at the moment.', style: TextStyle(color: AppColors.textSecondary));
+                return const Text(
+                  'No upcoming bookings at the moment.',
+                  style: TextStyle(color: AppColors.textSecondary),
+                );
               }
 
               return Column(
                 children: bookings.take(3).map((booking) {
-                  final inDate = '${booking.checkInDate.day} ${_getMonth(booking.checkInDate.month)} ${booking.checkInDate.year}';
-                  final outDate = '${booking.checkOutDate.day} ${_getMonth(booking.checkOutDate.month)} ${booking.checkOutDate.year}';
-                  
+                  final inDate =
+                      '${booking.checkInDate.day} ${_getMonth(booking.checkInDate.month)} ${booking.checkInDate.year}';
+                  final outDate =
+                      '${booking.checkOutDate.day} ${_getMonth(booking.checkOutDate.month)} ${booking.checkOutDate.year}';
+
                   return UpcomingBookingTile(
                     guestName: booking.travelerName,
                     dateRange: '$inDate - $outDate',
                     guestsInfo: '${booking.guestCount} Guests',
                     propertyName: booking.homestayTitle,
-                    status: booking.bookingStatus[0].toUpperCase() + booking.bookingStatus.substring(1),
-                    avatarUrl: 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(booking.travelerName)}&background=random',
+                    status:
+                        booking.bookingStatus[0].toUpperCase() +
+                        booking.bookingStatus.substring(1),
+                    avatarUrl:
+                        'https://ui-avatars.com/api/?name=${Uri.encodeComponent(booking.travelerName)}&background=random',
                   );
                 }).toList(),
               );
@@ -640,7 +758,9 @@ class HostHomeScreen extends StatelessWidget {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const MyPromotionsScreen()),
+                    MaterialPageRoute(
+                      builder: (context) => const MyPromotionsScreen(),
+                    ),
                   );
                 },
                 child: Row(
@@ -652,7 +772,11 @@ class HostHomeScreen extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const Icon(Icons.chevron_right, size: 16, color: AppColors.secondary),
+                    const Icon(
+                      Icons.chevron_right,
+                      size: 16,
+                      color: AppColors.secondary,
+                    ),
                   ],
                 ),
               ),
@@ -661,7 +785,12 @@ class HostHomeScreen extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           InkWell(
             onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const MyPromotionsScreen()));
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const MyPromotionsScreen(),
+                ),
+              );
             },
             child: Container(
               padding: const EdgeInsets.all(AppSpacing.md),
@@ -675,10 +804,16 @@ class HostHomeScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.secondary.withValues(alpha: 0.5), // match image
+                      color: AppColors.secondary.withValues(
+                        alpha: 0.5,
+                      ), // match image
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.analytics_outlined, color: Colors.white, size: 24),
+                    child: const Icon(
+                      Icons.analytics_outlined,
+                      color: Colors.white,
+                      size: 24,
+                    ),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
@@ -703,7 +838,10 @@ class HostHomeScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+                  const Icon(
+                    Icons.chevron_right,
+                    color: AppColors.textSecondary,
+                  ),
                 ],
               ),
             ),

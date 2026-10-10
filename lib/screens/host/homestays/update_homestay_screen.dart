@@ -23,7 +23,7 @@ class UpdateHomestayScreen extends StatefulWidget {
 class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
   final _formKey = GlobalKey<FormState>();
   final _homestayRepo = HomestayRepository();
-  
+
   // Controllers
   late TextEditingController _titleController;
   late TextEditingController _locationController;
@@ -34,18 +34,33 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
 
   // Basic Info
   late String _propertyType;
-  final List<String> _propertyTypes = ['Entire Homestay', 'Private Room', 'Shared Room'];
+  final List<String> _propertyTypes = [
+    'Entire Homestay',
+    'Private Room',
+    'Shared Room',
+  ];
 
   // Amenities
   final List<String> _availableAmenities = [
-    'Wi-Fi', 'Free Parking', 'Breakfast', 'Private Bathroom', 
-    'Hot Water', 'Air Conditioning', 'Fan', 'Kitchen', 'Garden', 'TV'
+    'Wi-Fi',
+    'Free Parking',
+    'Breakfast',
+    'Private Bathroom',
+    'Hot Water',
+    'Air Conditioning',
+    'Fan',
+    'Kitchen',
+    'Garden',
+    'TV',
   ];
   late List<String> _selectedAmenities;
 
   // House Rules
   final List<String> _availableRules = [
-    'No Smoking', 'No Parties', 'Pets Allowed', 'Children Allowed'
+    'No Smoking',
+    'No Parties',
+    'Pets Allowed',
+    'Children Allowed',
   ];
   late List<String> _selectedRules;
 
@@ -59,8 +74,17 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
   late String _checkInTime;
   late String _checkOutTime;
   final List<String> _timeOptions = [
-    '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', 
-    '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM'
+    '8:00 AM',
+    '9:00 AM',
+    '10:00 AM',
+    '11:00 AM',
+    '12:00 PM',
+    '1:00 PM',
+    '2:00 PM',
+    '3:00 PM',
+    '4:00 PM',
+    '5:00 PM',
+    '6:00 PM',
   ];
 
   // Add-ons
@@ -81,7 +105,7 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
   void initState() {
     super.initState();
     final h = widget.homestay;
-    
+
     _titleController = TextEditingController(text: h.title);
     _locationController = TextEditingController(text: h.location);
     _priceController = TextEditingController(text: h.pricePerNight.toString());
@@ -89,22 +113,26 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
     _guestsController = TextEditingController(text: h.maxGuests.toString());
     _descriptionController = TextEditingController(text: h.description);
 
-    _propertyType = _propertyTypes.contains(h.propertyType) ? h.propertyType : _propertyTypes.first;
+    _propertyType = _propertyTypes.contains(h.propertyType)
+        ? h.propertyType
+        : _propertyTypes.first;
     _selectedAmenities = List.from(h.amenities);
     _selectedRules = List.from(h.houseRules);
-    
+
     _availableDays = Map.from(h.availableDays);
     _unavailableDates = List.from(h.unavailableDates);
-    
-    _checkInTime = _timeOptions.contains(h.checkInTime) ? h.checkInTime : '2:00 PM';
-    _checkOutTime = _timeOptions.contains(h.checkOutTime) ? h.checkOutTime : '11:00 AM';
-    
+
+    _checkInTime = _timeOptions.contains(h.checkInTime)
+        ? h.checkInTime
+        : '2:00 PM';
+    _checkOutTime = _timeOptions.contains(h.checkOutTime)
+        ? h.checkOutTime
+        : '11:00 AM';
+
     _addOns = List.from(h.optionalAddOns);
-    
+
     _isAvailable = h.status == 'Active';
     _networkImages = List.from(h.images);
-
-
   }
 
   @override
@@ -128,7 +156,9 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
           if (images.length > remainingSlots) {
             _selectedLocalImages.addAll(images.take(remainingSlots));
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('You can only upload up to 10 images in total.')),
+              const SnackBar(
+                content: Text('You can only upload up to 10 images in total.'),
+              ),
             );
           } else {
             _selectedLocalImages.addAll(images);
@@ -140,8 +170,10 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
     }
   }
 
-  void _removeNetworkImage(int index) => setState(() => _networkImages.removeAt(index));
-  void _removeLocalImage(int index) => setState(() => _selectedLocalImages.removeAt(index));
+  void _removeNetworkImage(int index) =>
+      setState(() => _networkImages.removeAt(index));
+  void _removeLocalImage(int index) =>
+      setState(() => _selectedLocalImages.removeAt(index));
 
   Future<void> _selectUnavailableDate() async {
     final DateTime? picked = await showDatePicker(
@@ -152,7 +184,12 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
     );
     if (picked != null) {
       setState(() {
-        if (!_unavailableDates.any((d) => d.year == picked.year && d.month == picked.month && d.day == picked.day)) {
+        if (!_unavailableDates.any(
+          (d) =>
+              d.year == picked.year &&
+              d.month == picked.month &&
+              d.day == picked.day,
+        )) {
           _unavailableDates.add(picked);
           _unavailableDates.sort();
         }
@@ -163,7 +200,7 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
   void _showAddOnDialog() {
     final titleCtrl = TextEditingController();
     final priceCtrl = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -171,13 +208,25 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: 'Title (e.g. Buffet Lunch)')),
+            TextField(
+              controller: titleCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Title (e.g. Buffet Lunch)',
+              ),
+            ),
             const SizedBox(height: 8),
-            TextField(controller: priceCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Price (Rs.)')),
+            TextField(
+              controller: priceCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Price (Rs.)'),
+            ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             onPressed: () {
               final title = titleCtrl.text.trim();
@@ -198,10 +247,12 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
 
   Future<void> _saveUpdates() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     if (_networkImages.isEmpty && _selectedLocalImages.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please keep at least 1 image for your homestay.')),
+        const SnackBar(
+          content: Text('Please keep at least 1 image for your homestay.'),
+        ),
       );
       return;
     }
@@ -247,7 +298,10 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Homestay updated successfully!'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('Homestay updated successfully!'),
+            backgroundColor: Colors.green,
+          ),
         );
         Navigator.pop(context);
       }
@@ -255,7 +309,10 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
       debugPrint('Error updating homestay: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update homestay: $e'), backgroundColor: AppColors.error),
+          SnackBar(
+            content: Text('Failed to update homestay: $e'),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     } finally {
@@ -280,15 +337,26 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
           child: IconButton(
             icon: Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: AppColors.border), color: Colors.white),
-              child: const Icon(Icons.arrow_back, size: 18, color: AppColors.textPrimary),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.border),
+                color: Colors.white,
+              ),
+              child: const Icon(
+                Icons.arrow_back,
+                size: 18,
+                color: AppColors.textPrimary,
+              ),
             ),
             onPressed: () => Navigator.pop(context),
           ),
         ),
         title: Text(
           'Update Homestay',
-          style: AppTextStyles.sectionHeading.copyWith(color: AppColors.primaryDark, fontSize: 18),
+          style: AppTextStyles.sectionHeading.copyWith(
+            color: AppColors.primaryDark,
+            fontSize: 18,
+          ),
         ),
       ),
       body: Stack(
@@ -311,11 +379,10 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
                     _buildSectionHeader('3. Amenities'),
                     _buildAmenitiesSection(),
 
-
                     const SizedBox(height: AppSpacing.xl),
                     _buildSectionHeader('4. Gallery'),
                     _buildGallerySection(),
-                    
+
                     const SizedBox(height: AppSpacing.xl),
                     _buildSectionHeader('5. Description'),
                     _buildDescriptionSection(),
@@ -346,7 +413,7 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
               ),
             ),
           ),
-          
+
           // Bottom Sticky Button
           Positioned(
             left: 0,
@@ -356,7 +423,13 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
               padding: const EdgeInsets.all(AppSpacing.lg),
               decoration: BoxDecoration(
                 color: Colors.white,
-                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -5))],
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -5),
+                  ),
+                ],
               ),
               child: SafeArea(
                 child: ElevatedButton(
@@ -364,11 +437,27 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryDark,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                  child: _isSaving 
-                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text('Save Changes', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                  child: _isSaving
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'Save Changes',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
               ),
             ),
@@ -383,7 +472,12 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
       padding: const EdgeInsets.only(bottom: 12),
       child: Align(
         alignment: Alignment.centerLeft,
-        child: Text(title, style: AppTextStyles.labelLarge.copyWith(color: AppColors.primaryDark)),
+        child: Text(
+          title,
+          style: AppTextStyles.labelLarge.copyWith(
+            color: AppColors.primaryDark,
+          ),
+        ),
       ),
     );
   }
@@ -391,7 +485,11 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
   Widget _buildSectionContainer({required Widget child}) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: AppColors.border, width: 0.5)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border, width: 0.5),
+      ),
       child: child,
     );
   }
@@ -404,16 +502,32 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
           Expanded(
             child: Row(
               children: [
-                const Icon(Icons.calendar_today_outlined, size: 18, color: AppColors.primaryDark),
+                const Icon(
+                  Icons.calendar_today_outlined,
+                  size: 18,
+                  color: AppColors.primaryDark,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Listing Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryDark)),
+                      const Text(
+                        'Listing Status',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
                       Text(
-                        _isAvailable ? 'Currently AVAILABLE for booking' : 'Currently UNAVAILABLE for booking',
-                        style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                        _isAvailable
+                            ? 'Currently AVAILABLE for booking'
+                            : 'Currently UNAVAILABLE for booking',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ],
                   ),
@@ -438,20 +552,45 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
         children: [
           _buildFieldLabel('Property Title'),
           const SizedBox(height: 8),
-          _buildTextField(controller: _titleController, hintText: 'e.g. Galewela Riverside Cottage', validator: (v) => v == null || v.isEmpty ? 'Required' : null),
+          _buildTextField(
+            controller: _titleController,
+            hintText: 'e.g. Galewela Riverside Cottage',
+            validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+          ),
           const SizedBox(height: AppSpacing.lg),
           _buildFieldLabel('Property Type'),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
             initialValue: _propertyType,
-            decoration: InputDecoration(contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)), filled: true, fillColor: Colors.white),
-            items: _propertyTypes.map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(),
+            decoration: InputDecoration(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              filled: true,
+              fillColor: Colors.white,
+            ),
+            items: _propertyTypes
+                .map((type) => DropdownMenuItem(value: type, child: Text(type)))
+                .toList(),
             onChanged: (val) => setState(() => _propertyType = val!),
           ),
           const SizedBox(height: AppSpacing.lg),
           _buildFieldLabel('Location / Village Name'),
           const SizedBox(height: 8),
-          _buildTextField(controller: _locationController, hintText: 'e.g. Nilagama, Galewela', prefixIcon: const Icon(Icons.location_on_outlined, size: 18, color: AppColors.primaryDark), validator: (v) => v == null || v.isEmpty ? 'Required' : null),
+          _buildTextField(
+            controller: _locationController,
+            hintText: 'e.g. Nilagama, Galewela',
+            prefixIcon: const Icon(
+              Icons.location_on_outlined,
+              size: 18,
+              color: AppColors.primaryDark,
+            ),
+            validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+          ),
         ],
       ),
     );
@@ -465,11 +604,29 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildFieldLabel('Price per night (Rs.)'),
-              const Text('Village rate guideline', style: TextStyle(fontSize: 10, color: AppColors.secondary)),
+              const Text(
+                'Village rate guideline',
+                style: TextStyle(fontSize: 10, color: AppColors.secondary),
+              ),
             ],
           ),
           const SizedBox(height: 8),
-          _buildTextField(controller: _priceController, hintText: '3500', keyboardType: TextInputType.number, prefixIcon: const Padding(padding: EdgeInsets.all(12.0), child: Text('Rs.', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryDark))), validator: (v) => v == null || v.isEmpty ? 'Required' : null),
+          _buildTextField(
+            controller: _priceController,
+            hintText: '3500',
+            keyboardType: TextInputType.number,
+            prefixIcon: const Padding(
+              padding: EdgeInsets.all(12.0),
+              child: Text(
+                'Rs.',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryDark,
+                ),
+              ),
+            ),
+            validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+          ),
           const SizedBox(height: AppSpacing.lg),
           Row(
             children: [
@@ -479,7 +636,12 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
                   children: [
                     _buildFieldLabel('Rooms'),
                     const SizedBox(height: 8),
-                    _buildTextField(controller: _roomsController, hintText: '1', keyboardType: TextInputType.number, validator: (v) => v == null || v.isEmpty ? 'Req' : null),
+                    _buildTextField(
+                      controller: _roomsController,
+                      hintText: '1',
+                      keyboardType: TextInputType.number,
+                      validator: (v) => v == null || v.isEmpty ? 'Req' : null,
+                    ),
                   ],
                 ),
               ),
@@ -490,7 +652,12 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
                   children: [
                     _buildFieldLabel('Max Guests'),
                     const SizedBox(height: 8),
-                    _buildTextField(controller: _guestsController, hintText: '2', keyboardType: TextInputType.number, validator: (v) => v == null || v.isEmpty ? 'Req' : null),
+                    _buildTextField(
+                      controller: _guestsController,
+                      hintText: '2',
+                      keyboardType: TextInputType.number,
+                      validator: (v) => v == null || v.isEmpty ? 'Req' : null,
+                    ),
                   ],
                 ),
               ),
@@ -501,41 +668,66 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
     );
   }
 
-
-
   static IconData _amenityIcon(String amenity) {
     switch (amenity) {
-      case 'Wi-Fi':            return Icons.wifi_rounded;
-      case 'Free Parking':     return Icons.local_parking_rounded;
-      case 'Breakfast':        return Icons.free_breakfast_rounded;
-      case 'Private Bathroom': return Icons.bathtub_outlined;
-      case 'Hot Water':        return Icons.water_drop_outlined;
-      case 'Air Conditioning': return Icons.ac_unit_rounded;
-      case 'Fan':              return Icons.wind_power_rounded;
-      case 'Kitchen':          return Icons.kitchen_rounded;
-      case 'Garden':           return Icons.yard_rounded;
-      case 'TV':               return Icons.tv_rounded;
+      case 'Wi-Fi':
+        return Icons.wifi_rounded;
+      case 'Free Parking':
+        return Icons.local_parking_rounded;
+      case 'Breakfast':
+        return Icons.free_breakfast_rounded;
+      case 'Private Bathroom':
+        return Icons.bathtub_outlined;
+      case 'Hot Water':
+        return Icons.water_drop_outlined;
+      case 'Air Conditioning':
+        return Icons.ac_unit_rounded;
+      case 'Fan':
+        return Icons.wind_power_rounded;
+      case 'Kitchen':
+        return Icons.kitchen_rounded;
+      case 'Garden':
+        return Icons.yard_rounded;
+      case 'TV':
+        return Icons.tv_rounded;
       // House rules
-      case 'No Smoking':       return Icons.smoke_free_rounded;
-      case 'No Parties':       return Icons.do_not_disturb_on_rounded;
-      case 'Pets Allowed':     return Icons.pets_rounded;
-      case 'Children Allowed': return Icons.child_care_rounded;
-      default:                 return Icons.check_circle_outline_rounded;
+      case 'No Smoking':
+        return Icons.smoke_free_rounded;
+      case 'No Parties':
+        return Icons.do_not_disturb_on_rounded;
+      case 'Pets Allowed':
+        return Icons.pets_rounded;
+      case 'Children Allowed':
+        return Icons.child_care_rounded;
+      default:
+        return Icons.check_circle_outline_rounded;
     }
   }
 
   Widget _buildAmenitiesSection() {
     return _buildSectionContainer(
       child: Wrap(
-        spacing: 8, runSpacing: 8,
+        spacing: 8,
+        runSpacing: 8,
         children: _availableAmenities.map((amenity) {
           final isSelected = _selectedAmenities.contains(amenity);
           return FilterChip(
-            avatar: Icon(_amenityIcon(amenity), size: 16,
-                color: isSelected ? AppColors.primaryDark : AppColors.textSecondary),
+            avatar: Icon(
+              _amenityIcon(amenity),
+              size: 16,
+              color: isSelected
+                  ? AppColors.primaryDark
+                  : AppColors.textSecondary,
+            ),
             label: Text(amenity),
             selected: isSelected,
-            onSelected: (val) => setState(() { if (val) { _selectedAmenities.add(amenity); } else { _selectedAmenities.remove(amenity); } }),
+            onSelected: (val) => setState(() {
+              if (val) {
+                _selectedAmenities.add(amenity);
+              } else {
+                _selectedAmenities.remove(amenity);
+              }
+            }),
             selectedColor: AppColors.primaryDark.withValues(alpha: 0.2),
             checkmarkColor: AppColors.primaryDark,
             showCheckmark: false,
@@ -544,7 +736,6 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
       ),
     );
   }
-
 
   Widget _buildGallerySection() {
     int totalImages = _networkImages.length + _selectedLocalImages.length;
@@ -555,8 +746,22 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Gallery', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryDark)),
-              Text('$totalImages/10 photos', style: const TextStyle(fontSize: 10, color: AppColors.secondary, fontWeight: FontWeight.bold)),
+              const Text(
+                'Gallery',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: AppColors.primaryDark,
+                ),
+              ),
+              Text(
+                '$totalImages/10 photos',
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: AppColors.secondary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: AppSpacing.md),
@@ -564,12 +769,36 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                for (int i = 0; i < _networkImages.length; i++) _buildImageCard(imageProvider: NetworkImage(_networkImages[i]), badgeText: i == 0 ? 'Cover' : 'Photo', onRemove: () => _removeNetworkImage(i)),
-                for (int i = 0; i < _selectedLocalImages.length; i++) _buildImageCard(imageProvider: FileImage(File(_selectedLocalImages[i].path)), badgeText: 'New', onRemove: () => _removeLocalImage(i)),
+                for (int i = 0; i < _networkImages.length; i++)
+                  _buildImageCard(
+                    imageProvider: NetworkImage(_networkImages[i]),
+                    badgeText: i == 0 ? 'Cover' : 'Photo',
+                    onRemove: () => _removeNetworkImage(i),
+                  ),
+                for (int i = 0; i < _selectedLocalImages.length; i++)
+                  _buildImageCard(
+                    imageProvider: FileImage(
+                      File(_selectedLocalImages[i].path),
+                    ),
+                    badgeText: 'New',
+                    onRemove: () => _removeLocalImage(i),
+                  ),
                 if (totalImages < 10)
                   GestureDetector(
                     onTap: _pickImages,
-                    child: Container(width: 80, height: 80, decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)), child: const Icon(Icons.add, color: AppColors.textSecondary)),
+                    child: Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: const Icon(
+                        Icons.add,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
                   ),
               ],
             ),
@@ -579,15 +808,68 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
     );
   }
 
-  Widget _buildImageCard({required ImageProvider imageProvider, required String badgeText, required VoidCallback onRemove}) {
+  Widget _buildImageCard({
+    required ImageProvider imageProvider,
+    required String badgeText,
+    required VoidCallback onRemove,
+  }) {
     return Container(
-      margin: const EdgeInsets.only(right: 12), width: 80, height: 80,
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+      margin: const EdgeInsets.only(right: 12),
+      width: 80,
+      height: 80,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
       child: Stack(
         children: [
-          ClipRRect(borderRadius: BorderRadius.circular(11), child: Image(image: imageProvider, width: 80, height: 80, fit: BoxFit.cover)),
-          Positioned(top: 4, right: 4, child: GestureDetector(onTap: onRemove, child: Container(padding: const EdgeInsets.all(2), decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle), child: const Icon(Icons.close, color: AppColors.error, size: 14)))),
-          Positioned(bottom: 6, left: 6, child: Container(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2), decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(4)), child: Text(badgeText, style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)))),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(11),
+            child: Image(
+              image: imageProvider,
+              width: 80,
+              height: 80,
+              fit: BoxFit.cover,
+            ),
+          ),
+          Positioned(
+            top: 4,
+            right: 4,
+            child: GestureDetector(
+              onTap: onRemove,
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.close,
+                  color: AppColors.error,
+                  size: 14,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 6,
+            left: 6,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                badgeText,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 8,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -597,30 +879,51 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
     return _buildSectionContainer(
       child: TextFormField(
         controller: _descriptionController,
-        maxLines: 5, maxLength: 500,
-        decoration: InputDecoration(hintText: 'Describe your homestay...', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)), filled: true, fillColor: Colors.white),
+        maxLines: 5,
+        maxLength: 500,
+        decoration: InputDecoration(
+          hintText: 'Describe your homestay...',
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          filled: true,
+          fillColor: Colors.white,
+        ),
         validator: (v) => v == null || v.isEmpty ? 'Required' : null,
       ),
     );
   }
 
   Widget _buildBookingAvailabilitySection() {
-    final days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    final days = [
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+      'sunday',
+    ];
     return _buildSectionContainer(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Select days when you accept bookings:', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+          const Text(
+            'Select days when you accept bookings:',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+          ),
           const SizedBox(height: 12),
           Wrap(
-            spacing: 8, runSpacing: 8,
+            spacing: 8,
+            runSpacing: 8,
             children: days.map((day) {
               final isAvailable = _availableDays[day] ?? true;
               return FilterChip(
-                label: Text(day.substring(0, 1).toUpperCase() + day.substring(1)),
+                label: Text(
+                  day.substring(0, 1).toUpperCase() + day.substring(1),
+                ),
                 selected: isAvailable,
                 onSelected: (val) => setState(() => _availableDays[day] = val),
-                selectedColor: AppColors.primaryDark.withValues(alpha: 0.2), checkmarkColor: AppColors.primaryDark,
+                selectedColor: AppColors.primaryDark.withValues(alpha: 0.2),
+                checkmarkColor: AppColors.primaryDark,
               );
             }).toList(),
           ),
@@ -634,13 +937,27 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Select specific dates to block (blackout dates):', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+          const Text(
+            'Select specific dates to block (blackout dates):',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+          ),
           const SizedBox(height: 12),
           Wrap(
-            spacing: 8, runSpacing: 8,
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              ..._unavailableDates.map((date) => Chip(label: Text(DateFormat('MMM dd, yyyy').format(date)), onDeleted: () => setState(() => _unavailableDates.remove(date)))),
-              ActionChip(label: const Text('+ Add Date'), onPressed: _selectUnavailableDate, backgroundColor: AppColors.background),
+              ..._unavailableDates.map(
+                (date) => Chip(
+                  label: Text(DateFormat('MMM dd, yyyy').format(date)),
+                  onDeleted: () =>
+                      setState(() => _unavailableDates.remove(date)),
+                ),
+              ),
+              ActionChip(
+                label: const Text('+ Add Date'),
+                onPressed: _selectUnavailableDate,
+                backgroundColor: AppColors.background,
+              ),
             ],
           ),
         ],
@@ -652,15 +969,57 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
     return _buildSectionContainer(
       child: Row(
         children: [
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            _buildFieldLabel('Check-in Time'), const SizedBox(height: 8),
-            DropdownButtonFormField<String>(initialValue: _checkInTime, decoration: InputDecoration(contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))), items: _timeOptions.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(), onChanged: (val) => setState(() => _checkInTime = val!)),
-          ])),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildFieldLabel('Check-in Time'),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  initialValue: _checkInTime,
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  items: _timeOptions
+                      .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                      .toList(),
+                  onChanged: (val) => setState(() => _checkInTime = val!),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(width: AppSpacing.md),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            _buildFieldLabel('Check-out Time'), const SizedBox(height: 8),
-            DropdownButtonFormField<String>(initialValue: _checkOutTime, decoration: InputDecoration(contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))), items: _timeOptions.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(), onChanged: (val) => setState(() => _checkOutTime = val!)),
-          ])),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildFieldLabel('Check-out Time'),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  initialValue: _checkOutTime,
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  items: _timeOptions
+                      .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                      .toList(),
+                  onChanged: (val) => setState(() => _checkOutTime = val!),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -669,14 +1028,27 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
   Widget _buildHouseRulesSection() {
     return _buildSectionContainer(
       child: Wrap(
-        spacing: 8, runSpacing: 8,
+        spacing: 8,
+        runSpacing: 8,
         children: _availableRules.map((rule) {
           final isSelected = _selectedRules.contains(rule);
           return FilterChip(
-            avatar: Icon(_amenityIcon(rule), size: 16,
-                color: isSelected ? AppColors.primaryDark : AppColors.textSecondary),
-            label: Text(rule), selected: isSelected,
-            onSelected: (val) => setState(() { if (val) { _selectedRules.add(rule); } else { _selectedRules.remove(rule); } }),
+            avatar: Icon(
+              _amenityIcon(rule),
+              size: 16,
+              color: isSelected
+                  ? AppColors.primaryDark
+                  : AppColors.textSecondary,
+            ),
+            label: Text(rule),
+            selected: isSelected,
+            onSelected: (val) => setState(() {
+              if (val) {
+                _selectedRules.add(rule);
+              } else {
+                _selectedRules.remove(rule);
+              }
+            }),
             selectedColor: AppColors.primaryDark.withValues(alpha: 0.2),
             checkmarkColor: AppColors.primaryDark,
             showCheckmark: false,
@@ -691,35 +1063,83 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Offer optional extras (e.g. Meals, Activities)', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+          const Text(
+            'Offer optional extras (e.g. Meals, Activities)',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+          ),
           const SizedBox(height: 12),
           if (_addOns.isNotEmpty)
             ListView.builder(
-              shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
               itemCount: _addOns.length,
               itemBuilder: (context, index) {
                 final addOn = _addOns[index];
                 return ListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: Text(addOn['title']), subtitle: Text('Rs. ${addOn['price']} / person'),
-                  trailing: IconButton(icon: const Icon(Icons.delete_outline, color: AppColors.error), onPressed: () => setState(() => _addOns.removeAt(index))),
+                  title: Text(addOn['title']),
+                  subtitle: Text('Rs. ${addOn['price']} / person'),
+                  trailing: IconButton(
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      color: AppColors.error,
+                    ),
+                    onPressed: () => setState(() => _addOns.removeAt(index)),
+                  ),
                 );
               },
             ),
-          OutlinedButton.icon(onPressed: _showAddOnDialog, icon: const Icon(Icons.add), label: const Text('Add Optional Add-on')),
+          OutlinedButton.icon(
+            onPressed: _showAddOnDialog,
+            icon: const Icon(Icons.add),
+            label: const Text('Add Optional Add-on'),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildFieldLabel(String label) {
-    return RichText(text: TextSpan(text: label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryDark), children: const [TextSpan(text: ' *', style: TextStyle(color: Colors.red))]));
+    return RichText(
+      text: TextSpan(
+        text: label,
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 13,
+          color: AppColors.primaryDark,
+        ),
+        children: const [
+          TextSpan(
+            text: ' *',
+            style: TextStyle(color: Colors.red),
+          ),
+        ],
+      ),
+    );
   }
 
-  Widget _buildTextField({required TextEditingController controller, required String hintText, String? Function(String?)? validator, Widget? prefixIcon, TextInputType keyboardType = TextInputType.text}) {
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hintText,
+    String? Function(String?)? validator,
+    Widget? prefixIcon,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
     return TextFormField(
-      controller: controller, validator: validator, keyboardType: keyboardType,
-      decoration: InputDecoration(hintText: hintText, prefixIcon: prefixIcon, contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)), filled: true, fillColor: Colors.white),
+      controller: controller,
+      validator: validator,
+      keyboardType: keyboardType,
+      decoration: InputDecoration(
+        hintText: hintText,
+        prefixIcon: prefixIcon,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        filled: true,
+        fillColor: Colors.white,
+      ),
     );
   }
 }

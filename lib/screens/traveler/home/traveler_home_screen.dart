@@ -4,8 +4,6 @@ import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../theme/app_spacing.dart';
 
-import 'package:intl/intl.dart';
-
 import '../../../../widgets/common/app_search_bar.dart';
 import '../../../../widgets/common/section_header.dart';
 import '../../../../widgets/common/app_icon_button.dart';
@@ -13,38 +11,64 @@ import '../../../../widgets/cards/destination_card.dart';
 import '../../../../widgets/cards/homestay_card.dart';
 import 'widgets/home_filter_bottom_sheet.dart';
 import '../../../../repositories/destination_repository.dart';
+import '../../../../repositories/homestay_repository.dart';
 import '../../../../services/auth_service.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
+
 import '../../../../models/destination.dart';
 import '../destinations/explore_destinations_screen.dart';
 import '../destinations/destination_details_screen.dart';
 import '../../common/auth/auth_guard.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../experiences/buffet_lunch_experience_screen.dart';
 import '../experiences/cookery_experience_screen.dart';
 import '../../common/homestays/homestay_details_screen.dart';
 import '../../../../models/homestay.dart';
+
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class TravelerHomeScreen extends StatefulWidget {
   final VoidCallback? onProfileTap;
-  const TravelerHomeScreen({super.key, this.onProfileTap});
+  final VoidCallback? onSearchTap;
+  static final GlobalKey exploreNavKey = GlobalKey();
+
+  const TravelerHomeScreen({super.key, this.onProfileTap, this.onSearchTap});
 
   @override
-  State<TravelerHomeScreen> createState() => _TravelerHomeScreenState();
+  State<TravelerHomeScreen> createState() => TravelerHomeScreenState();
 }
 
-class _TravelerHomeScreenState extends State<TravelerHomeScreen>
+class TravelerHomeScreenState extends State<TravelerHomeScreen>
     with TickerProviderStateMixin {
   HomeFilterData? _filterData;
   int _currentDestIndex = 0;
   late AnimationController _blinkController;
   late Stream<List<Destination>> _popularDestinationsStream;
 
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  final DestinationRepository _destinationRepository = DestinationRepository();
+  final HomestayRepository _homestayRepository = HomestayRepository();
+
+  void resetToHome() {
+    FocusScope.of(context).unfocus();
+    if (_searchQuery.isNotEmpty || _filterData != null) {
+      setState(() {
+        _searchController.clear();
+        _searchQuery = '';
+        _filterData = null;
+      });
+    }
+  }
+
   // Walkthrough Keys
   final GlobalKey _searchKey = GlobalKey();
   final GlobalKey _profileKey = GlobalKey();
+  final GlobalKey _menuKey = GlobalKey();
   final GlobalKey _destinationsKey = GlobalKey();
   final GlobalKey _experienceKey = GlobalKey();
 
@@ -70,7 +94,9 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
     final hasSeenTutorial = prefs.getBool('has_seen_home_tutorial') ?? false;
     if (!hasSeenTutorial) {
       Future.delayed(const Duration(milliseconds: 500), () {
-        _showTutorial();
+        if (mounted) {
+          _showTutorial();
+        }
       });
       await prefs.setBool('has_seen_home_tutorial', true);
     }
@@ -80,7 +106,21 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
     tutorialCoachMark = TutorialCoachMark(
       targets: targets,
       colorShadow: AppColors.primaryDark,
-      textSkip: "SKIP",
+      skipWidget: Container(
+        margin: const EdgeInsets.only(right: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: const Text(
+          "SKIP",
+          style: TextStyle(
+            color: AppColors.primaryDark,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
       paddingFocus: 10,
       opacityShadow: 0.8,
       onFinish: () {},
@@ -91,30 +131,57 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
     )..show(context: context);
   }
 
+  Widget _buildTutorialContent(String title, String description) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: AppTextStyles.sectionHeading.copyWith(
+            color: Colors.white,
+            fontSize: 24,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          description,
+          style: AppTextStyles.bodyLarge.copyWith(color: Colors.white70),
+        ),
+        const SizedBox(height: 24),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.touch_app, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              "Tap anywhere to continue",
+              style: AppTextStyles.labelLarge.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   void _initTargets() {
     targets.add(
       TargetFocus(
         identify: "search_bar",
         keyTarget: _searchKey,
         alignSkip: Alignment.topRight,
+        shape: ShapeLightFocus.RRect,
+        radius: 12,
         contents: [
           TargetContent(
             align: ContentAlign.bottom,
             builder: (context, controller) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Discover the Best Places",
-                    style: AppTextStyles.sectionHeading.copyWith(color: Colors.white, fontSize: 24),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    "Search for destinations, homestays, or experiences here. You can also apply filters!",
-                    style: AppTextStyles.bodyLarge.copyWith(color: Colors.white70),
-                  ),
-                ],
+              return _buildTutorialContent(
+                "Discover the Best Places",
+                "Search for destinations, homestays, or experiences here. You can also apply filters!",
               );
             },
           ),
@@ -126,25 +193,15 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
       TargetFocus(
         identify: "profile",
         keyTarget: _profileKey,
-        alignSkip: Alignment.bottomLeft,
+        alignSkip: Alignment.bottomRight,
+        shape: ShapeLightFocus.Circle,
         contents: [
           TargetContent(
             align: ContentAlign.bottom,
             builder: (context, controller) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Your Profile",
-                    style: AppTextStyles.sectionHeading.copyWith(color: Colors.white, fontSize: 24),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    "Manage your account, bookings, and preferences from here.",
-                    style: AppTextStyles.bodyLarge.copyWith(color: Colors.white70),
-                  ),
-                ],
+              return _buildTutorialContent(
+                "Your Profile",
+                "Manage your account, bookings, and preferences from here.",
               );
             },
           ),
@@ -154,27 +211,17 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
 
     targets.add(
       TargetFocus(
-        identify: "popular_destinations",
-        keyTarget: _destinationsKey,
-        alignSkip: Alignment.topRight,
+        identify: "menu",
+        keyTarget: _menuKey,
+        alignSkip: Alignment.bottomRight,
+        shape: ShapeLightFocus.Circle,
         contents: [
           TargetContent(
             align: ContentAlign.bottom,
             builder: (context, controller) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Popular Destinations",
-                    style: AppTextStyles.sectionHeading.copyWith(color: Colors.white, fontSize: 24),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    "Explore the most loved places in Sri Lanka. Swipe to see more!",
-                    style: AppTextStyles.bodyLarge.copyWith(color: Colors.white70),
-                  ),
-                ],
+              return _buildTutorialContent(
+                "App Menu",
+                "Access more options, settings, and features from this menu.",
               );
             },
           ),
@@ -184,27 +231,39 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
 
     targets.add(
       TargetFocus(
-        identify: "village_experience",
+        identify: "tour_packages",
         keyTarget: _experienceKey,
         alignSkip: Alignment.topRight,
+        shape: ShapeLightFocus.RRect,
+        radius: 24,
         contents: [
           TargetContent(
             align: ContentAlign.top,
             builder: (context, controller) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Authentic Village Experiences",
-                    style: AppTextStyles.sectionHeading.copyWith(color: Colors.white, fontSize: 24),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    "Book unique local experiences like buffet lunches or cookery classes.",
-                    style: AppTextStyles.bodyLarge.copyWith(color: Colors.white70),
-                  ),
-                ],
+              return _buildTutorialContent(
+                "Tour Packages & Experiences",
+                "Book unique local experiences like buffet lunches or cookery classes.",
+              );
+            },
+          ),
+        ],
+      ),
+    );
+
+    targets.add(
+      TargetFocus(
+        identify: "explore",
+        keyTarget: TravelerHomeScreen.exploreNavKey,
+        alignSkip: Alignment.topRight,
+        shape: ShapeLightFocus.RRect,
+        radius: 16,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            builder: (context, controller) {
+              return _buildTutorialContent(
+                "Explore Destinations",
+                "Explore the most loved places in Sri Lanka. Tap here to see more!",
               );
             },
           ),
@@ -292,6 +351,10 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
     );
   }
 
+  bool get _isSearching =>
+      _searchQuery.isNotEmpty ||
+      (_filterData != null && _filterData!.hasAnyFilter);
+
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
@@ -304,17 +367,228 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
               _buildAppBar(context),
               _buildSearchBar(),
               _buildFiltersRow(),
-              const SizedBox(height: AppSpacing.xl),
-              _buildPopularDestinations(),
-              const SizedBox(height: AppSpacing.xxl),
-              _buildVillageExperienceBanner(),
-              const SizedBox(height: AppSpacing.xxl),
-              _buildRecommendedHomestays(),
-              const SizedBox(height: AppSpacing.xxl),
+              if (_isSearching)
+                _buildSearchResults()
+              else ...[
+                const SizedBox(height: AppSpacing.xl),
+                _buildPopularDestinations(),
+                const SizedBox(height: AppSpacing.xxl),
+                _buildVillageExperienceBanner(),
+                const SizedBox(height: AppSpacing.xxl),
+                _buildRecommendedHomestays(),
+                const SizedBox(height: AppSpacing.xxl),
+              ],
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSearchResults() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: AppSpacing.lg),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: Text('Search Results', style: AppTextStyles.sectionHeading),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        if (_filterData?.category == 'All' ||
+            _filterData?.category == 'Destinations' ||
+            _filterData == null)
+          _buildDestinationsSearchStream(),
+        if (_filterData?.category == 'All' ||
+            _filterData?.category == 'Homestays' ||
+            _filterData == null)
+          _buildHomestaysSearchStream(),
+      ],
+    );
+  }
+
+  Widget _buildDestinationsSearchStream() {
+    return StreamBuilder<List<Destination>>(
+      stream: _destinationRepository.getActiveDestinationsStream(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const SizedBox.shrink();
+        var destinations = snapshot.data!.where((d) {
+          if (_searchQuery.isNotEmpty) {
+            final query = _searchQuery.toLowerCase();
+            if (!(d.name.toLowerCase().contains(query) ||
+                d.locationName.toLowerCase().contains(query))) {
+              return false;
+            }
+          }
+          return true;
+        }).toList();
+
+        if (_filterData != null) {
+          if (_filterData!.sortBy == 'a-z') {
+            destinations.sort(
+              (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+            );
+          } else if (_filterData!.sortBy == 'newest') {
+            destinations.sort((a, b) => (b.createdAt).compareTo(a.createdAt));
+          } else if (_filterData!.sortBy == 'oldest') {
+            destinations.sort((a, b) => (a.createdAt).compareTo(b.createdAt));
+          }
+        }
+
+        if (destinations.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: Text('Destinations', style: AppTextStyles.labelLarge),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: destinations.length,
+              itemBuilder: (context, index) {
+                final destination = destinations[index];
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                    vertical: AppSpacing.xs,
+                  ),
+                  child: SizedBox(
+                    height: 220,
+                    child: DestinationCard(
+                      title: destination.name,
+                      subtitle: destination.locationName,
+                      category: 'Destination',
+                      imageUrl: destination.images.isNotEmpty
+                          ? destination.images.first.url
+                          : '',
+                      width: double.infinity,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DestinationDetailsScreen(
+                              destination: destination,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: AppSpacing.lg),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildHomestaysSearchStream() {
+    return StreamBuilder<List<Homestay>>(
+      stream: _homestayRepository.getActiveHomestays(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const SizedBox.shrink();
+        var homestays = snapshot.data!.where((h) {
+          if (_searchQuery.isNotEmpty) {
+            final query = _searchQuery.toLowerCase();
+            if (!(h.title.toLowerCase().contains(query) ||
+                h.location.toLowerCase().contains(query))) {
+              return false;
+            }
+          }
+
+          if (_filterData != null) {
+            if (_filterData!.verifiedOnly && !h.isVerified) return false;
+
+            if (_filterData!.homestayTypes.isNotEmpty) {
+              if (!_filterData!.homestayTypes.contains(h.propertyType)) {
+                return false;
+              }
+            }
+
+            if (_filterData!.amenities.isNotEmpty) {
+              for (final amenity in _filterData!.amenities) {
+                if (!h.amenities.contains(amenity)) return false;
+              }
+            }
+          }
+
+          return true;
+        }).toList();
+
+        if (_filterData != null) {
+          if (_filterData!.sortBy == 'a-z') {
+            homestays.sort(
+              (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
+            );
+          } else if (_filterData!.sortBy == 'newest') {
+            homestays.sort(
+              (a, b) => (b.createdAt ?? DateTime.now()).compareTo(
+                a.createdAt ?? DateTime.now(),
+              ),
+            );
+          } else if (_filterData!.sortBy == 'oldest') {
+            homestays.sort(
+              (a, b) => (a.createdAt ?? DateTime.now()).compareTo(
+                b.createdAt ?? DateTime.now(),
+              ),
+            );
+          } else if (_filterData!.sortBy == 'price_asc') {
+            homestays.sort(
+              (a, b) => a.pricePerNight.compareTo(b.pricePerNight),
+            );
+          } else if (_filterData!.sortBy == 'price_desc') {
+            homestays.sort(
+              (a, b) => b.pricePerNight.compareTo(a.pricePerNight),
+            );
+          }
+        }
+
+        if (homestays.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: Text('Homestays', style: AppTextStyles.labelLarge),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: homestays.length,
+              itemBuilder: (context, index) {
+                final homestay = homestays[index];
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                    vertical: AppSpacing.xs,
+                  ),
+                  child: HomestayCard(
+                    homestay: homestay,
+                    onViewDetailsTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              HomestayDetailsScreen(homestayId: homestay.id),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: AppSpacing.lg),
+          ],
+        );
+      },
     );
   }
 
@@ -330,6 +604,7 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
           Builder(
             builder: (context) {
               return AppIconButton(
+                key: _menuKey,
                 icon: Icons.menu,
                 onTap: () => Scaffold.of(context).openDrawer(),
               );
@@ -404,7 +679,7 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, authSnapshot) {
           final user = authSnapshot.data;
-          
+
           if (user == null) {
             // Guest State
             return _buildIconAvatar(null);
@@ -412,11 +687,16 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
 
           // Authenticated State - load profileImageUrl from Firestore
           return StreamBuilder<DocumentSnapshot>(
-            stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
+            stream: FirebaseFirestore.instance
+                .collection('users')
+                .doc(user.uid)
+                .snapshots(),
             builder: (context, profileSnapshot) {
               String? profileImageUrl;
-              if (profileSnapshot.hasData && profileSnapshot.data!.data() != null) {
-                final data = profileSnapshot.data!.data() as Map<String, dynamic>;
+              if (profileSnapshot.hasData &&
+                  profileSnapshot.data!.data() != null) {
+                final data =
+                    profileSnapshot.data!.data() as Map<String, dynamic>;
                 profileImageUrl = data['profileImageUrl'] as String?;
               }
               return _buildIconAvatar(profileImageUrl);
@@ -459,6 +739,12 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
       key: _searchKey,
       child: AppSearchBar(
         placeholder: 'Search destinations, homestays...',
+        controller: _searchController,
+        onChanged: (val) {
+          setState(() {
+            _searchQuery = val;
+          });
+        },
         onFilterTap: _openFilterSheet,
       ),
     );
@@ -486,45 +772,124 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
 
     final filters = <Widget>[];
 
-    if (_filterData!.checkIn != null && _filterData!.checkOut != null) {
-      final inFormat = DateFormat('dd MMM').format(_filterData!.checkIn!);
-      final outFormat = DateFormat('dd MMM').format(_filterData!.checkOut!);
+    void removeFilter(HomeFilterData newData) {
+      setState(() {
+        _filterData = newData;
+        if (!_filterData!.hasAnyFilter) _filterData = null;
+      });
+    }
+
+    if (_filterData!.category != 'All') {
       filters.add(
         _buildActiveFilterChip(
-          Icons.calendar_today,
-          '$inFormat–$outFormat',
+          Icons.category,
+          _filterData!.category,
           onRemove: () {
-            setState(() {
-              _filterData = HomeFilterData(
-                adults: _filterData!.adults,
-                children: _filterData!.children,
+            removeFilter(
+              HomeFilterData(
+                category: 'All',
                 useLocation: _filterData!.useLocation,
                 locationPosition: _filterData!.locationPosition,
-              );
-              if (!_filterData!.hasAnyFilter) _filterData = null;
-            });
+                sortBy: _filterData!.sortBy,
+                verifiedOnly: _filterData!.verifiedOnly,
+                amenities: _filterData!.amenities,
+                homestayTypes: _filterData!.homestayTypes,
+              ),
+            );
           },
         ),
       );
     }
 
-    if (_filterData!.adults > 1 || _filterData!.children > 0) {
-      final text =
-          '${_filterData!.totalGuests} Guest${_filterData!.totalGuests > 1 ? 's' : ''}';
+    if (_filterData!.sortBy != 'newest') {
+      String sortName = '';
+      if (_filterData!.sortBy == 'oldest') sortName = 'Oldest';
+      if (_filterData!.sortBy == 'a-z') sortName = 'A-Z';
+      if (_filterData!.sortBy == 'price_asc') sortName = 'Price: Low-High';
+      if (_filterData!.sortBy == 'price_desc') sortName = 'Price: High-Low';
+
       filters.add(
         _buildActiveFilterChip(
-          Icons.people,
-          text,
+          Icons.sort,
+          sortName,
           onRemove: () {
-            setState(() {
-              _filterData = HomeFilterData(
-                checkIn: _filterData!.checkIn,
-                checkOut: _filterData!.checkOut,
+            removeFilter(
+              HomeFilterData(
+                category: _filterData!.category,
                 useLocation: _filterData!.useLocation,
                 locationPosition: _filterData!.locationPosition,
-              );
-              if (!_filterData!.hasAnyFilter) _filterData = null;
-            });
+                sortBy: 'newest',
+                verifiedOnly: _filterData!.verifiedOnly,
+                amenities: _filterData!.amenities,
+                homestayTypes: _filterData!.homestayTypes,
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    if (_filterData!.verifiedOnly) {
+      filters.add(
+        _buildActiveFilterChip(
+          Icons.verified,
+          'Verified Only',
+          onRemove: () {
+            removeFilter(
+              HomeFilterData(
+                category: _filterData!.category,
+                useLocation: _filterData!.useLocation,
+                locationPosition: _filterData!.locationPosition,
+                sortBy: _filterData!.sortBy,
+                verifiedOnly: false,
+                amenities: _filterData!.amenities,
+                homestayTypes: _filterData!.homestayTypes,
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    if (_filterData!.homestayTypes.isNotEmpty) {
+      filters.add(
+        _buildActiveFilterChip(
+          Icons.house,
+          '${_filterData!.homestayTypes.length} Types',
+          onRemove: () {
+            removeFilter(
+              HomeFilterData(
+                category: _filterData!.category,
+                useLocation: _filterData!.useLocation,
+                locationPosition: _filterData!.locationPosition,
+                sortBy: _filterData!.sortBy,
+                verifiedOnly: _filterData!.verifiedOnly,
+                amenities: _filterData!.amenities,
+                homestayTypes: const [],
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    if (_filterData!.amenities.isNotEmpty) {
+      filters.add(
+        _buildActiveFilterChip(
+          Icons.room_preferences,
+          '${_filterData!.amenities.length} Amenities',
+          onRemove: () {
+            removeFilter(
+              HomeFilterData(
+                category: _filterData!.category,
+                useLocation: _filterData!.useLocation,
+                locationPosition: _filterData!.locationPosition,
+                sortBy: _filterData!.sortBy,
+                verifiedOnly: _filterData!.verifiedOnly,
+                amenities: const [],
+                homestayTypes: _filterData!.homestayTypes,
+              ),
+            );
           },
         ),
       );
@@ -536,17 +901,17 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
           Icons.location_on,
           'My Location',
           onRemove: () {
-            setState(() {
-              _filterData = HomeFilterData(
-                checkIn: _filterData!.checkIn,
-                checkOut: _filterData!.checkOut,
-                adults: _filterData!.adults,
-                children: _filterData!.children,
+            removeFilter(
+              HomeFilterData(
+                category: _filterData!.category,
                 useLocation: false,
                 locationPosition: null,
-              );
-              if (!_filterData!.hasAnyFilter) _filterData = null;
-            });
+                sortBy: _filterData!.sortBy,
+                verifiedOnly: _filterData!.verifiedOnly,
+                amenities: _filterData!.amenities,
+                homestayTypes: _filterData!.homestayTypes,
+              ),
+            );
           },
         ),
       );
@@ -616,205 +981,209 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
       key: _destinationsKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SectionHeader(
-          title: 'Popular Destinations',
-          subtitle: 'Explore ancient living heritage and nature',
-          actionText: 'See all >',
-          onActionTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const ExploreDestinationsScreen(),
-              ),
-            );
-          },
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: AppSpacing.xs,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              FadeTransition(
-                opacity: _blinkController,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Swipe to explore',
-                      style: AppTextStyles.caption.copyWith(
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(
-                      Icons.arrow_forward_rounded,
-                      size: 14,
-                      color: AppColors.primary,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        StreamBuilder<List<Destination>>(
-          stream: _popularDestinationsStream,
-          builder: (context, snapshot) {
-            if (snapshot.hasError) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                child: Column(
-                  children: [
-                    const Text('Unable to load destinations.'),
-                    TextButton(
-                      onPressed: () => setState(() {}),
-                      child: const Text('Try Again'),
-                    ),
-                  ],
+        children: [
+          SectionHeader(
+            title: 'Popular Destinations',
+            subtitle: 'Explore ancient living heritage and nature',
+            actionText: 'See all >',
+            onActionTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ExploreDestinationsScreen(),
                 ),
               );
-            }
-
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return SizedBox(
-                height: 220,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
+            },
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.xs,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                FadeTransition(
+                  opacity: _blinkController,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Swipe to explore',
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.arrow_forward_rounded,
+                        size: 14,
+                        color: AppColors.primary,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          StreamBuilder<List<Destination>>(
+            stream: _popularDestinationsStream,
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.lg,
                   ),
-                  itemCount: 3,
-                  itemBuilder: (context, index) {
-                    return Container(
-                      width:
-                          (MediaQuery.of(context).size.width -
-                              (AppSpacing.lg * 3)) /
-                          2,
-                      margin: EdgeInsets.only(
-                        right: index == 2 ? 0 : AppSpacing.lg,
+                  child: Column(
+                    children: [
+                      const Text('Unable to load destinations.'),
+                      TextButton(
+                        onPressed: () => setState(() {}),
+                        child: const Text('Try Again'),
                       ),
-                      decoration: BoxDecoration(
-                        color: AppColors.softSecondarySurface,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    );
-                  },
-                ),
-              );
-            }
+                    ],
+                  ),
+                );
+              }
 
-            final destinations = snapshot.data ?? [];
-
-            if (destinations.isEmpty) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                child: Text(
-                  'No popular destinations yet.\nExplore more places coming soon.',
-                  style: TextStyle(color: AppColors.textSecondary),
-                ),
-              );
-            }
-
-            return Column(
-              children: [
-                SizedBox(
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return SizedBox(
                   height: 220,
-                  child: NotificationListener<ScrollNotification>(
-                    onNotification: (ScrollNotification notification) {
-                      if (notification is ScrollUpdateNotification) {
-                        final cardWidth =
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                    ),
+                    itemCount: 3,
+                    itemBuilder: (context, index) {
+                      return Container(
+                        width:
                             (MediaQuery.of(context).size.width -
                                 (AppSpacing.lg * 3)) /
-                            2;
-                        final itemWidth = cardWidth + AppSpacing.lg;
-                        int newIndex = (notification.metrics.pixels / itemWidth)
-                            .round();
-                        if (newIndex < 0) {
-                          newIndex = 0;
-                        }
-                        if (newIndex >= destinations.length) {
-                          newIndex = destinations.length - 1;
-                        }
-                        if (newIndex != _currentDestIndex) {
-                          setState(() {
-                            _currentDestIndex = newIndex;
-                          });
-                        }
-                      }
-                      return false;
+                            2,
+                        margin: EdgeInsets.only(
+                          right: index == 2 ? 0 : AppSpacing.lg,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.softSecondarySurface,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      );
                     },
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.lg,
-                      ),
-                      itemCount: destinations.length,
-                      itemBuilder: (context, index) {
-                        final dest = destinations[index];
-                        String imageUrl = '';
-                        if (dest.images.isNotEmpty) {
-                          imageUrl = dest.images.first.url;
-                        } else if (dest.imageUrl != null) {
-                          imageUrl = dest.imageUrl!;
-                        }
-                        final cardWidth =
-                            (MediaQuery.of(context).size.width -
-                                (AppSpacing.lg * 3)) /
-                            2;
+                  ),
+                );
+              }
 
-                        return DestinationCard(
-                          width: cardWidth,
-                          margin: EdgeInsets.only(
-                            right: index == destinations.length - 1
-                                ? 0
-                                : AppSpacing.lg,
-                          ),
-                          title: dest.name,
-                          subtitle: dest.locationName,
-                          category: 'DESTINATION',
-                          imageUrl: imageUrl,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    DestinationDetailsScreen(destination: dest),
-                              ),
-                            );
-                          },
-                        );
+              final destinations = snapshot.data ?? [];
+
+              if (destinations.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                  child: Text(
+                    'No popular destinations yet.\nExplore more places coming soon.',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                );
+              }
+
+              return Column(
+                children: [
+                  SizedBox(
+                    height: 220,
+                    child: NotificationListener<ScrollNotification>(
+                      onNotification: (ScrollNotification notification) {
+                        if (notification is ScrollUpdateNotification) {
+                          final cardWidth =
+                              (MediaQuery.of(context).size.width -
+                                  (AppSpacing.lg * 3)) /
+                              2;
+                          final itemWidth = cardWidth + AppSpacing.lg;
+                          int newIndex =
+                              (notification.metrics.pixels / itemWidth).round();
+                          if (newIndex < 0) {
+                            newIndex = 0;
+                          }
+                          if (newIndex >= destinations.length) {
+                            newIndex = destinations.length - 1;
+                          }
+                          if (newIndex != _currentDestIndex) {
+                            setState(() {
+                              _currentDestIndex = newIndex;
+                            });
+                          }
+                        }
+                        return false;
                       },
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.lg,
+                        ),
+                        itemCount: destinations.length,
+                        itemBuilder: (context, index) {
+                          final dest = destinations[index];
+                          String imageUrl = '';
+                          if (dest.images.isNotEmpty) {
+                            imageUrl = dest.images.first.url;
+                          } else if (dest.imageUrl != null) {
+                            imageUrl = dest.imageUrl!;
+                          }
+                          final cardWidth =
+                              (MediaQuery.of(context).size.width -
+                                  (AppSpacing.lg * 3)) /
+                              2;
+
+                          return DestinationCard(
+                            width: cardWidth,
+                            margin: EdgeInsets.only(
+                              right: index == destinations.length - 1
+                                  ? 0
+                                  : AppSpacing.lg,
+                            ),
+                            title: dest.name,
+                            subtitle: dest.locationName,
+                            category: 'DESTINATION',
+                            imageUrl: imageUrl,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      DestinationDetailsScreen(
+                                        destination: dest,
+                                      ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(destinations.length, (index) {
-                    return AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      width: _currentDestIndex == index ? 24 : 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: _currentDestIndex == index
-                            ? AppColors.primary
-                            : AppColors.primary.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    );
-                  }),
-                ),
-              ],
-            );
-          },
-        ),
-      ],
+                  const SizedBox(height: AppSpacing.md),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(destinations.length, (index) {
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        width: _currentDestIndex == index ? 24 : 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: _currentDestIndex == index
+                              ? AppColors.primary
+                              : AppColors.primary.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      );
+                    }),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -884,7 +1253,10 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const BuffetLunchExperienceScreen()),
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const BuffetLunchExperienceScreen(),
+                        ),
                       );
                     },
                     style: ElevatedButton.styleFrom(
@@ -898,7 +1270,10 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
                     ),
                     child: Text(
                       'Buffet Lunch',
-                      style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold, fontSize: 13),
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
                     ),
                   ),
                 ),
@@ -908,7 +1283,9 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const CookeryExperienceScreen()),
+                        MaterialPageRoute(
+                          builder: (context) => const CookeryExperienceScreen(),
+                        ),
                       );
                     },
                     style: ElevatedButton.styleFrom(
@@ -922,7 +1299,10 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
                     ),
                     child: Text(
                       'Cookery',
-                      style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold, fontSize: 13),
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
                     ),
                   ),
                 ),
@@ -944,7 +1324,10 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
         ),
         const SizedBox(height: AppSpacing.md),
         StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance.collection('homestays').where('status', isEqualTo: 'Active').snapshots(),
+          stream: FirebaseFirestore.instance
+              .collection('homestays')
+              .where('status', isEqualTo: 'Active')
+              .snapshots(),
           builder: (context, snapshot) {
             if (snapshot.hasError) {
               return const Padding(
@@ -964,13 +1347,19 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
             if (docs.isEmpty) {
               return const Padding(
                 padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                child: Text('No homestays available right now.', style: TextStyle(color: AppColors.textSecondary)),
+                child: Text(
+                  'No homestays available right now.',
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
               );
             }
 
             return Column(
               children: docs.map((doc) {
-                final hs = Homestay.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+                final hs = Homestay.fromMap(
+                  doc.data() as Map<String, dynamic>,
+                  doc.id,
+                );
                 return Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.lg),
                   child: HomestayCard(
@@ -979,7 +1368,8 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => HomestayDetailsScreen(homestayId: doc.id),
+                          builder: (context) =>
+                              HomestayDetailsScreen(homestayId: doc.id),
                         ),
                       );
                     },

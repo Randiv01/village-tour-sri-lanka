@@ -7,8 +7,11 @@ import 'destinations/manage_destinations_screen.dart';
 import 'homestays/admin_manage_homestays_screen.dart';
 import 'users/manage_users_screen.dart';
 import 'gallery/admin_manage_gallery_screen.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
+
 import '../../services/auth_service.dart';
+
 class AdminShell extends StatefulWidget {
   const AdminShell({super.key});
 
@@ -72,7 +75,11 @@ class _AdminShellState extends State<AdminShell> {
                     color: AppColors.primary.withValues(alpha: 0.3),
                   ),
                 ),
-                child: const Icon(Icons.person, color: AppColors.primary, size: 20),
+                child: const Icon(
+                  Icons.person,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
               ),
             ),
           ),
@@ -194,7 +201,11 @@ class _AdminShellState extends State<AdminShell> {
                 const CircleAvatar(
                   radius: 30,
                   backgroundColor: AppColors.primary,
-                  child: Icon(Icons.admin_panel_settings, color: Colors.white, size: 32),
+                  child: Icon(
+                    Icons.admin_panel_settings,
+                    color: Colors.white,
+                    size: 32,
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(

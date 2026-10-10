@@ -1,8 +1,8 @@
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+
 import '../../../models/user_model.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_spacing.dart';
@@ -59,8 +59,9 @@ class _UserCrudDialogState extends State<UserCrudDialog> {
     try {
       final isUpdating = widget.user != null;
       final email = _emailController.text.trim();
-      
-      String displayRole = widget.role.substring(0, 1).toUpperCase() + widget.role.substring(1);
+
+      String displayRole =
+          widget.role.substring(0, 1).toUpperCase() + widget.role.substring(1);
 
       if (isUpdating) {
         // Update existing profile
@@ -68,12 +69,12 @@ class _UserCrudDialogState extends State<UserCrudDialog> {
             .collection('users')
             .doc(widget.user!.uid)
             .update({
-          'fullName': _nameController.text.trim(),
-          'email': email,
-          'phoneNumber': _phoneController.text.trim(),
-          'isActive': _isActive,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
+              'fullName': _nameController.text.trim(),
+              'email': email,
+              'phoneNumber': _phoneController.text.trim(),
+              'isActive': _isActive,
+              'updatedAt': FieldValue.serverTimestamp(),
+            });
       } else {
         // Create new admin authentication via a temporary Firebase App
         // This avoids logging out the current admin!
@@ -81,19 +82,21 @@ class _UserCrudDialogState extends State<UserCrudDialog> {
           name: 'tempAdminCreator',
           options: Firebase.app().options,
         );
-        
+
         final tempAuth = FirebaseAuth.instanceFor(app: tempApp);
         final cred = await tempAuth.createUserWithEmailAndPassword(
           email: email,
           password: _passwordController.text,
         );
         final uid = cred.user!.uid;
-        
+
         // Clean up the temp app
         await tempApp.delete();
 
-        final newDocRef = FirebaseFirestore.instance.collection('users').doc(uid);
-        
+        final newDocRef = FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid);
+
         final newUser = UserModel(
           uid: uid,
           email: email,
@@ -113,7 +116,11 @@ class _UserCrudDialogState extends State<UserCrudDialog> {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(isUpdating ? '$displayRole updated' : '$displayRole profile created'),
+            content: Text(
+              isUpdating
+                  ? '$displayRole updated'
+                  : '$displayRole profile created',
+            ),
             backgroundColor: AppColors.primary,
           ),
         );
@@ -137,7 +144,8 @@ class _UserCrudDialogState extends State<UserCrudDialog> {
   @override
   Widget build(BuildContext context) {
     final isUpdating = widget.user != null;
-    String displayRole = widget.role.substring(0, 1).toUpperCase() + widget.role.substring(1);
+    String displayRole =
+        widget.role.substring(0, 1).toUpperCase() + widget.role.substring(1);
 
     return AlertDialog(
       title: Text(isUpdating ? 'Edit $displayRole' : 'Add $displayRole'),
@@ -167,7 +175,8 @@ class _UserCrudDialogState extends State<UserCrudDialog> {
                 validator: (val) {
                   if (val == null || val.isEmpty) return 'Required';
                   if (!val.contains('@')) return 'Invalid email';
-                  if (widget.role == 'admin' && !val.endsWith('@villagetour.com')) {
+                  if (widget.role == 'admin' &&
+                      !val.endsWith('@villagetour.com')) {
                     return 'Must use @villagetour.com domain';
                   }
                   return null;
@@ -199,7 +208,9 @@ class _UserCrudDialogState extends State<UserCrudDialog> {
                     border: const OutlineInputBorder(),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _isPasswordObscured ? Icons.visibility : Icons.visibility_off,
+                        _isPasswordObscured
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                         color: AppColors.textSecondary,
                       ),
                       onPressed: () {
@@ -211,7 +222,9 @@ class _UserCrudDialogState extends State<UserCrudDialog> {
                   ),
                   validator: (val) {
                     if (val == null || val.isEmpty) return 'Required';
-                    if (val.length < 6) return 'Password must be at least 6 characters';
+                    if (val.length < 6) {
+                      return 'Password must be at least 6 characters';
+                    }
                     return null;
                   },
                 ),
@@ -224,7 +237,9 @@ class _UserCrudDialogState extends State<UserCrudDialog> {
                     border: const OutlineInputBorder(),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _isPasswordObscured ? Icons.visibility : Icons.visibility_off,
+                        _isPasswordObscured
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                         color: AppColors.textSecondary,
                       ),
                       onPressed: () {
@@ -236,7 +251,9 @@ class _UserCrudDialogState extends State<UserCrudDialog> {
                   ),
                   validator: (val) {
                     if (val == null || val.isEmpty) return 'Required';
-                    if (val != _passwordController.text) return 'Passwords do not match';
+                    if (val != _passwordController.text) {
+                      return 'Passwords do not match';
+                    }
                     return null;
                   },
                 ),
@@ -260,7 +277,10 @@ class _UserCrudDialogState extends State<UserCrudDialog> {
               ? const SizedBox(
                   height: 20,
                   width: 20,
-                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2,
+                  ),
                 )
               : const Text('Save'),
         ),

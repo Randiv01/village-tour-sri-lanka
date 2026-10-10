@@ -25,7 +25,7 @@ class UpcomingBookingTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isConfirmed = status.toLowerCase() == 'confirmed';
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -57,22 +57,34 @@ class UpcomingBookingTile extends StatelessWidget {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Icon(Icons.calendar_today_outlined, size: 12, color: AppColors.textSecondary),
+                    const Icon(
+                      Icons.calendar_today_outlined,
+                      size: 12,
+                      color: AppColors.textSecondary,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       dateRange,
-                      style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Icon(Icons.people_alt_outlined, size: 12, color: AppColors.textSecondary),
+                    const Icon(
+                      Icons.people_alt_outlined,
+                      size: 12,
+                      color: AppColors.textSecondary,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       guestsInfo,
-                      style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -96,9 +108,14 @@ class UpcomingBookingTile extends StatelessWidget {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
-                      color: isConfirmed ? Colors.green.withValues(alpha: 0.1) : AppColors.secondary.withValues(alpha: 0.1),
+                      color: isConfirmed
+                          ? Colors.green.withValues(alpha: 0.1)
+                          : AppColors.secondary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -106,12 +123,18 @@ class UpcomingBookingTile extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
-                        color: isConfirmed ? Colors.green[700] : AppColors.secondary,
+                        color: isConfirmed
+                            ? Colors.green[700]
+                            : AppColors.secondary,
                       ),
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const Icon(Icons.chevron_right, size: 16, color: AppColors.textSecondary),
+                  const Icon(
+                    Icons.chevron_right,
+                    size: 16,
+                    color: AppColors.textSecondary,
+                  ),
                 ],
               ),
             ],

@@ -41,14 +41,22 @@ class UserModel {
     this.updatedAt,
   });
 
-  String get location => (country != null && country!.isNotEmpty) ? country! : '';
+  String get location =>
+      (country != null && country!.isNotEmpty) ? country! : '';
 
   factory UserModel.fromMap(Map<String, dynamic> map, String documentId) {
     List<String>? parsedLanguages;
     if (map['languages'] is List) {
-      parsedLanguages = (map['languages'] as List).map((e) => e.toString()).toList();
-    } else if (map['languages'] is String && (map['languages'] as String).isNotEmpty) {
-      parsedLanguages = (map['languages'] as String).split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+      parsedLanguages = (map['languages'] as List)
+          .map((e) => e.toString())
+          .toList();
+    } else if (map['languages'] is String &&
+        (map['languages'] as String).isNotEmpty) {
+      parsedLanguages = (map['languages'] as String)
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
     }
 
     return UserModel(
@@ -64,7 +72,9 @@ class UserModel {
       specialization: map['specialization'] ?? map['guideType'],
       bio: map['bio'] ?? map['description'],
       favorites: List<String>.from(map['favorites'] ?? []),
-      favoriteDestinations: List<String>.from(map['favoriteDestinations'] ?? []),
+      favoriteDestinations: List<String>.from(
+        map['favoriteDestinations'] ?? [],
+      ),
       isActive: map['isActive'] ?? true,
       isEmailVerified: map['isEmailVerified'] ?? false,
       isVerified: map['isVerified'] ?? map['verified'] ?? false,
@@ -86,7 +96,8 @@ class UserModel {
       if (specialization != null) 'specialization': specialization,
       if (bio != null) 'bio': bio,
       if (favorites.isNotEmpty) 'favorites': favorites,
-      if (favoriteDestinations.isNotEmpty) 'favoriteDestinations': favoriteDestinations,
+      if (favoriteDestinations.isNotEmpty)
+        'favoriteDestinations': favoriteDestinations,
       'isActive': isActive,
       'isEmailVerified': isEmailVerified,
       'isVerified': isVerified,

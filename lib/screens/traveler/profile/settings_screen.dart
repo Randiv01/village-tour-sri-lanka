@@ -12,6 +12,8 @@ import '../../../../services/auth_service.dart';
 import '../main/traveler_main_screen.dart';
 import 'edit_profile_screen.dart';
 
+import 'package:package_info_plus/package_info_plus.dart';
+
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -27,9 +29,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
-    
+
     if (currentUser == null) {
-      return const Scaffold(body: Center(child: Text('Please sign in to view settings')));
+      return const Scaffold(
+        body: Center(child: Text('Please sign in to view settings')),
+      );
     }
 
     return Scaffold(
@@ -47,7 +51,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 shape: BoxShape.circle,
                 border: Border.all(color: AppColors.border),
               ),
-              child: const Icon(Icons.arrow_back_ios_new, size: 16, color: AppColors.primaryDark),
+              child: const Icon(
+                Icons.arrow_back_ios_new,
+                size: 16,
+                color: AppColors.primaryDark,
+              ),
             ),
             onPressed: () => Navigator.of(context).pop(),
           ),
@@ -56,7 +64,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             Text(
               'Settings',
-              style: AppTextStyles.screenHeading.copyWith(color: AppColors.primaryDark),
+              style: AppTextStyles.screenHeading.copyWith(
+                color: AppColors.primaryDark,
+              ),
             ),
             Text(
               'A BETTER LOCAL EXPERIENCE',
@@ -79,7 +89,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   shape: BoxShape.circle,
                   border: Border.all(color: AppColors.border),
                 ),
-                child: const Icon(Icons.notifications_none, size: 18, color: AppColors.primaryDark),
+                child: const Icon(
+                  Icons.notifications_none,
+                  size: 18,
+                  color: AppColors.primaryDark,
+                ),
               ),
               onPressed: () {},
             ),
@@ -87,14 +101,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
       body: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance.collection('users').doc(currentUser.uid).snapshots(),
+        stream: FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUser.uid)
+            .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+            return const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            );
           }
 
           UserModel? userModel;
-          if (snapshot.hasData && snapshot.data!.exists && snapshot.data!.data() != null) {
+          if (snapshot.hasData &&
+              snapshot.data!.exists &&
+              snapshot.data!.data() != null) {
             final data = snapshot.data!.data() as Map<String, dynamic>;
             userModel = UserModel.fromMap(data, snapshot.data!.id);
           }
@@ -114,9 +135,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _buildDeleteAccountButton(context),
                 const SizedBox(height: AppSpacing.md),
                 Center(
-                  child: Text(
-                    'Village Tour Sri Lanka v1.0.4',
-                    style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                  child: FutureBuilder<PackageInfo>(
+                    future: PackageInfo.fromPlatform(),
+                    builder: (context, snapshot) {
+                      final version = snapshot.hasData
+                          ? 'v${snapshot.data!.version}'
+                          : 'v...';
+                      return Text(
+                        'Village Tour Sri Lanka $version',
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      );
+                    },
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xxl),
@@ -129,9 +160,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildProfileCard(UserModel user, User firebaseAuthUser) {
-    String displayName = user.fullName.isNotEmpty ? user.fullName : (firebaseAuthUser.displayName ?? 'Traveler');
-    String email = user.email.isNotEmpty ? user.email : (firebaseAuthUser.email ?? '');
-    String photoUrl = (user.profileImageUrl != null && user.profileImageUrl!.isNotEmpty) ? user.profileImageUrl! : (firebaseAuthUser.photoURL ?? '');
+    String displayName = user.fullName.isNotEmpty
+        ? user.fullName
+        : (firebaseAuthUser.displayName ?? 'Traveler');
+    String email = user.email.isNotEmpty
+        ? user.email
+        : (firebaseAuthUser.email ?? '');
+    String photoUrl =
+        (user.profileImageUrl != null && user.profileImageUrl!.isNotEmpty)
+        ? user.profileImageUrl!
+        : (firebaseAuthUser.photoURL ?? '');
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -145,8 +183,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           CircleAvatar(
             radius: 28,
             backgroundColor: AppColors.background,
-            backgroundImage: photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null,
-            child: photoUrl.isEmpty ? const Icon(Icons.person, color: AppColors.textSecondary) : null,
+            backgroundImage: photoUrl.isNotEmpty
+                ? NetworkImage(photoUrl)
+                : null,
+            child: photoUrl.isEmpty
+                ? const Icon(Icons.person, color: AppColors.textSecondary)
+                : null,
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
@@ -158,7 +200,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Expanded(
                       child: Text(
                         displayName,
-                        style: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.bold, color: AppColors.primaryDark),
+                        style: AppTextStyles.labelLarge.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryDark,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -168,7 +213,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 4),
                 Text(
                   email,
-                  style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -187,12 +234,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
               side: const BorderSide(color: AppColors.border),
             ),
             child: Text(
               'Edit',
-              style: AppTextStyles.caption.copyWith(color: AppColors.primaryDark, fontWeight: FontWeight.bold),
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.primaryDark,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -230,7 +282,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Center(
-                    child: Text('Rs', style: TextStyle(color: Color(0xFFD97706), fontWeight: FontWeight.bold)),
+                    child: Text(
+                      'Rs',
+                      style: TextStyle(
+                        color: Color(0xFFD97706),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
                 title: 'Currency',
@@ -239,7 +297,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.background,
                         borderRadius: BorderRadius.circular(8),
@@ -247,11 +308,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       child: Text(
                         _selectedCurrency,
-                        style: AppTextStyles.caption.copyWith(fontWeight: FontWeight.bold, color: AppColors.primaryDark),
+                        style: AppTextStyles.caption.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryDark,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 20),
+                    const Icon(
+                      Icons.chevron_right,
+                      color: AppColors.textSecondary,
+                      size: 20,
+                    ),
                   ],
                 ),
                 onTap: () {
@@ -268,7 +336,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Center(
-                    child: Icon(Icons.notifications_none, color: Color(0xFF1E6B52), size: 20),
+                    child: Icon(
+                      Icons.notifications_none,
+                      color: Color(0xFF1E6B52),
+                      size: 20,
+                    ),
                   ),
                 ),
                 title: 'Booking Reminders',
@@ -293,7 +365,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Center(
-                    child: Icon(Icons.map_outlined, color: Color(0xFF2C5E47), size: 20),
+                    child: Icon(
+                      Icons.map_outlined,
+                      color: Color(0xFF2C5E47),
+                      size: 20,
+                    ),
                   ),
                 ),
                 title: 'Offline Village Trail Guide',
@@ -345,16 +421,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Center(
-                    child: Icon(Icons.mail_outline, color: Color(0xFFD97706), size: 20),
+                    child: Icon(
+                      Icons.mail_outline,
+                      color: Color(0xFFD97706),
+                      size: 20,
+                    ),
                   ),
                 ),
                 title: 'Contact Us / Reservation Help',
                 subtitle: 'Call: +94 71 422 6176 · Galewela',
-                trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 20),
+                trailing: const Icon(
+                  Icons.chevron_right,
+                  color: AppColors.textSecondary,
+                  size: 20,
+                ),
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const ContactUsScreen()),
+                    MaterialPageRoute(
+                      builder: (context) => const ContactUsScreen(),
+                    ),
                   );
                 },
               ),
@@ -368,16 +454,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Center(
-                    child: Icon(Icons.verified_user_outlined, color: Color(0xFF1E6B52), size: 20),
+                    child: Icon(
+                      Icons.verified_user_outlined,
+                      color: Color(0xFF1E6B52),
+                      size: 20,
+                    ),
                   ),
                 ),
                 title: 'Village Policy & Advance Rules',
                 subtitle: 'Max 20 pax/day · 3 days advance confirmation',
-                trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 20),
+                trailing: const Icon(
+                  Icons.chevron_right,
+                  color: AppColors.textSecondary,
+                  size: 20,
+                ),
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const VillagePolicyScreen()),
+                    MaterialPageRoute(
+                      builder: (context) => const VillagePolicyScreen(),
+                    ),
                   );
                 },
               ),
@@ -398,7 +494,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.md),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.md,
+        ),
         child: Row(
           children: [
             iconWidget,
@@ -409,12 +508,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   Text(
                     title,
-                    style: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.bold, color: AppColors.primaryDark),
+                    style: AppTextStyles.labelLarge.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primaryDark,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
@@ -432,7 +536,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final confirm = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: Text('Delete Account', style: AppTextStyles.screenHeading.copyWith(color: AppColors.error)),
+            title: Text(
+              'Delete Account',
+              style: AppTextStyles.screenHeading.copyWith(
+                color: AppColors.error,
+              ),
+            ),
             content: const Text(
               'Are you sure you want to completely delete your account? This will permanently delete your profile, bookings, packages, and personal details. This action cannot be undone.',
             ),
@@ -442,31 +551,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: const Text('Cancel'),
               ),
               ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: Colors.white),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.error,
+                  foregroundColor: Colors.white,
+                ),
                 onPressed: () => Navigator.pop(context, true),
                 child: const Text('Delete'),
               ),
             ],
           ),
         );
-        
+
         if (confirm == true && context.mounted) {
           try {
             showDialog(
               context: context,
               barrierDismissible: false,
-              builder: (context) => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+              builder: (context) => const Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              ),
             );
-            
+
             await AuthService().deleteAccount();
-            
+
             if (context.mounted) {
               Navigator.pop(context); // pop loading
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Account deleted successfully')),
               );
               Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => const TravelerMainScreen()),
+                MaterialPageRoute(
+                  builder: (context) => const TravelerMainScreen(),
+                ),
                 (route) => false,
               );
             }
@@ -474,7 +590,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             if (context.mounted) {
               Navigator.pop(context); // pop loading
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(e.toString()), backgroundColor: AppColors.error),
+                SnackBar(
+                  content: Text(e.toString()),
+                  backgroundColor: AppColors.error,
+                ),
               );
             }
           }
@@ -512,7 +631,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Select Currency', style: AppTextStyles.screenHeading.copyWith(color: AppColors.primaryDark)),
+          title: Text(
+            'Select Currency',
+            style: AppTextStyles.screenHeading.copyWith(
+              color: AppColors.primaryDark,
+            ),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -545,7 +669,11 @@ class ContactUsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Contact Us'), backgroundColor: AppColors.background, foregroundColor: AppColors.primaryDark),
+      appBar: AppBar(
+        title: const Text('Contact Us'),
+        backgroundColor: AppColors.background,
+        foregroundColor: AppColors.primaryDark,
+      ),
       body: const Center(child: Text('Contact Us Form and Info')),
     );
   }
@@ -571,7 +699,9 @@ class VillagePolicyScreen extends StatelessWidget {
         ),
         title: Text(
           'Village Policy',
-          style: AppTextStyles.screenHeading.copyWith(color: AppColors.primaryDark),
+          style: AppTextStyles.screenHeading.copyWith(
+            color: AppColors.primaryDark,
+          ),
         ),
       ),
       body: SingleChildScrollView(
@@ -581,7 +711,9 @@ class VillagePolicyScreen extends StatelessWidget {
           children: [
             Text(
               'Advance Booking & Confirmation',
-              style: AppTextStyles.sectionHeading.copyWith(color: AppColors.primaryDark),
+              style: AppTextStyles.sectionHeading.copyWith(
+                color: AppColors.primaryDark,
+              ),
             ),
             const SizedBox(height: AppSpacing.md),
             _buildPolicyCard(
@@ -592,7 +724,9 @@ class VillagePolicyScreen extends StatelessWidget {
             const SizedBox(height: AppSpacing.lg),
             Text(
               'Capacity Rules',
-              style: AppTextStyles.sectionHeading.copyWith(color: AppColors.primaryDark),
+              style: AppTextStyles.sectionHeading.copyWith(
+                color: AppColors.primaryDark,
+              ),
             ),
             const SizedBox(height: AppSpacing.md),
             _buildPolicyCard(
@@ -603,7 +737,9 @@ class VillagePolicyScreen extends StatelessWidget {
             const SizedBox(height: AppSpacing.lg),
             Text(
               'Cultural Etiquette',
-              style: AppTextStyles.sectionHeading.copyWith(color: AppColors.primaryDark),
+              style: AppTextStyles.sectionHeading.copyWith(
+                color: AppColors.primaryDark,
+              ),
             ),
             const SizedBox(height: AppSpacing.md),
             _buildPolicyCard(
@@ -617,7 +753,11 @@ class VillagePolicyScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPolicyCard({required IconData icon, required String title, required String description}) {
+  Widget _buildPolicyCard({
+    required IconData icon,
+    required String title,
+    required String description,
+  }) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
@@ -643,12 +783,18 @@ class VillagePolicyScreen extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.bold, color: AppColors.primaryDark),
+                  style: AppTextStyles.labelLarge.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primaryDark,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   description,
-                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary, height: 1.4),
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                    height: 1.4,
+                  ),
                 ),
               ],
             ),

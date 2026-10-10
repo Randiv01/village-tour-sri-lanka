@@ -1,7 +1,9 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_spacing.dart';
 import '../../../theme/app_text_styles.dart';
@@ -63,9 +65,9 @@ class _AdminAddEditGalleryImageScreenState
     if (images.isNotEmpty) {
       setState(() {
         if (widget.image != null) {
-           _selectedImages = [images.first]; // only one if editing
+          _selectedImages = [images.first]; // only one if editing
         } else {
-           _selectedImages.addAll(images);
+          _selectedImages.addAll(images);
         }
       });
     }
@@ -91,14 +93,16 @@ class _AdminAddEditGalleryImageScreenState
         // Edit mode
         String imageUrl = _existingImageUrl ?? '';
         if (_selectedImages.isNotEmpty) {
-          final result = await _cloudinaryService.uploadImage(_selectedImages.first);
+          final result = await _cloudinaryService.uploadImage(
+            _selectedImages.first,
+          );
           if (result != null) {
             imageUrl = result.secureUrl;
           } else {
             throw Exception('Image upload failed');
           }
         }
-        
+
         final updatedImage = GalleryImage(
           id: widget.image!.id,
           title: _titleController.text.trim(),
@@ -146,9 +150,8 @@ class _AdminAddEditGalleryImageScreenState
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) {
@@ -198,7 +201,9 @@ class _AdminAddEditGalleryImageScreenState
                                     return Stack(
                                       children: [
                                         ClipRRect(
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                           child: Image.file(
                                             File(img.path),
                                             width: 100,
@@ -219,9 +224,14 @@ class _AdminAddEditGalleryImageScreenState
                                               padding: const EdgeInsets.all(4),
                                               decoration: BoxDecoration(
                                                 color: Colors.black54,
-                                                borderRadius: BorderRadius.circular(4),
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
                                               ),
-                                              child: const Icon(Icons.close, color: Colors.white, size: 16),
+                                              child: const Icon(
+                                                Icons.close,
+                                                color: Colors.white,
+                                                size: 16,
+                                              ),
                                             ),
                                           ),
                                         ),
@@ -230,32 +240,34 @@ class _AdminAddEditGalleryImageScreenState
                                   }).toList(),
                                 )
                               : _existingImageUrl != null
-                                  ? ClipRRect(
-                                      borderRadius: BorderRadius.circular(16),
-                                      child: Image.network(
-                                        _existingImageUrl!,
-                                        height: 200,
-                                        width: double.infinity,
-                                        fit: BoxFit.cover,
-                                      ),
-                                    )
-                                  : Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        const Icon(
-                                          Icons.add_photo_alternate,
-                                          size: 48,
-                                          color: AppColors.primary,
-                                        ),
-                                        const SizedBox(height: AppSpacing.sm),
-                                        Text(
-                                          isEditing ? 'Tap to change image' : 'Tap to upload multiple images',
-                                          style: AppTextStyles.bodyMedium.copyWith(
-                                            color: AppColors.textSecondary,
-                                          ),
-                                        ),
-                                      ],
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Image.network(
+                                    _existingImageUrl!,
+                                    height: 200,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                  ),
+                                )
+                              : Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.add_photo_alternate,
+                                      size: 48,
+                                      color: AppColors.primary,
                                     ),
+                                    const SizedBox(height: AppSpacing.sm),
+                                    Text(
+                                      isEditing
+                                          ? 'Tap to change image'
+                                          : 'Tap to upload multiple images',
+                                      style: AppTextStyles.bodyMedium.copyWith(
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                         ),
                       ),
                     ),
@@ -300,9 +312,18 @@ class _AdminAddEditGalleryImageScreenState
                         border: OutlineInputBorder(),
                       ),
                       items: const [
-                        DropdownMenuItem(value: 'Surroundings & Views', child: Text('Surroundings & Views')),
-                        DropdownMenuItem(value: 'Homestay Spaces', child: Text('Homestay Spaces')),
-                        DropdownMenuItem(value: 'Activities', child: Text('Activities')),
+                        DropdownMenuItem(
+                          value: 'Surroundings & Views',
+                          child: Text('Surroundings & Views'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Homestay Spaces',
+                          child: Text('Homestay Spaces'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Activities',
+                          child: Text('Activities'),
+                        ),
                         DropdownMenuItem(value: 'Food', child: Text('Food')),
                       ],
                       onChanged: (val) {
@@ -330,9 +351,9 @@ class _AdminAddEditGalleryImageScreenState
                           border: OutlineInputBorder(),
                         ),
                         child: Text(
-                          _imageDate == null 
-                            ? 'Select Date' 
-                            : '${_imageDate!.year}-${_imageDate!.month.toString().padLeft(2, '0')}-${_imageDate!.day.toString().padLeft(2, '0')}',
+                          _imageDate == null
+                              ? 'Select Date'
+                              : '${_imageDate!.year}-${_imageDate!.month.toString().padLeft(2, '0')}-${_imageDate!.day.toString().padLeft(2, '0')}',
                         ),
                       ),
                     ),

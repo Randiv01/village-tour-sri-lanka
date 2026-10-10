@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../models/payment.dart';
 
 class PaymentRepository {
@@ -14,7 +15,12 @@ class PaymentRepository {
     return docRef.id;
   }
 
-  Future<void> updatePaymentStatus(String paymentId, String status, {String? transactionId, DateTime? paidAt}) async {
+  Future<void> updatePaymentStatus(
+    String paymentId,
+    String status, {
+    String? transactionId,
+    DateTime? paidAt,
+  }) async {
     final updates = <String, dynamic>{
       'status': status,
       'updatedAt': FieldValue.serverTimestamp(),

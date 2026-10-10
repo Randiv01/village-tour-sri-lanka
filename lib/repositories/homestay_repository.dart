@@ -1,16 +1,22 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../models/homestay.dart';
 
 class HomestayRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Future<String> createHomestay(Homestay homestay) async {
-    final docRef = await _firestore.collection('homestays').add(homestay.toMap());
+    final docRef = await _firestore
+        .collection('homestays')
+        .add(homestay.toMap());
     return docRef.id;
   }
 
   Future<void> updateHomestay(Homestay homestay) async {
-    await _firestore.collection('homestays').doc(homestay.id).update(homestay.toMap());
+    await _firestore
+        .collection('homestays')
+        .doc(homestay.id)
+        .update(homestay.toMap());
   }
 
   Future<Homestay?> getHomestayById(String id) async {
@@ -27,8 +33,10 @@ class HomestayRepository {
         .where('hostId', isEqualTo: hostId)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) => Homestay.fromMap(doc.data(), doc.id)).toList();
-    });
+          return snapshot.docs
+              .map((doc) => Homestay.fromMap(doc.data(), doc.id))
+              .toList();
+        });
   }
 
   Stream<List<Homestay>> getActiveHomestays() {
@@ -37,16 +45,17 @@ class HomestayRepository {
         .where('status', isEqualTo: 'Active')
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) => Homestay.fromMap(doc.data(), doc.id)).toList();
-    });
+          return snapshot.docs
+              .map((doc) => Homestay.fromMap(doc.data(), doc.id))
+              .toList();
+        });
   }
 
   Stream<List<Homestay>> getAllHomestays() {
-    return _firestore
-        .collection('homestays')
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs.map((doc) => Homestay.fromMap(doc.data(), doc.id)).toList();
+    return _firestore.collection('homestays').snapshots().map((snapshot) {
+      return snapshot.docs
+          .map((doc) => Homestay.fromMap(doc.data(), doc.id))
+          .toList();
     });
   }
 }

@@ -9,7 +9,7 @@ class TourPackage {
     'Food & Culinary',
     'Religious & Spiritual',
     'Family & Leisure',
-    'Other Experience'
+    'Other Experience',
   ];
 
   final String id;
@@ -108,11 +108,19 @@ class TourPackage {
       description: map['description'] ?? '',
       category: map['category'],
       coverImageUrl: map['coverImageUrl'] ?? map['coverImage'],
-      galleryImages: List<String>.from(map['galleryImages'] ?? map['images'] ?? []),
+      galleryImages: List<String>.from(
+        map['galleryImages'] ?? map['images'] ?? [],
+      ),
       durationDays: (map['durationDays'] as num?)?.toInt() ?? 1,
-      nights: (map['nights'] as num?)?.toInt() ?? (map['durationNights'] as num?)?.toInt() ?? 0,
+      nights:
+          (map['nights'] as num?)?.toInt() ??
+          (map['durationNights'] as num?)?.toInt() ??
+          0,
       maxGuests: (map['maxGuests'] as num?)?.toInt() ?? 1,
-      pricePerGuest: (map['pricePerGuest'] as num?)?.toDouble() ?? (map['price'] as num?)?.toDouble() ?? 0.0,
+      pricePerGuest:
+          (map['pricePerGuest'] as num?)?.toDouble() ??
+          (map['price'] as num?)?.toDouble() ??
+          0.0,
       vehicleType: map['vehicleType'] ?? '',
       location: map['location'] ?? '',
       placesToVisit: _parseList(map['placesToVisit'] ?? map['places']),
@@ -122,18 +130,18 @@ class TourPackage {
       excludedItems: List<String>.from(map['excludedItems'] ?? []),
       meetingPoint: map['meetingPoint'],
       pickupNotes: map['pickupNotes'],
-      availabilityDates: (map['availabilityDates'] as List<dynamic>?)
+      availabilityDates:
+          (map['availabilityDates'] as List<dynamic>?)
               ?.map((e) => (e as Timestamp).toDate())
               .toList() ??
           [],
       availableDays: parsedDays,
-      unavailableDates: (map['unavailableDates'] as List<dynamic>?)
-              ?.map((e) {
-                if (e is Timestamp) return e.toDate();
-                if (e is String) return DateTime.tryParse(e) ?? DateTime.now();
-                return DateTime.now();
-              })
-              .toList() ??
+      unavailableDates:
+          (map['unavailableDates'] as List<dynamic>?)?.map((e) {
+            if (e is Timestamp) return e.toDate();
+            if (e is String) return DateTime.tryParse(e) ?? DateTime.now();
+            return DateTime.now();
+          }).toList() ??
           [],
       status: map['status'] ?? 'active',
       createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
@@ -177,9 +185,16 @@ class TourPackage {
       'excludedItems': excludedItems,
       'meetingPoint': meetingPoint,
       'pickupNotes': pickupNotes,
-      'availabilityDates': availabilityDates.map((d) => Timestamp.fromDate(d)).toList(),
+      'availabilityDates': availabilityDates
+          .map((d) => Timestamp.fromDate(d))
+          .toList(),
       'availableDays': availableDays,
-      'unavailableDates': unavailableDates.map((d) => "${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}").toList(),
+      'unavailableDates': unavailableDates
+          .map(
+            (d) =>
+                "${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}",
+          )
+          .toList(),
       'status': status,
       'updatedAt': FieldValue.serverTimestamp(),
     };

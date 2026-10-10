@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../services/auth_service.dart';
 
-
 import '../../admin/admin_shell.dart';
 import '../../host/main/host_main_screen.dart';
 import '../../guide/guide_shell.dart';
@@ -57,14 +56,21 @@ class AuthGate extends StatelessWidget {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                        const Icon(
+                          Icons.error_outline,
+                          size: 48,
+                          color: AppColors.error,
+                        ),
                         const SizedBox(height: 16),
                         Text(
-                          profileSnapshot.hasError 
-                            ? 'Error loading profile: ${profileSnapshot.error}'
-                            : 'No user profile found in the database for this account. Please ensure your Firestore document is created with the same UID as your Firebase Auth account.',
+                          profileSnapshot.hasError
+                              ? 'Error loading profile: ${profileSnapshot.error}'
+                              : 'No user profile found in the database for this account. Please ensure your Firestore document is created with the same UID as your Firebase Auth account.',
                           textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 14, color: AppColors.error),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppColors.error,
+                          ),
                         ),
                         const SizedBox(height: 24),
                         ElevatedButton(

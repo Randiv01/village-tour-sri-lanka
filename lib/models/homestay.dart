@@ -18,7 +18,8 @@ class Homestay {
   final List<DateTime> unavailableDates;
   final String checkInTime; // '2:00 PM'
   final String checkOutTime; // '11:00 AM'
-  final List<Map<String, dynamic>> optionalAddOns; // { 'title': 'Buffet Lunch', 'price': 2000 }
+  final List<Map<String, dynamic>>
+  optionalAddOns; // { 'title': 'Buffet Lunch', 'price': 2000 }
   final String status; // 'Active', 'Inactive'
   final bool isVerified; // true if admin verified this specific property
   final DateTime? createdAt;
@@ -88,24 +89,31 @@ class Homestay {
       location: map['location'] ?? '',
       description: map['description'] ?? '',
       pricePerNight: (map['pricePerNight'] as num?)?.toDouble() ?? 0.0,
-      rooms: (map['roomsCount'] as num?)?.toInt() ?? (map['rooms'] as num?)?.toInt() ?? 1,
+      rooms:
+          (map['roomsCount'] as num?)?.toInt() ??
+          (map['rooms'] as num?)?.toInt() ??
+          1,
       maxGuests: (map['maxGuests'] as num?)?.toInt() ?? 1,
       images: List<String>.from(map['images'] ?? []),
-      coverImage: map['coverImage'] ?? (map['images'] != null && map['images'].isNotEmpty ? map['images'][0] : null),
+      coverImage:
+          map['coverImage'] ??
+          (map['images'] != null && map['images'].isNotEmpty
+              ? map['images'][0]
+              : null),
       amenities: List<String>.from(map['amenities'] ?? []),
       houseRules: List<String>.from(map['houseRules'] ?? []),
       availableDays: parsedDays,
-      unavailableDates: (map['unavailableDates'] as List<dynamic>?)
-              ?.map((e) {
-                if (e is Timestamp) return e.toDate();
-                if (e is String) return DateTime.tryParse(e) ?? DateTime.now();
-                return DateTime.now();
-              })
-              .toList() ??
+      unavailableDates:
+          (map['unavailableDates'] as List<dynamic>?)?.map((e) {
+            if (e is Timestamp) return e.toDate();
+            if (e is String) return DateTime.tryParse(e) ?? DateTime.now();
+            return DateTime.now();
+          }).toList() ??
           [],
       checkInTime: map['checkInTime'] ?? '2:00 PM',
       checkOutTime: map['checkOutTime'] ?? '11:00 AM',
-      optionalAddOns: (map['optionalAddOns'] as List<dynamic>?)
+      optionalAddOns:
+          (map['optionalAddOns'] as List<dynamic>?)
               ?.map((e) => Map<String, dynamic>.from(e as Map))
               .toList() ??
           [],
@@ -131,7 +139,12 @@ class Homestay {
       'amenities': amenities,
       'houseRules': houseRules,
       'availableDays': availableDays,
-      'unavailableDates': unavailableDates.map((d) => "${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}").toList(),
+      'unavailableDates': unavailableDates
+          .map(
+            (d) =>
+                "${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}",
+          )
+          .toList(),
       'checkInTime': checkInTime,
       'checkOutTime': checkOutTime,
       'optionalAddOns': optionalAddOns,

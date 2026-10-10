@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -83,10 +84,12 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
 
     _daysCtrl = TextEditingController(text: p?.durationDays.toString() ?? '1');
     _nightsCtrl = TextEditingController(text: p?.nights.toString() ?? '0');
-    _maxGuestsCtrl =
-        TextEditingController(text: p?.maxGuests.toString() ?? '2');
-    _priceCtrl =
-        TextEditingController(text: p?.pricePerGuest.toStringAsFixed(0) ?? '');
+    _maxGuestsCtrl = TextEditingController(
+      text: p?.maxGuests.toString() ?? '2',
+    );
+    _priceCtrl = TextEditingController(
+      text: p?.pricePerGuest.toStringAsFixed(0) ?? '',
+    );
     _vehicleCtrl = TextEditingController(text: p?.vehicleType ?? '');
     _locationCtrl = TextEditingController(text: p?.location ?? '');
     _meetingCtrl = TextEditingController(text: p?.meetingPoint ?? '');
@@ -128,8 +131,10 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
   }
 
   Future<void> _pickCoverImage() async {
-    final XFile? image =
-        await _picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    final XFile? image = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
     if (image != null) {
       setState(() {
         _coverImageFile = image;
@@ -184,13 +189,18 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
 
     // Prevent adding duplicate dates
     final alreadyExists = _unavailableDates.any(
-      (d) => d.year == normalised.year && d.month == normalised.month && d.day == normalised.day,
+      (d) =>
+          d.year == normalised.year &&
+          d.month == normalised.month &&
+          d.day == normalised.day,
     );
 
     if (alreadyExists) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('This date is already selected as a blackout date.')),
+          const SnackBar(
+            content: Text('This date is already selected as a blackout date.'),
+          ),
         );
       }
       return;
@@ -205,7 +215,8 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
   void _removeUnavailableDate(DateTime date) {
     setState(() {
       _unavailableDates.removeWhere(
-        (d) => d.year == date.year && d.month == date.month && d.day == date.day,
+        (d) =>
+            d.year == date.year && d.month == date.month && d.day == date.day,
       );
     });
   }
@@ -274,10 +285,12 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
             ElevatedButton(
               onPressed: () {
                 if (titleCtrl.text.trim().isNotEmpty) {
-                  setState(() => targetList.add({
-                        'title': titleCtrl.text.trim(),
-                        'description': descCtrl.text.trim(),
-                      }));
+                  setState(
+                    () => targetList.add({
+                      'title': titleCtrl.text.trim(),
+                      'description': descCtrl.text.trim(),
+                    }),
+                  );
                 }
                 Navigator.pop(ctx);
               },
@@ -345,7 +358,8 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
     if (_status == 'active') {
       if (_placesList.isEmpty && _activitiesList.isEmpty) {
         _showError(
-            'Active packages require at least one place to visit or activity.');
+          'Active packages require at least one place to visit or activity.',
+        );
         return;
       }
       if (_itineraryList.isEmpty) {
@@ -353,13 +367,13 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
         return;
       }
       if (_meetingCtrl.text.trim().isEmpty) {
-        _showError(
-            'Active packages require a meeting/pickup location.');
+        _showError('Active packages require a meeting/pickup location.');
         return;
       }
       if (_vehicleCtrl.text.trim().isEmpty) {
         _showError(
-            'Active packages require a vehicle type if transport is included.');
+          'Active packages require a vehicle type if transport is included.',
+        );
         return;
       }
     }
@@ -460,8 +474,9 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
         elevation: 0,
         title: Text(
           isEditing ? 'Edit Package' : 'Create Tour Package',
-          style: AppTextStyles.screenHeading
-              .copyWith(color: AppColors.primaryDark),
+          style: AppTextStyles.screenHeading.copyWith(
+            color: AppColors.primaryDark,
+          ),
         ),
         centerTitle: true,
         leading: IconButton(
@@ -502,66 +517,64 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
                           ),
                         )
                       : (_coverImageUrl != null && _coverImageUrl!.isNotEmpty)
-                          ? ClipRRect(
-                              borderRadius: AppRadius.cardRadius,
-                              child: Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  Image.network(
-                                    _coverImageUrl!,
-                                    fit: BoxFit.cover,
+                      ? ClipRRect(
+                          borderRadius: AppRadius.cardRadius,
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Image.network(_coverImageUrl!, fit: BoxFit.cover),
+                              Positioned(
+                                bottom: 8,
+                                right: 8,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
                                   ),
-                                  Positioned(
-                                    bottom: 8,
-                                    right: 8,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black54,
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: const Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.edit,
-                                            size: 12,
-                                            color: Colors.white,
-                                          ),
-                                          SizedBox(width: 4),
-                                          Text(
-                                            'Change',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 11,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black54,
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
-                                ],
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.edit,
+                                        size: 12,
+                                        color: Colors.white,
+                                      ),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        'Change',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
-                            )
-                          : Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.add_photo_alternate_outlined,
-                                  size: 40,
-                                  color: AppColors.primary.withValues(alpha: 0.5),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Tap to Add Cover Image',
-                                  style: AppTextStyles.bodyMedium
-                                      .copyWith(color: AppColors.primary),
-                                ),
-                              ],
+                            ],
+                          ),
+                        )
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.add_photo_alternate_outlined,
+                              size: 40,
+                              color: AppColors.primary.withValues(alpha: 0.5),
                             ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Tap to Add Cover Image',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
@@ -620,8 +633,12 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
               ),
               const SizedBox(height: AppSpacing.xl),
 
-              _field(_titleCtrl, 'Package Title *', 'e.g. Nilagama Village Explorer',
-                  required: true),
+              _field(
+                _titleCtrl,
+                'Package Title *',
+                'e.g. Nilagama Village Explorer',
+                required: true,
+              ),
               const SizedBox(height: AppSpacing.md),
               _field(
                 _descCtrl,
@@ -635,9 +652,7 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
                 initialValue: _selectedCategory,
                 decoration: const InputDecoration(labelText: 'Category *'),
                 items: TourPackage.packageCategories
-                    .map(
-                      (c) => DropdownMenuItem(value: c, child: Text(c)),
-                    )
+                    .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                     .toList(),
                 onChanged: (val) => setState(() => _selectedCategory = val),
                 validator: (v) => v == null ? 'Required' : null,
@@ -695,11 +710,7 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
                 ],
               ),
               const SizedBox(height: AppSpacing.md),
-              _field(
-                _vehicleCtrl,
-                'Vehicle Type',
-                'e.g. Tuk Tuk, Car, Van',
-              ),
+              _field(_vehicleCtrl, 'Vehicle Type', 'e.g. Tuk Tuk, Car, Van'),
               const SizedBox(height: AppSpacing.md),
               _field(
                 _locationCtrl,
@@ -714,53 +725,75 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
               const SizedBox(height: AppSpacing.sm),
               Text(
                 'Select the days of the week this tour is typically available.',
-                style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
               const SizedBox(height: AppSpacing.md),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: [
-                  'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'
-                ].map((day) {
-                  final isSelected = _availableDays[day] == true;
-                  return FilterChip(
-                    label: Text(day.substring(0, 1).toUpperCase() + day.substring(1)),
-                    selected: isSelected,
-                    onSelected: (bool selected) {
-                      setState(() {
-                        _availableDays[day] = selected;
-                      });
-                    },
-                    selectedColor: AppColors.primary.withValues(alpha: 0.2),
-                    checkmarkColor: AppColors.primaryDark,
-                  );
-                }).toList(),
+                children:
+                    [
+                      'monday',
+                      'tuesday',
+                      'wednesday',
+                      'thursday',
+                      'friday',
+                      'saturday',
+                      'sunday',
+                    ].map((day) {
+                      final isSelected = _availableDays[day] == true;
+                      return FilterChip(
+                        label: Text(
+                          day.substring(0, 1).toUpperCase() + day.substring(1),
+                        ),
+                        selected: isSelected,
+                        onSelected: (bool selected) {
+                          setState(() {
+                            _availableDays[day] = selected;
+                          });
+                        },
+                        selectedColor: AppColors.primary.withValues(alpha: 0.2),
+                        checkmarkColor: AppColors.primaryDark,
+                      );
+                    }).toList(),
               ),
-              
+
               const SizedBox(height: AppSpacing.xl),
               Text('Blackout Dates', style: AppTextStyles.labelLarge),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 'Add specific dates when you are NOT available to conduct this tour.',
-                style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
               const SizedBox(height: AppSpacing.md),
-              
+
               // Add Date Button
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
                   onPressed: _pickUnavailableDate,
-                  icon: const Icon(Icons.calendar_month_outlined, color: AppColors.primary),
+                  icon: const Icon(
+                    Icons.calendar_month_outlined,
+                    color: AppColors.primary,
+                  ),
                   label: Text(
                     'Add Blackout Date',
-                    style: AppTextStyles.bodyMedium.copyWith(color: AppColors.primary),
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.primary,
+                    ),
                   ),
                   style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppSpacing.md,
+                    ),
                     side: const BorderSide(color: AppColors.primary),
-                    shape: RoundedRectangleBorder(borderRadius: AppRadius.inputButtonRadius),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: AppRadius.inputButtonRadius,
+                    ),
                   ),
                 ),
               ),
@@ -774,13 +807,23 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
                   decoration: BoxDecoration(
                     color: AppColors.softSecondarySurface,
                     borderRadius: AppRadius.cardRadius,
-                    border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+                    border: Border.all(
+                      color: AppColors.border.withValues(alpha: 0.5),
+                    ),
                   ),
                   child: Column(
                     children: [
-                      Icon(Icons.event_available, size: 32, color: AppColors.textSecondary.withValues(alpha: 0.5)),
+                      Icon(
+                        Icons.event_available,
+                        size: 32,
+                        color: AppColors.textSecondary.withValues(alpha: 0.5),
+                      ),
                       const SizedBox(height: AppSpacing.sm),
-                      Text('No blackout dates added.', style: AppTextStyles.bodySecondary, textAlign: TextAlign.center),
+                      Text(
+                        'No blackout dates added.',
+                        style: AppTextStyles.bodySecondary,
+                        textAlign: TextAlign.center,
+                      ),
                     ],
                   ),
                 )
@@ -789,7 +832,9 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
                   decoration: BoxDecoration(
                     color: AppColors.surface,
                     borderRadius: AppRadius.cardRadius,
-                    border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+                    border: Border.all(
+                      color: AppColors.border.withValues(alpha: 0.5),
+                    ),
                   ),
                   child: Column(
                     children: _unavailableDates.asMap().entries.map((entry) {
@@ -799,14 +844,24 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
                       return Column(
                         children: [
                           ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 2),
-                            title: Text(DateFormat('EEEE, d MMMM yyyy').format(date), style: AppTextStyles.bodyMedium),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md,
+                              vertical: 2,
+                            ),
+                            title: Text(
+                              DateFormat('EEEE, d MMMM yyyy').format(date),
+                              style: AppTextStyles.bodyMedium,
+                            ),
                             trailing: IconButton(
-                              icon: const Icon(Icons.close, color: AppColors.error),
+                              icon: const Icon(
+                                Icons.close,
+                                color: AppColors.error,
+                              ),
                               onPressed: () => _removeUnavailableDate(date),
                             ),
                           ),
-                          if (!isLast) const Divider(height: 1, indent: 16, endIndent: 16),
+                          if (!isLast)
+                            const Divider(height: 1, indent: 16, endIndent: 16),
                         ],
                       );
                     }).toList(),
@@ -865,7 +920,10 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
                     _statusOption('active', 'Active', 'Visible and bookable'),
                     const Divider(height: 1, color: AppColors.border),
                     _statusOption(
-                        'inactive', 'Inactive', 'Not currently available'),
+                      'inactive',
+                      'Inactive',
+                      'Not currently available',
+                    ),
                     const Divider(height: 1, color: AppColors.border),
                     _statusOption('draft', 'Draft', 'Saved but not visible'),
                   ],
@@ -878,8 +936,9 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
                 child: ElevatedButton(
                   onPressed: _saving ? null : _save,
                   style: ElevatedButton.styleFrom(
-                    padding:
-                        const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppSpacing.lg,
+                    ),
                   ),
                   child: _saving
                       ? const SizedBox(
@@ -891,9 +950,7 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
                           ),
                         )
                       : Text(
-                          isEditing
-                              ? 'Save Changes'
-                              : 'Create Tour Package',
+                          isEditing ? 'Save Changes' : 'Create Tour Package',
                         ),
                 ),
               ),
@@ -962,8 +1019,9 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
         if (items.isEmpty)
           Text(
             'No items added.',
-            style: AppTextStyles.caption
-                .copyWith(color: AppColors.textSecondary),
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.textSecondary,
+            ),
           ),
         for (final item in items)
           ListTile(
@@ -971,8 +1029,10 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
             dense: true,
             title: Text(item),
             trailing: IconButton(
-              icon: const Icon(Icons.remove_circle_outline,
-                  color: AppColors.error),
+              icon: const Icon(
+                Icons.remove_circle_outline,
+                color: AppColors.error,
+              ),
               onPressed: () => setState(() => items.remove(item)),
             ),
           ),
@@ -980,10 +1040,7 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
     );
   }
 
-  Widget _buildComplexList(
-    String title,
-    List<Map<String, dynamic>> items,
-  ) {
+  Widget _buildComplexList(String title, List<Map<String, dynamic>> items) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1001,8 +1058,9 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
         if (items.isEmpty)
           Text(
             'No items added.',
-            style: AppTextStyles.caption
-                .copyWith(color: AppColors.textSecondary),
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.textSecondary,
+            ),
           ),
         for (final item in items)
           Card(
@@ -1016,8 +1074,8 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
               title: Text(item['title'] ?? ''),
               subtitle:
                   item['description'] != null && item['description'].isNotEmpty
-                      ? Text(item['description'])
-                      : null,
+                  ? Text(item['description'])
+                  : null,
               trailing: IconButton(
                 icon: const Icon(Icons.delete_outline, color: AppColors.error),
                 onPressed: () => setState(() => items.remove(item)),
@@ -1029,20 +1087,20 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
   }
 
   Widget _sectionLabel(String text) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-        decoration: BoxDecoration(
-          color: AppColors.primary.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          text,
-          style: AppTextStyles.labelLarge.copyWith(
-            color: AppColors.primaryDark,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      );
+    width: double.infinity,
+    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+    decoration: BoxDecoration(
+      color: AppColors.primary.withValues(alpha: 0.1),
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Text(
+      text,
+      style: AppTextStyles.labelLarge.copyWith(
+        color: AppColors.primaryDark,
+        fontWeight: FontWeight.bold,
+      ),
+    ),
+  );
 
   Widget _field(
     TextEditingController ctrl,
@@ -1056,7 +1114,7 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
     if (keyboardType == TextInputType.number) {
       formatters = [FilteringTextInputFormatter.digitsOnly];
     }
-    
+
     return TextFormField(
       controller: ctrl,
       maxLines: maxLines,
@@ -1082,8 +1140,7 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
               isSelected
                   ? Icons.radio_button_checked
                   : Icons.radio_button_unchecked,
-              color:
-                  isSelected ? AppColors.primary : AppColors.textSecondary,
+              color: isSelected ? AppColors.primary : AppColors.textSecondary,
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
@@ -1093,8 +1150,9 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
                   Text(title, style: AppTextStyles.labelLarge),
                   Text(
                     subtitle,
-                    style: AppTextStyles.caption
-                        .copyWith(color: AppColors.textSecondary),
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),

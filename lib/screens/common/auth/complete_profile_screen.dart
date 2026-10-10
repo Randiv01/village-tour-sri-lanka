@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../theme/app_spacing.dart';
@@ -37,7 +38,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   late TextEditingController _emailController;
   late TextEditingController _phoneController;
   late String _selectedRole;
-  
+
   bool _isLoading = false;
   final _authService = AuthService();
 
@@ -151,7 +152,10 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                             label: 'Full Name *',
                             hint: 'e.g. Kasuni Perera',
                             controller: _nameController,
-                            prefixIcon: const Icon(Icons.person_outline, size: 20),
+                            prefixIcon: const Icon(
+                              Icons.person_outline,
+                              size: 20,
+                            ),
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
                                 return 'Please enter your full name.';
@@ -164,12 +168,20 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                             hint: 'name@example.com',
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
-                            prefixIcon: const Icon(Icons.email_outlined, size: 20),
+                            prefixIcon: const Icon(
+                              Icons.email_outlined,
+                              size: 20,
+                            ),
                             validator: (value) {
-                              if (value != null && value.isNotEmpty && !value.contains('@')) {
+                              if (value != null &&
+                                  value.isNotEmpty &&
+                                  !value.contains('@')) {
                                 return 'Please enter a valid email address.';
                               }
-                              if (value != null && value.isNotEmpty && _selectedRole != 'admin' && !value.toLowerCase().endsWith('@gmail.com')) {
+                              if (value != null &&
+                                  value.isNotEmpty &&
+                                  _selectedRole != 'admin' &&
+                                  !value.toLowerCase().endsWith('@gmail.com')) {
                                 return 'Only @gmail.com addresses are allowed.';
                               }
                               return null;
@@ -180,16 +192,23 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                             hint: '+94771234567',
                             controller: _phoneController,
                             keyboardType: TextInputType.phone,
-                            prefixIcon: const Icon(Icons.phone_outlined, size: 20),
+                            prefixIcon: const Icon(
+                              Icons.phone_outlined,
+                              size: 20,
+                            ),
                           ),
                           const SizedBox(height: AppSpacing.lg),
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
-                              onPressed: _isLoading ? null : _completeRegistration,
+                              onPressed: _isLoading
+                                  ? null
+                                  : _completeRegistration,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primaryDark,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -200,7 +219,10 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                       width: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Colors.white,
+                                            ),
                                       ),
                                     )
                                   : const Text(

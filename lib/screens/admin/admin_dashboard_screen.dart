@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_spacing.dart';
 import '../../../theme/app_text_styles.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
@@ -54,22 +55,28 @@ class AdminDashboardScreen extends StatelessWidget {
             childAspectRatio: 1.5,
             children: [
               _buildCountCard(
-                'Destinations', 
-                Icons.place, 
+                'Destinations',
+                Icons.place,
                 AppColors.primary,
-                stream: FirebaseFirestore.instance.collection('destinations').snapshots(),
+                stream: FirebaseFirestore.instance
+                    .collection('destinations')
+                    .snapshots(),
               ),
               _buildCountCard(
-                'Homestays', 
-                Icons.house, 
+                'Homestays',
+                Icons.house,
                 AppColors.secondary,
-                stream: FirebaseFirestore.instance.collection('homestays').snapshots(),
+                stream: FirebaseFirestore.instance
+                    .collection('homestays')
+                    .snapshots(),
               ),
               _buildCountCard(
-                'Tour Packages', 
-                Icons.tour, 
+                'Tour Packages',
+                Icons.tour,
                 AppColors.tertiary,
-                stream: FirebaseFirestore.instance.collection('tour_packages').snapshots(),
+                stream: FirebaseFirestore.instance
+                    .collection('tour_packages')
+                    .snapshots(),
               ),
               _buildCountCard('Bookings', Icons.book, AppColors.textSecondary),
             ],
@@ -145,7 +152,9 @@ class AdminDashboardScreen extends StatelessWidget {
                   const SizedBox(width: AppSpacing.sm),
                   Text(
                     'Users Overview',
-                    style: AppTextStyles.sectionHeading.copyWith(color: AppColors.primaryDark),
+                    style: AppTextStyles.sectionHeading.copyWith(
+                      color: AppColors.primaryDark,
+                    ),
                   ),
                   const Spacer(),
                   Text(
@@ -161,10 +170,18 @@ class AdminDashboardScreen extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildRoleStatItem('Travelers', travelers, Icons.person_outline),
+                  _buildRoleStatItem(
+                    'Travelers',
+                    travelers,
+                    Icons.person_outline,
+                  ),
                   _buildRoleStatItem('Hosts', hosts, Icons.home_work_outlined),
                   _buildRoleStatItem('Guides', guides, Icons.explore_outlined),
-                  _buildRoleStatItem('Admins', admins, Icons.admin_panel_settings_outlined),
+                  _buildRoleStatItem(
+                    'Admins',
+                    admins,
+                    Icons.admin_panel_settings_outlined,
+                  ),
                 ],
               ),
             ],
@@ -188,15 +205,19 @@ class AdminDashboardScreen extends StatelessWidget {
         ),
         Text(
           label,
-          style: AppTextStyles.caption.copyWith(
-            color: AppColors.textSecondary,
-          ),
+          style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
         ),
       ],
     );
   }
 
-  Widget _buildCountCard(String title, IconData icon, Color color, {Stream<QuerySnapshot>? stream, String placeholderCount = '0'}) {
+  Widget _buildCountCard(
+    String title,
+    IconData icon,
+    Color color, {
+    Stream<QuerySnapshot>? stream,
+    String placeholderCount = '0',
+  }) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -222,7 +243,9 @@ class AdminDashboardScreen extends StatelessWidget {
                 StreamBuilder<QuerySnapshot>(
                   stream: stream,
                   builder: (context, snapshot) {
-                    final count = snapshot.hasData ? snapshot.data!.docs.length.toString() : '...';
+                    final count = snapshot.hasData
+                        ? snapshot.data!.docs.length.toString()
+                        : '...';
                     return Text(
                       count,
                       style: AppTextStyles.sectionHeading.copyWith(

@@ -17,7 +17,8 @@ class GuideBookingsScreen extends StatefulWidget {
   State<GuideBookingsScreen> createState() => _GuideBookingsScreenState();
 }
 
-class _GuideBookingsScreenState extends State<GuideBookingsScreen> with SingleTickerProviderStateMixin {
+class _GuideBookingsScreenState extends State<GuideBookingsScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final GuideBookingRepository _repo = GuideBookingRepository();
   final String _uid = FirebaseAuth.instance.currentUser?.uid ?? '';
@@ -41,7 +42,12 @@ class _GuideBookingsScreenState extends State<GuideBookingsScreen> with SingleTi
       appBar: AppBar(
         backgroundColor: AppColors.background,
         elevation: 0,
-        title: Text('My Bookings', style: AppTextStyles.screenHeading.copyWith(color: AppColors.primaryDark)),
+        title: Text(
+          'My Bookings',
+          style: AppTextStyles.screenHeading.copyWith(
+            color: AppColors.primaryDark,
+          ),
+        ),
         centerTitle: true,
         bottom: TabBar(
           controller: _tabController,
@@ -62,21 +68,52 @@ class _GuideBookingsScreenState extends State<GuideBookingsScreen> with SingleTi
         stream: _repo.getGuideBookingsStream(_uid),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+            return const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            );
           }
           if (snapshot.hasError) {
-            return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(Icons.error_outline, size: 48, color: AppColors.error),
-              const SizedBox(height: AppSpacing.md),
-              Text('Unable to load bookings.', style: AppTextStyles.bodyLarge),
-            ]));
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: AppColors.error,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    'Unable to load bookings.',
+                    style: AppTextStyles.bodyLarge,
+                  ),
+                ],
+              ),
+            );
           }
 
           final allBookings = snapshot.data ?? [];
-          final pending = allBookings.where((b) => b.status == 'pending').toList();
-          final upcoming = allBookings.where((b) => (b.status == 'confirmed' || b.status == 'accepted') && b.startDate.isAfter(DateTime.now())).toList();
-          final completed = allBookings.where((b) => b.status == 'completed' || (b.status == 'confirmed' && b.startDate.isBefore(DateTime.now()))).toList();
-          final cancelled = allBookings.where((b) => b.status == 'cancelled' || b.status == 'rejected').toList();
+          final pending = allBookings
+              .where((b) => b.status == 'pending')
+              .toList();
+          final upcoming = allBookings
+              .where(
+                (b) =>
+                    (b.status == 'confirmed' || b.status == 'accepted') &&
+                    b.startDate.isAfter(DateTime.now()),
+              )
+              .toList();
+          final completed = allBookings
+              .where(
+                (b) =>
+                    b.status == 'completed' ||
+                    (b.status == 'confirmed' &&
+                        b.startDate.isBefore(DateTime.now())),
+              )
+              .toList();
+          final cancelled = allBookings
+              .where((b) => b.status == 'cancelled' || b.status == 'rejected')
+              .toList();
 
           return TabBarView(
             controller: _tabController,
@@ -97,11 +134,23 @@ class _GuideBookingsScreenState extends State<GuideBookingsScreen> with SingleTi
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xxl),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.event_note, size: 64, color: AppColors.primary.withValues(alpha: 0.3)),
-            const SizedBox(height: AppSpacing.lg),
-            Text(emptyMessage, style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textSecondary)),
-          ]),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.event_note,
+                size: 64,
+                color: AppColors.primary.withValues(alpha: 0.3),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Text(
+                emptyMessage,
+                style: AppTextStyles.bodyLarge.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -109,16 +158,25 @@ class _GuideBookingsScreenState extends State<GuideBookingsScreen> with SingleTi
     return ListView.separated(
       padding: const EdgeInsets.all(AppSpacing.lg),
       itemCount: bookings.length,
-      separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.md),
+      separatorBuilder: (context, index) =>
+          const SizedBox(height: AppSpacing.md),
       itemBuilder: (context, index) {
         final booking = bookings[index];
-        return _BookingCard(booking: booking, onTap: () => _openBooking(booking));
+        return _BookingCard(
+          booking: booking,
+          onTap: () => _openBooking(booking),
+        );
       },
     );
   }
 
   void _openBooking(GuideBooking booking) {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => GuideBookingDetailScreen(booking: booking)));
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => GuideBookingDetailScreen(booking: booking),
+      ),
+    );
   }
 }
 
@@ -134,35 +192,87 @@ class _BookingCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.md),
-        decoration: BoxDecoration(color: AppColors.surface, borderRadius: AppRadius.cardRadius, border: Border.all(color: AppColors.border)),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Expanded(child: Text(booking.packageTitle, style: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis)),
-            _buildStatusBadge(booking.status),
-          ]),
-          const SizedBox(height: AppSpacing.sm),
-          Row(children: [
-            const Icon(Icons.person_outline, size: 16, color: AppColors.textSecondary),
-            const SizedBox(width: 4),
-            Text('${booking.guestName} (${booking.numberOfGuests} Guests)', style: AppTextStyles.bodyMedium),
-          ]),
-          const SizedBox(height: 4),
-          Row(children: [
-            const Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.textSecondary),
-            const SizedBox(width: 4),
-            Text('${DateFormat('MMM dd, yyyy').format(booking.startDate)} - ${DateFormat('MMM dd, yyyy').format(booking.endDate)}', style: AppTextStyles.bodyMedium),
-          ]),
-          const SizedBox(height: AppSpacing.md),
-          const Divider(height: 1),
-          const SizedBox(height: AppSpacing.sm),
-          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Total Amount', style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary)),
-              Text('${booking.currency} ${NumberFormat('#,##0').format(booking.totalPrice)}', style: AppTextStyles.labelLarge.copyWith(color: AppColors.primaryDark)),
-            ]),
-            TextButton(onPressed: onTap, child: const Text('View Details')),
-          ]),
-        ]),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: AppRadius.cardRadius,
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    booking.packageTitle,
+                    style: AppTextStyles.labelLarge.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                _buildStatusBadge(booking.status),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              children: [
+                const Icon(
+                  Icons.person_outline,
+                  size: 16,
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '${booking.guestName} (${booking.numberOfGuests} Guests)',
+                  style: AppTextStyles.bodyMedium,
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(
+                  Icons.calendar_today_outlined,
+                  size: 16,
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '${DateFormat('MMM dd, yyyy').format(booking.startDate)} - ${DateFormat('MMM dd, yyyy').format(booking.endDate)}',
+                  style: AppTextStyles.bodyMedium,
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            const Divider(height: 1),
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Total Amount',
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    Text(
+                      '${booking.currency} ${NumberFormat('#,##0').format(booking.totalPrice)}',
+                      style: AppTextStyles.labelLarge.copyWith(
+                        color: AppColors.primaryDark,
+                      ),
+                    ),
+                  ],
+                ),
+                TextButton(onPressed: onTap, child: const Text('View Details')),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -170,18 +280,38 @@ class _BookingCard extends StatelessWidget {
   Widget _buildStatusBadge(String status) {
     Color color;
     switch (status) {
-      case 'pending': color = Colors.orange; break;
-      case 'accepted': color = Colors.blue; break;
-      case 'confirmed': color = Colors.green; break;
-      case 'completed': color = AppColors.primary; break;
+      case 'pending':
+        color = Colors.orange;
+        break;
+      case 'accepted':
+        color = Colors.blue;
+        break;
+      case 'confirmed':
+        color = Colors.green;
+        break;
+      case 'completed':
+        color = AppColors.primary;
+        break;
       case 'cancelled':
-      case 'rejected': color = AppColors.error; break;
-      default: color = AppColors.textSecondary;
+      case 'rejected':
+        color = AppColors.error;
+        break;
+      default:
+        color = AppColors.textSecondary;
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
-      child: Text(status.toUpperCase(), style: AppTextStyles.caption.copyWith(color: color, fontWeight: FontWeight.bold)),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        status.toUpperCase(),
+        style: AppTextStyles.caption.copyWith(
+          color: color,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 }

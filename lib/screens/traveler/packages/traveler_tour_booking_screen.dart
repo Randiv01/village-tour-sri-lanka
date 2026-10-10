@@ -16,7 +16,8 @@ class TravelerTourBookingScreen extends StatefulWidget {
   const TravelerTourBookingScreen({super.key, required this.package});
 
   @override
-  State<TravelerTourBookingScreen> createState() => _TravelerTourBookingScreenState();
+  State<TravelerTourBookingScreen> createState() =>
+      _TravelerTourBookingScreenState();
 }
 
 class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
@@ -47,10 +48,12 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
           .where('packageId', isEqualTo: widget.package.id)
           .where('status', whereIn: ['pending', 'accepted', 'confirmed'])
           .get();
-      
+
       if (mounted) {
         setState(() {
-          _existingBookings = snapshot.docs.map((doc) => GuideBooking.fromMap(doc.data(), doc.id)).toList();
+          _existingBookings = snapshot.docs
+              .map((doc) => GuideBooking.fromMap(doc.data(), doc.id))
+              .toList();
           _isLoadingBookings = false;
         });
       }
@@ -82,7 +85,9 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
 
     // 3. Not in blackout dates
     for (var blackout in widget.package.unavailableDates) {
-      if (blackout.year == date.year && blackout.month == date.month && blackout.day == date.day) {
+      if (blackout.year == date.year &&
+          blackout.month == date.month &&
+          blackout.day == date.day) {
         return false;
       }
     }
@@ -92,14 +97,22 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
 
   String _getWeekdayString(int weekday) {
     switch (weekday) {
-      case 1: return 'monday';
-      case 2: return 'tuesday';
-      case 3: return 'wednesday';
-      case 4: return 'thursday';
-      case 5: return 'friday';
-      case 6: return 'saturday';
-      case 7: return 'sunday';
-      default: return '';
+      case 1:
+        return 'monday';
+      case 2:
+        return 'tuesday';
+      case 3:
+        return 'wednesday';
+      case 4:
+        return 'thursday';
+      case 5:
+        return 'friday';
+      case 6:
+        return 'saturday';
+      case 7:
+        return 'sunday';
+      default:
+        return '';
     }
   }
 
@@ -109,16 +122,30 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
     setState(() {
       _selectedDate = date;
       // Duration logic: if duration is 4 days, end date is start date + 3 days
-      _calculatedEndDate = date.add(Duration(days: widget.package.durationDays > 0 ? widget.package.durationDays - 1 : 0));
+      _calculatedEndDate = date.add(
+        Duration(
+          days: widget.package.durationDays > 0
+              ? widget.package.durationDays - 1
+              : 0,
+        ),
+      );
       _isCheckingAvailability = true;
     });
 
     // 4. Check for overlapping bookings
     try {
-      final isOverlap = await _bookingRepo.checkDateOverlap(widget.package.id, _selectedDate!, _calculatedEndDate!);
+      final isOverlap = await _bookingRepo.checkDateOverlap(
+        widget.package.id,
+        _selectedDate!,
+        _calculatedEndDate!,
+      );
       if (isOverlap && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('The selected date range is unavailable due to an existing booking.')),
+          const SnackBar(
+            content: Text(
+              'The selected date range is unavailable due to an existing booking.',
+            ),
+          ),
         );
         setState(() {
           _selectedDate = null;
@@ -138,10 +165,12 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
 
   void _submitBooking() async {
     if (_selectedDate == null || _calculatedEndDate == null) return;
-    
+
     final user = _auth.currentUser;
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please log in to book.')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please log in to book.')));
       return;
     }
 
@@ -151,16 +180,25 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
 
     try {
       // Re-verify overlap just in case
-      final isOverlap = await _bookingRepo.checkDateOverlap(widget.package.id, _selectedDate!, _calculatedEndDate!);
+      final isOverlap = await _bookingRepo.checkDateOverlap(
+        widget.package.id,
+        _selectedDate!,
+        _calculatedEndDate!,
+      );
       if (isOverlap) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Dates are no longer available.')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Dates are no longer available.')),
+          );
           setState(() => _isSubmitting = false);
         }
         return;
       }
 
-      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
       final userData = doc.data() ?? {};
 
       final booking = GuideBooking(
@@ -184,13 +222,17 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
       await _bookingRepo.createBooking(booking);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Booking request sent!')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Booking request sent!')));
         Navigator.pop(context); // Go back to details
       }
     } catch (e) {
       debugPrint('Booking error: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to submit booking.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to submit booking.')),
+        );
       }
     } finally {
       if (mounted) {
@@ -204,41 +246,58 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
   Widget _buildCalendar() {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    
-    final daysInMonth = DateUtils.getDaysInMonth(_focusedMonth.year, _focusedMonth.month);
-    final firstDayOfMonth = DateTime(_focusedMonth.year, _focusedMonth.month, 1);
+
+    final daysInMonth = DateUtils.getDaysInMonth(
+      _focusedMonth.year,
+      _focusedMonth.month,
+    );
+    final firstDayOfMonth = DateTime(
+      _focusedMonth.year,
+      _focusedMonth.month,
+      1,
+    );
     final firstWeekday = firstDayOfMonth.weekday; // 1=Mon, 7=Sun
-    
+
     List<Widget> dayWidgets = [];
-    
+
     // Empty slots for previous month
     for (int i = 1; i < firstWeekday; i++) {
       dayWidgets.add(const SizedBox());
     }
-    
+
     // Days of current month
     for (int i = 1; i <= daysInMonth; i++) {
       final date = DateTime(_focusedMonth.year, _focusedMonth.month, i);
       final bookingStatus = _getBookingStatusForDate(date);
       final isSelectable = _isDateSelectable(date) && bookingStatus == null;
-      final isSelected = _selectedDate != null && 
-                         _selectedDate!.year == date.year && 
-                         _selectedDate!.month == date.month && 
-                         _selectedDate!.day == date.day;
-      
+      final isSelected =
+          _selectedDate != null &&
+          _selectedDate!.year == date.year &&
+          _selectedDate!.month == date.month &&
+          _selectedDate!.day == date.day;
+
       BoxDecoration decoration = const BoxDecoration();
       Color textColor = Colors.black87;
 
       if (isSelected) {
-        decoration = const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle);
+        decoration = const BoxDecoration(
+          color: AppColors.primary,
+          shape: BoxShape.circle,
+        );
         textColor = Colors.white;
       } else if (bookingStatus != null) {
         if (bookingStatus == 'pending') {
-          decoration = BoxDecoration(color: Colors.orange.withValues(alpha: 0.2), shape: BoxShape.circle);
+          decoration = BoxDecoration(
+            color: Colors.orange.withValues(alpha: 0.2),
+            shape: BoxShape.circle,
+          );
           textColor = Colors.orange.shade800;
         } else {
           // accepted or confirmed (booked)
-          decoration = BoxDecoration(color: Colors.red.withValues(alpha: 0.2), shape: BoxShape.circle);
+          decoration = BoxDecoration(
+            color: Colors.red.withValues(alpha: 0.2),
+            shape: BoxShape.circle,
+          );
           textColor = Colors.red.shade800;
         }
       } else if (!isSelectable) {
@@ -266,7 +325,7 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
               ),
             ),
           ),
-        )
+        ),
       );
     }
 
@@ -278,7 +337,9 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
             IconButton(
               icon: const Icon(Icons.chevron_left),
               onPressed: () {
-                _onMonthChanged(DateTime(_focusedMonth.year, _focusedMonth.month - 1, 1));
+                _onMonthChanged(
+                  DateTime(_focusedMonth.year, _focusedMonth.month - 1, 1),
+                );
               },
             ),
             Text(
@@ -288,7 +349,9 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
             IconButton(
               icon: const Icon(Icons.chevron_right),
               onPressed: () {
-                _onMonthChanged(DateTime(_focusedMonth.year, _focusedMonth.month + 1, 1));
+                _onMonthChanged(
+                  DateTime(_focusedMonth.year, _focusedMonth.month + 1, 1),
+                );
               },
             ),
           ],
@@ -300,13 +363,26 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
           physics: const NeverScrollableScrollPhysics(),
           children: [
             for (var day in ['M', 'T', 'W', 'T', 'F', 'S', 'S'])
-              Center(child: Text(day, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey))),
+              Center(
+                child: Text(
+                  day,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
+                  ),
+                ),
+              ),
             ...dayWidgets,
           ],
         ),
         const SizedBox(height: 16),
         if (_isLoadingBookings)
-          const Center(child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator()))
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(8.0),
+              child: CircularProgressIndicator(),
+            ),
+          )
         else
           Wrap(
             spacing: 16,
@@ -323,7 +399,11 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
     );
   }
 
-  Widget _buildLegendItem(Color color, String label, {bool isOutlined = false}) {
+  Widget _buildLegendItem(
+    Color color,
+    String label, {
+    bool isOutlined = false,
+  }) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -337,17 +417,28 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
           ),
         ),
         const SizedBox(width: 6),
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.black87)),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: Colors.black87),
+        ),
       ],
     );
   }
 
   String? _getBookingStatusForDate(DateTime date) {
     for (var booking in _existingBookings) {
-      final start = DateTime(booking.startDate.year, booking.startDate.month, booking.startDate.day);
-      final end = DateTime(booking.endDate.year, booking.endDate.month, booking.endDate.day);
+      final start = DateTime(
+        booking.startDate.year,
+        booking.startDate.month,
+        booking.startDate.day,
+      );
+      final end = DateTime(
+        booking.endDate.year,
+        booking.endDate.month,
+        booking.endDate.day,
+      );
       final current = DateTime(date.year, date.month, date.day);
-      
+
       if (!current.isBefore(start) && !current.isAfter(end)) {
         return booking.status;
       }
@@ -365,7 +456,10 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.primaryDark),
-        titleTextStyle: AppTextStyles.screenHeading.copyWith(color: AppColors.primaryDark, fontSize: 20),
+        titleTextStyle: AppTextStyles.screenHeading.copyWith(
+          color: AppColors.primaryDark,
+          fontSize: 20,
+        ),
       ),
       backgroundColor: AppColors.background,
       body: SingleChildScrollView(
@@ -384,15 +478,15 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
               ),
               child: _buildCalendar(),
             ),
-            
+
             if (_isCheckingAvailability)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 16),
                 child: Center(child: CircularProgressIndicator()),
               ),
-              
+
             const SizedBox(height: 24),
-            
+
             if (_selectedDate != null && !_isCheckingAvailability) ...[
               Text('Booking Details', style: AppTextStyles.sectionHeading),
               const SizedBox(height: 8),
@@ -408,9 +502,15 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
+                        const Icon(
+                          Icons.calendar_today,
+                          size: 16,
+                          color: Colors.grey,
+                        ),
                         const SizedBox(width: 8),
-                        Text('Start: ${DateFormat('dd MMM yyyy').format(_selectedDate!)}'),
+                        Text(
+                          'Start: ${DateFormat('dd MMM yyyy').format(_selectedDate!)}',
+                        ),
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -418,7 +518,9 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
                       children: [
                         const Icon(Icons.event, size: 16, color: Colors.grey),
                         const SizedBox(width: 8),
-                        Text('End: ${DateFormat('dd MMM yyyy').format(_calculatedEndDate!)}'),
+                        Text(
+                          'End: ${DateFormat('dd MMM yyyy').format(_calculatedEndDate!)}',
+                        ),
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -426,14 +528,16 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
                       children: [
                         const Icon(Icons.timer, size: 16, color: Colors.grey),
                         const SizedBox(width: 8),
-                        Text('Duration: ${widget.package.durationDays} Days / ${widget.package.nights} Nights'),
+                        Text(
+                          'Duration: ${widget.package.durationDays} Days / ${widget.package.nights} Nights',
+                        ),
                       ],
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               Text('Guests', style: AppTextStyles.sectionHeading),
               const SizedBox(height: 8),
               Row(
@@ -444,7 +548,13 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
                         ? () => setState(() => _guestCount--)
                         : null,
                   ),
-                  Text('$_guestCount', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text(
+                    '$_guestCount',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   IconButton(
                     icon: const Icon(Icons.add_circle_outline),
                     onPressed: _guestCount < widget.package.maxGuests
@@ -452,12 +562,15 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
                         : null,
                   ),
                   const Spacer(),
-                  Text('Max: ${widget.package.maxGuests}', style: const TextStyle(color: Colors.grey)),
+                  Text(
+                    'Max: ${widget.package.maxGuests}',
+                    style: const TextStyle(color: Colors.grey),
+                  ),
                 ],
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -470,26 +583,38 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text('Price per Guest'),
-                        Text('Rs. ${NumberFormat('#,##0').format(widget.package.pricePerGuest)}'),
+                        Text(
+                          'Rs. ${NumberFormat('#,##0').format(widget.package.pricePerGuest)}',
+                        ),
                       ],
                     ),
                     const Divider(),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Total Amount', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        const Text(
+                          'Total Amount',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
                         Text(
                           'Rs. ${NumberFormat('#,##0').format(totalPrice)}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.primaryDark),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            color: AppColors.primaryDark,
+                          ),
                         ),
                       ],
                     ),
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 32),
-              
+
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -498,14 +623,29 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
                     backgroundColor: AppColors.primaryDark,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                   child: _isSubmitting
-                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : const Text('Request Booking', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'Request Booking',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ),
-            ]
+            ],
           ],
         ),
       ),

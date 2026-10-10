@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_spacing.dart';
 import '../../../theme/app_text_styles.dart';
 import '../../../models/gallery_image.dart';
 import '../../../repositories/gallery_repository.dart';
+
 import 'package:share_plus/share_plus.dart';
+
 import '../../../widgets/common/app_bottom_navigation.dart';
 import '../main/traveler_main_screen.dart';
 import '../../common/auth/auth_guard.dart';
@@ -24,12 +27,12 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
     'Surroundings & Views',
     'Homestay Spaces',
     'Activities',
-    'Food'
+    'Food',
   ];
 
   final PageController _pageController = PageController();
   int _currentHeroIndex = 0;
-  
+
   Color _getColorForTag(String tag) {
     switch (tag) {
       case 'Surroundings & Views':
@@ -79,7 +82,9 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
             List<GalleryImage> images = snapshot.data ?? [];
             if (_selectedFilterIndex > 0) {
               final selectedCategory = _filters[_selectedFilterIndex];
-              images = images.where((img) => img.category == selectedCategory).toList();
+              images = images
+                  .where((img) => img.category == selectedCategory)
+                  .toList();
             }
 
             if (images.isEmpty) {
@@ -106,33 +111,25 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
 
             return CustomScrollView(
               slivers: [
-                SliverToBoxAdapter(
-                  child: _buildHeader(images.length),
-                ),
-                SliverToBoxAdapter(
-                  child: _buildFilters(images.length),
-                ),
-                SliverToBoxAdapter(
-                  child: _buildHeroCarousel(images),
-                ),
-                SliverToBoxAdapter(
-                  child: _buildSectionTitle(),
-                ),
+                SliverToBoxAdapter(child: _buildHeader(images.length)),
+                SliverToBoxAdapter(child: _buildFilters(images.length)),
+                SliverToBoxAdapter(child: _buildHeroCarousel(images)),
+                SliverToBoxAdapter(child: _buildSectionTitle()),
                 SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                  ),
                   sliver: SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: AppSpacing.md,
-                      mainAxisSpacing: AppSpacing.md,
-                      childAspectRatio: 0.82,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        return _buildGridItem(images[index], index);
-                      },
-                      childCount: images.length,
-                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: AppSpacing.md,
+                          mainAxisSpacing: AppSpacing.md,
+                          childAspectRatio: 0.82,
+                        ),
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      return _buildGridItem(images[index], index);
+                    }, childCount: images.length),
                   ),
                 ),
                 const SliverToBoxAdapter(
@@ -156,7 +153,8 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
               onAuthenticated: () {
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(
-                    builder: (context) => TravelerMainScreen(initialIndex: index),
+                    builder: (context) =>
+                        TravelerMainScreen(initialIndex: index),
                   ),
                   (route) => false,
                 );
@@ -177,7 +175,12 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
 
   Widget _buildHeader(int count) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.md),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.sm,
+        AppSpacing.md,
+        AppSpacing.md,
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -209,7 +212,9 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
             icon: Icons.share_outlined,
             onTap: () {
               // ignore: deprecated_member_use
-              Share.share('Check out these amazing village experiences at Village Tour Sri Lanka!');
+              Share.share(
+                'Check out these amazing village experiences at Village Tour Sri Lanka!',
+              );
             },
           ),
         ],
@@ -217,7 +222,10 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
     );
   }
 
-  Widget _buildIconButton({required IconData icon, required VoidCallback onTap}) {
+  Widget _buildIconButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -244,7 +252,7 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
           final isSelected = index == _selectedFilterIndex;
           String label = _filters[index];
           if (index == 0) label = 'All ($count)';
-          
+
           return Padding(
             padding: const EdgeInsets.only(right: AppSpacing.sm),
             child: GestureDetector(
@@ -254,13 +262,18 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
                 });
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: isSelected ? AppColors.primaryDark : Colors.white,
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: isSelected ? AppColors.primaryDark : Colors.grey.withValues(alpha: 0.3),
+                    color: isSelected
+                        ? AppColors.primaryDark
+                        : Colors.grey.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Text(
@@ -280,7 +293,7 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
 
   Widget _buildHeroCarousel(List<GalleryImage> images) {
     if (images.isEmpty) return const SizedBox.shrink();
-    
+
     return Container(
       height: 280,
       margin: const EdgeInsets.all(AppSpacing.md),
@@ -310,7 +323,7 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
               },
             ),
           ),
-          
+
           // Top Left Tag
           Positioned(
             top: 16,
@@ -344,7 +357,7 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
               ),
             ),
           ),
-          
+
           // Top Right Expand
           Positioned(
             top: 16,
@@ -358,11 +371,15 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
                   color: Colors.black.withValues(alpha: 0.6),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.fullscreen, color: Colors.white, size: 20),
+                child: const Icon(
+                  Icons.fullscreen,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
             ),
           ),
-          
+
           // Navigation Arrows
           Positioned(
             left: 16,
@@ -385,7 +402,11 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
                     color: Colors.white.withValues(alpha: 0.9),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.chevron_left, color: Colors.black, size: 24),
+                  child: const Icon(
+                    Icons.chevron_left,
+                    color: Colors.black,
+                    size: 24,
+                  ),
                 ),
               ),
             ),
@@ -411,12 +432,16 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
                     color: Colors.white.withValues(alpha: 0.9),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.chevron_right, color: Colors.black, size: 24),
+                  child: const Icon(
+                    Icons.chevron_right,
+                    color: Colors.black,
+                    size: 24,
+                  ),
                 ),
               ),
             ),
           ),
-          
+
           // Bottom Tags
           Positioned(
             bottom: 16,
@@ -427,7 +452,10 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
               children: [
                 Expanded(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.black.withValues(alpha: 0.7),
                       borderRadius: BorderRadius.circular(20),
@@ -445,7 +473,10 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
                 ),
                 const SizedBox(width: 12),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.orange.shade800,
                     borderRadius: BorderRadius.circular(20),
@@ -469,7 +500,12 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
 
   Widget _buildSectionTitle() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.sm),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.sm,
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -496,7 +532,7 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
   Widget _buildGridItem(GalleryImage image, int index) {
     final String tag = image.category.isNotEmpty ? image.category : 'Location';
     final Color tagColor = _getColorForTag(tag);
-    
+
     return GestureDetector(
       onTap: () => _openFullScreen(image),
       child: Container(
@@ -529,7 +565,10 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
                     top: 12,
                     left: 12,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: tagColor,
                         borderRadius: BorderRadius.circular(8),
@@ -563,7 +602,9 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    image.description.isNotEmpty ? image.description : 'Explore the beauty',
+                    image.description.isNotEmpty
+                        ? image.description
+                        : 'Explore the beauty',
                     style: AppTextStyles.caption.copyWith(
                       color: Colors.black54,
                     ),
@@ -574,7 +615,11 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(Icons.location_on, size: 12, color: Colors.black54),
+                        const Icon(
+                          Icons.location_on,
+                          size: 12,
+                          color: Colors.black54,
+                        ),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
@@ -622,8 +667,11 @@ class FullScreenImageViewer extends StatelessWidget {
               child: Image.network(
                 image.imageUrl,
                 fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) =>
-                    const Icon(Icons.broken_image, color: Colors.white, size: 64),
+                errorBuilder: (context, error, stackTrace) => const Icon(
+                  Icons.broken_image,
+                  color: Colors.white,
+                  size: 64,
+                ),
               ),
             ),
           ),
@@ -673,4 +721,3 @@ class FullScreenImageViewer extends StatelessWidget {
     );
   }
 }
-

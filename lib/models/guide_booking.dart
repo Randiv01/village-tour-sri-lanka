@@ -15,8 +15,10 @@ class GuideBooking {
   final int numberOfGuests;
   final double totalPrice;
   final String currency;
-  final String status; // 'pending', 'confirmed', 'cancelled', 'completed', 'rejected'
-  final String paymentStatus; // 'pending', 'paid', 'failed', 'refunded', 'unpaid'
+  final String
+  status; // 'pending', 'confirmed', 'cancelled', 'completed', 'rejected'
+  final String
+  paymentStatus; // 'pending', 'paid', 'failed', 'refunded', 'unpaid'
   final String? rejectionReason;
   final String? transactionId;
   final String? notes;

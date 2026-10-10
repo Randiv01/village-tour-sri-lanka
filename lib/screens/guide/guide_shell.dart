@@ -56,10 +56,7 @@ class _GuideBottomNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
 
-  const _GuideBottomNav({
-    required this.currentIndex,
-    required this.onTap,
-  });
+  const _GuideBottomNav({required this.currentIndex, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +81,12 @@ class _GuideBottomNav extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildNavItem(context, Icons.home, 'Home', 0),
-              _buildNavItem(context, Icons.calendar_today_outlined, 'Bookings', 1),
+              _buildNavItem(
+                context,
+                Icons.calendar_today_outlined,
+                'Bookings',
+                1,
+              ),
               _buildNavItem(context, Icons.list_alt_outlined, 'Packages', 2),
               _buildNavItem(context, Icons.person_outline, 'Profile', 3),
             ],
@@ -124,8 +126,7 @@ class _GuideBottomNav extends StatelessWidget {
                   color: isSelected
                       ? AppColors.primaryDark
                       : AppColors.textSecondary,
-                  fontWeight:
-                      isSelected ? FontWeight.bold : FontWeight.normal,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 ),
               ),
             ],

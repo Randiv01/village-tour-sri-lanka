@@ -12,8 +12,6 @@ import '../../../widgets/common/auth/international_phone_field.dart';
 import 'complete_profile_screen.dart';
 import 'phone_auth_screen.dart';
 
-
-
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
 
@@ -36,13 +34,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _acceptedTerms = false;
   bool _isLoading = false;
 
-
-
   Future<void> _signUpWithGoogle() async {
     setState(() => _isLoading = true);
     try {
       final userCredential = await _authService.signInWithGoogle();
-      final profile = await _authService.getUserProfile(userCredential.user!.uid);
+      final profile = await _authService.getUserProfile(
+        userCredential.user!.uid,
+      );
 
       if (profile != null) {
         // User already exists
@@ -80,10 +78,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => PhoneAuthScreen(
-          isSignUp: true,
-          defaultRole: _selectedRole,
-        ),
+        builder: (_) =>
+            PhoneAuthScreen(isSignUp: true, defaultRole: _selectedRole),
       ),
     );
   }
@@ -115,7 +111,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         await Future.delayed(const Duration(milliseconds: 700));
 
         if (mounted) {
-          // Pop back to the root route (AuthGate) which will automatically 
+          // Pop back to the root route (AuthGate) which will automatically
           // build the correct dashboard based on the new auth state.
           Navigator.of(context).popUntil((route) => route.isFirst);
         }
@@ -137,10 +133,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   void _showSuccess(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.green),
     );
   }
 
@@ -466,7 +459,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     if (!value.contains('@')) {
                                       return 'Please enter a valid email address.';
                                     }
-                                    if (_selectedRole != 'admin' && !value.toLowerCase().endsWith('@gmail.com')) {
+                                    if (_selectedRole != 'admin' &&
+                                        !value.toLowerCase().endsWith(
+                                          '@gmail.com',
+                                        )) {
                                       return 'Only @gmail.com addresses are allowed.';
                                     }
                                     return null;
@@ -482,8 +478,24 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     size: 18,
                                   ),
                                   validator: (value) {
-                                    if (value == null || value.length < 8) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Please enter a password.';
+                                    }
+                                    if (value.length < 8) {
                                       return 'Password must be at least 8 characters.';
+                                    }
+                                    if (!RegExp(r'[A-Z]').hasMatch(value)) {
+                                      return 'Must contain at least one uppercase letter.';
+                                    }
+                                    if (!RegExp(r'[a-z]').hasMatch(value)) {
+                                      return 'Must contain at least one lowercase letter.';
+                                    }
+                                    if (!RegExp(r'[0-9]').hasMatch(value)) {
+                                      return 'Must contain at least one number.';
+                                    }
+                                    if (!RegExp(r'[!@#\$&*~%]')
+                                        .hasMatch(value)) {
+                                      return 'Must contain a special character (!@#\$&*~%).';
                                     }
                                     return null;
                                   },

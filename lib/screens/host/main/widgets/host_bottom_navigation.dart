@@ -60,14 +60,18 @@ class HostBottomNavigation extends StatelessWidget {
             children: [
               Icon(
                 icon,
-                color: isSelected ? AppColors.primaryDark : AppColors.textSecondary,
+                color: isSelected
+                    ? AppColors.primaryDark
+                    : AppColors.textSecondary,
                 size: 24,
               ),
               const SizedBox(height: 4),
               Text(
                 label,
                 style: AppTextStyles.caption.copyWith(
-                  color: isSelected ? AppColors.primaryDark : AppColors.textSecondary,
+                  color: isSelected
+                      ? AppColors.primaryDark
+                      : AppColors.textSecondary,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 ),
               ),

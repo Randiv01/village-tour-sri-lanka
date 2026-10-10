@@ -195,8 +195,7 @@ class _AdminManageHomestaysScreenState
           builder: (context, setSheetState) {
             final bool hasChanges =
                 tempStatus != _statusFilter || tempSort != _sortBy;
-            final bool hasFilters =
-                tempStatus != 'All' || tempSort != 'Newest';
+            final bool hasFilters = tempStatus != 'All' || tempSort != 'Newest';
 
             return Padding(
               padding: const EdgeInsets.all(AppSpacing.lg),
@@ -227,12 +226,7 @@ class _AdminManageHomestaysScreenState
                   const SizedBox(height: AppSpacing.sm),
                   _buildSheetDropdown(
                     'Sort By',
-                    [
-                      'Name A-Z',
-                      'Name Z-A',
-                      'Newest',
-                      'Oldest',
-                    ],
+                    ['Name A-Z', 'Name Z-A', 'Newest', 'Oldest'],
                     tempSort,
                     (val) => setSheetState(() => tempSort = val),
                   ),
@@ -383,12 +377,14 @@ class _AdminManageHomestaysScreenState
         case 'Name Z-A':
           return b.title.compareTo(a.title);
         case 'Oldest':
-          return (a.createdAt ?? DateTime.now())
-              .compareTo(b.createdAt ?? DateTime.now());
+          return (a.createdAt ?? DateTime.now()).compareTo(
+            b.createdAt ?? DateTime.now(),
+          );
         case 'Newest':
         default:
-          return (b.createdAt ?? DateTime.now())
-              .compareTo(a.createdAt ?? DateTime.now());
+          return (b.createdAt ?? DateTime.now()).compareTo(
+            a.createdAt ?? DateTime.now(),
+          );
       }
     });
 
@@ -536,7 +532,8 @@ class _AdminManageHomestaysScreenState
 
   Widget _buildHomestayCard(Homestay hs) {
     bool isActive = hs.status == 'Active';
-    String imageUrl = hs.coverImage ?? (hs.images.isNotEmpty ? hs.images.first : '');
+    String imageUrl =
+        hs.coverImage ?? (hs.images.isNotEmpty ? hs.images.first : '');
 
     return Card(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
@@ -637,11 +634,7 @@ class _AdminManageHomestaysScreenState
                         AppColors.primary,
                       ),
                       if (hs.isVerified)
-                        _buildBadge(
-                          'Verified',
-                          Icons.verified,
-                          Colors.blue,
-                        ),
+                        _buildBadge('Verified', Icons.verified, Colors.blue),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -661,24 +654,35 @@ class _AdminManageHomestaysScreenState
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => UpdateHomestayScreen(homestay: hs),
+                                  builder: (context) =>
+                                      UpdateHomestayScreen(homestay: hs),
                                 ),
                               ).then((_) => _loadStream());
                             },
                             tooltip: 'Edit',
                             constraints: const BoxConstraints(),
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 8,
+                            ),
                           ),
                           IconButton(
                             icon: Icon(
-                              hs.isVerified ? Icons.verified : Icons.new_releases_outlined,
-                              color: hs.isVerified ? Colors.blue : AppColors.textSecondary,
+                              hs.isVerified
+                                  ? Icons.verified
+                                  : Icons.new_releases_outlined,
+                              color: hs.isVerified
+                                  ? Colors.blue
+                                  : AppColors.textSecondary,
                               size: 20,
                             ),
                             onPressed: () => _toggleHomestayVerification(hs),
                             tooltip: hs.isVerified ? 'Unverify' : 'Verify',
                             constraints: const BoxConstraints(),
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 8,
+                            ),
                           ),
                           IconButton(
                             icon: Icon(
@@ -699,7 +703,10 @@ class _AdminManageHomestaysScreenState
                             },
                             tooltip: isActive ? 'Deactivate' : 'Activate',
                             constraints: const BoxConstraints(),
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 8,
+                            ),
                           ),
                           IconButton(
                             icon: const Icon(
@@ -710,7 +717,10 @@ class _AdminManageHomestaysScreenState
                             onPressed: () => _confirmDelete(hs),
                             tooltip: 'Delete',
                             constraints: const BoxConstraints(),
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 8,
+                            ),
                           ),
                         ],
                       ),
@@ -781,9 +791,12 @@ class _AdminManageHomestaysScreenState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(newStatus
+            content: Text(
+              newStatus
                   ? 'Homestay verified successfully'
-                  : 'Homestay unverified')),
+                  : 'Homestay unverified',
+            ),
+          ),
         );
       }
     } catch (e) {
@@ -801,7 +814,8 @@ class _AdminManageHomestaysScreenState
       builder: (context) => AlertDialog(
         title: const Text('Deactivate Homestay?'),
         content: Text(
-            'Are you sure you want to deactivate "${hs.title}"? It will no longer be visible to travelers.'),
+          'Are you sure you want to deactivate "${hs.title}"? It will no longer be visible to travelers.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -843,7 +857,8 @@ class _AdminManageHomestaysScreenState
       builder: (context) => AlertDialog(
         title: const Text('Delete Homestay?'),
         content: Text(
-            'Are you sure you want to delete "${hs.title}"? This action cannot be undone.'),
+          'Are you sure you want to delete "${hs.title}"? This action cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -860,7 +875,10 @@ class _AdminManageHomestaysScreenState
 
     if (confirm == true) {
       try {
-        await FirebaseFirestore.instance.collection('homestays').doc(hs.id).delete();
+        await FirebaseFirestore.instance
+            .collection('homestays')
+            .doc(hs.id)
+            .delete();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Homestay deleted successfully')),

@@ -22,7 +22,9 @@ class GuideNotificationsScreen extends StatelessWidget {
           iconTheme: const IconThemeData(color: AppColors.primaryDark),
           title: Text(
             'Notifications',
-            style: AppTextStyles.screenHeading.copyWith(color: AppColors.primaryDark),
+            style: AppTextStyles.screenHeading.copyWith(
+              color: AppColors.primaryDark,
+            ),
           ),
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(50),
@@ -38,7 +40,9 @@ class GuideNotificationsScreen extends StatelessWidget {
                 indicatorColor: const Color(0xFF1E6B52),
                 labelColor: const Color(0xFF1E6B52),
                 unselectedLabelColor: AppColors.textSecondary,
-                labelStyle: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.bold),
+                labelStyle: AppTextStyles.labelLarge.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
                 unselectedLabelStyle: AppTextStyles.labelLarge,
                 tabs: const [
                   Tab(text: 'Booking Details'),
@@ -50,11 +54,7 @@ class GuideNotificationsScreen extends StatelessWidget {
           ),
         ),
         body: const TabBarView(
-          children: [
-            _BookingDetailsTab(),
-            _TouristMessagesTab(),
-            _OthersTab(),
-          ],
+          children: [_BookingDetailsTab(), _TouristMessagesTab(), _OthersTab()],
         ),
       ),
     );
@@ -77,12 +77,16 @@ Widget _buildEmptyState(IconData icon, String title, String subtitle) {
         const SizedBox(height: 24),
         Text(
           title,
-          style: AppTextStyles.screenHeading.copyWith(color: AppColors.primaryDark),
+          style: AppTextStyles.screenHeading.copyWith(
+            color: AppColors.primaryDark,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
           subtitle,
-          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
+          ),
         ),
       ],
     ),
@@ -95,50 +99,71 @@ class _BookingDetailsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-    if (currentUserId == null) return const Center(child: Text('Not logged in'));
+    if (currentUserId == null) {
+      return const Center(child: Text('Not logged in'));
+    }
 
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('notifications')
           .where('userId', isEqualTo: currentUserId)
-          .where('type', whereIn: ['booking_new', 'payment_success', 'payment_failed', 'booking_cancelled'])
+          .where(
+            'type',
+            whereIn: [
+              'booking_new',
+              'payment_success',
+              'payment_failed',
+              'booking_cancelled',
+            ],
+          )
           .orderBy('createdAt', descending: true)
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-           return const Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator());
         }
-        
+
         if (snapshot.hasError) {
           // Fallback if index is missing: just fetch and sort locally
           return StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
-              .collection('notifications')
-              .where('userId', isEqualTo: currentUserId)
-              .where('type', whereIn: ['booking_new', 'payment_success', 'payment_failed', 'booking_cancelled'])
-              .snapshots(),
+                .collection('notifications')
+                .where('userId', isEqualTo: currentUserId)
+                .where(
+                  'type',
+                  whereIn: [
+                    'booking_new',
+                    'payment_success',
+                    'payment_failed',
+                    'booking_cancelled',
+                  ],
+                )
+                .snapshots(),
             builder: (context, fallbackSnapshot) {
-               if (fallbackSnapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-               if (!fallbackSnapshot.hasData || fallbackSnapshot.data!.docs.isEmpty) {
-                 return _buildEmptyState(
-                    Icons.event_busy,
-                    'No Booking Updates',
-                    'You have no recent booking updates.',
-                  );
-               }
-               var docs = fallbackSnapshot.data!.docs.toList();
-               docs.sort((a, b) {
-                 final aData = a.data() as Map<String, dynamic>;
-                 final bData = b.data() as Map<String, dynamic>;
-                 final aTime = aData['createdAt'] as Timestamp?;
-                 final bTime = bData['createdAt'] as Timestamp?;
-                 if (aTime == null && bTime == null) return 0;
-                 if (aTime == null) return 1;
-                 if (bTime == null) return -1;
-                 return bTime.compareTo(aTime);
-               });
-               return _buildNotificationList(docs);
-            }
+              if (fallbackSnapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (!fallbackSnapshot.hasData ||
+                  fallbackSnapshot.data!.docs.isEmpty) {
+                return _buildEmptyState(
+                  Icons.event_busy,
+                  'No Booking Updates',
+                  'You have no recent booking updates.',
+                );
+              }
+              var docs = fallbackSnapshot.data!.docs.toList();
+              docs.sort((a, b) {
+                final aData = a.data() as Map<String, dynamic>;
+                final bData = b.data() as Map<String, dynamic>;
+                final aTime = aData['createdAt'] as Timestamp?;
+                final bTime = bData['createdAt'] as Timestamp?;
+                if (aTime == null && bTime == null) return 0;
+                if (aTime == null) return 1;
+                if (bTime == null) return -1;
+                return bTime.compareTo(aTime);
+              });
+              return _buildNotificationList(docs);
+            },
           );
         }
 
@@ -158,7 +183,8 @@ class _BookingDetailsTab extends StatelessWidget {
   Widget _buildNotificationList(List<DocumentSnapshot> docs) {
     return ListView.separated(
       itemCount: docs.length,
-      separatorBuilder: (context, index) => const Divider(height: 1, color: AppColors.border),
+      separatorBuilder: (context, index) =>
+          const Divider(height: 1, color: AppColors.border),
       itemBuilder: (context, index) {
         final data = docs[index].data() as Map<String, dynamic>;
         final title = data['title'] ?? '';
@@ -184,7 +210,10 @@ class _BookingDetailsTab extends StatelessWidget {
         }
 
         return ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
           leading: CircleAvatar(
             backgroundColor: iconColor.withValues(alpha: 0.1),
             child: Icon(icon, color: iconColor),
@@ -202,19 +231,27 @@ class _BookingDetailsTab extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 body,
-                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
               const SizedBox(height: 6),
               if (createdAt != null)
                 Text(
                   DateFormat('MMM d, h:mm a').format(createdAt.toDate()),
-                  style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary, fontSize: 11),
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                  ),
                 ),
             ],
           ),
           onTap: () {
             if (!isRead) {
-               FirebaseFirestore.instance.collection('notifications').doc(docs[index].id).update({'read': true});
+              FirebaseFirestore.instance
+                  .collection('notifications')
+                  .doc(docs[index].id)
+                  .update({'read': true});
             }
           },
         );
@@ -260,18 +297,18 @@ class _TouristMessagesTab extends StatelessWidget {
         }
 
         var chats = snapshot.data?.docs.toList() ?? [];
-        
+
         // Sort locally to avoid Firebase composite index requirement
         chats.sort((a, b) {
           final dataA = a.data() as Map<String, dynamic>;
           final dataB = b.data() as Map<String, dynamic>;
           final timeA = dataA['lastMessageTime'] as Timestamp?;
           final timeB = dataB['lastMessageTime'] as Timestamp?;
-          
+
           if (timeA == null && timeB == null) return 0;
           if (timeA == null) return 1;
           if (timeB == null) return -1;
-          
+
           return timeB.compareTo(timeA); // descending
         });
         if (chats.isEmpty) {
@@ -284,49 +321,71 @@ class _TouristMessagesTab extends StatelessWidget {
 
         return ListView.separated(
           itemCount: chats.length,
-          separatorBuilder: (context, index) => const Divider(height: 1, color: AppColors.border),
+          separatorBuilder: (context, index) =>
+              const Divider(height: 1, color: AppColors.border),
           itemBuilder: (context, index) {
             final chatData = chats[index].data() as Map<String, dynamic>;
             final touristId = chatData['touristId'] as String? ?? '';
             final packageId = chatData['packageId'] as String? ?? '';
-            final packageTitle = chatData['packageTitle'] as String? ?? 'Custom Tour';
-            final lastMessage = chatData['lastTranslatedMessage'] as String? ?? chatData['lastMessage'] as String? ?? '';
+            final packageTitle =
+                chatData['packageTitle'] as String? ?? 'Custom Tour';
+            final lastMessage =
+                chatData['lastTranslatedMessage'] as String? ??
+                chatData['lastMessage'] as String? ??
+                '';
             final lastMessageTime = chatData['lastMessageTime'] as Timestamp?;
-            final unreadCount = chatData['unreadCount_$currentUserId'] as int? ?? 0;
-            
+            final unreadCount =
+                chatData['unreadCount_$currentUserId'] as int? ?? 0;
+
             // We fetch the tourist info from the 'users' collection on the fly
             // because we didn't save touristName inside the chat document initially.
             return StreamBuilder<DocumentSnapshot>(
-              stream: FirebaseFirestore.instance.collection('users').doc(touristId).snapshots(),
+              stream: FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(touristId)
+                  .snapshots(),
               builder: (context, userSnapshot) {
                 String touristName = 'Tourist';
                 String touristImage = '';
-                
-                if (userSnapshot.hasData && userSnapshot.data != null && userSnapshot.data!.exists) {
-                  final userData = userSnapshot.data!.data() as Map<String, dynamic>;
+
+                if (userSnapshot.hasData &&
+                    userSnapshot.data != null &&
+                    userSnapshot.data!.exists) {
+                  final userData =
+                      userSnapshot.data!.data() as Map<String, dynamic>;
                   touristName = userData['fullName'] as String? ?? 'Tourist';
                   touristImage = userData['profileImageUrl'] as String? ?? '';
                 }
 
                 String timeStr = '';
                 if (lastMessageTime != null) {
-                  timeStr = DateFormat('MMM d, h:mm a').format(lastMessageTime.toDate());
+                  timeStr = DateFormat('MMM d, h:mm a')
+                      .format(lastMessageTime.toDate());
                 }
 
                 return ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   leading: CircleAvatar(
                     radius: 28,
-                    backgroundImage: touristImage.isNotEmpty ? NetworkImage(touristImage) : null,
+                    backgroundImage: touristImage.isNotEmpty
+                        ? NetworkImage(touristImage)
+                        : null,
                     backgroundColor: AppColors.border,
                     child: touristImage.isEmpty
-                        ? const Icon(Icons.person, color: AppColors.textSecondary, size: 28)
+                        ? const Icon(
+                            Icons.person,
+                            color: AppColors.textSecondary,
+                            size: 28,
+                          )
                         : null,
                   ),
                   title: Text(
                     touristName,
                     style: AppTextStyles.labelLarge.copyWith(
-                      fontWeight: FontWeight.bold, 
+                      fontWeight: FontWeight.bold,
                       color: AppColors.primaryDark,
                       fontSize: 16,
                     ),
@@ -339,7 +398,10 @@ class _TouristMessagesTab extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         packageTitle,
-                        style: AppTextStyles.caption.copyWith(color: const Color(0xFFC47F46), fontWeight: FontWeight.w600),
+                        style: AppTextStyles.caption.copyWith(
+                          color: const Color(0xFFC47F46),
+                          fontWeight: FontWeight.w600,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -347,8 +409,12 @@ class _TouristMessagesTab extends StatelessWidget {
                       Text(
                         lastMessage,
                         style: AppTextStyles.bodyMedium.copyWith(
-                          color: unreadCount > 0 ? AppColors.textPrimary : AppColors.textSecondary,
-                          fontWeight: unreadCount > 0 ? FontWeight.bold : FontWeight.normal,
+                          color: unreadCount > 0
+                              ? AppColors.textPrimary
+                              : AppColors.textSecondary,
+                          fontWeight: unreadCount > 0
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                           fontSize: 14,
                         ),
                         maxLines: 1,
@@ -365,8 +431,12 @@ class _TouristMessagesTab extends StatelessWidget {
                         Text(
                           timeStr,
                           style: AppTextStyles.caption.copyWith(
-                            color: unreadCount > 0 ? const Color(0xFF1E6B52) : AppColors.textSecondary,
-                            fontWeight: unreadCount > 0 ? FontWeight.bold : FontWeight.normal,
+                            color: unreadCount > 0
+                                ? const Color(0xFF1E6B52)
+                                : AppColors.textSecondary,
+                            fontWeight: unreadCount > 0
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                             fontSize: 11,
                           ),
                         ),
@@ -380,7 +450,11 @@ class _TouristMessagesTab extends StatelessWidget {
                           ),
                           child: Text(
                             unreadCount.toString(),
-                            style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ],
@@ -388,9 +462,10 @@ class _TouristMessagesTab extends StatelessWidget {
                   ),
                   onTap: () {
                     // Reset unread count for guide
-                    FirebaseFirestore.instance.collection('chats').doc(chats[index].id).update({
-                      'unreadCount_$currentUserId': 0,
-                    });
+                    FirebaseFirestore.instance
+                        .collection('chats')
+                        .doc(chats[index].id)
+                        .update({'unreadCount_$currentUserId': 0});
 
                     Navigator.push(
                       context,

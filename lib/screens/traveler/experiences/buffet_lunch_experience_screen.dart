@@ -5,7 +5,9 @@ import '../../../theme/app_radius.dart';
 import '../../../theme/app_spacing.dart';
 import '../../../theme/app_text_styles.dart';
 import '../../../widgets/common/app_bottom_navigation.dart';
+
 import 'package:share_plus/share_plus.dart';
+
 import '../main/traveler_main_screen.dart';
 import '../../common/auth/auth_guard.dart';
 
@@ -49,9 +51,7 @@ class _BuffetLunchExperienceScreenState
         ),
         title: Text(
           'Buffet Lunch Experience',
-          style: AppTextStyles.screenHeading.copyWith(
-            fontSize: 18,
-          ),
+          style: AppTextStyles.screenHeading.copyWith(fontSize: 18),
         ),
         actions: [
           Padding(
@@ -72,7 +72,9 @@ class _BuffetLunchExperienceScreenState
                 ),
                 onPressed: () {
                   // ignore: deprecated_member_use
-                  Share.share('Check out the Traditional Village Buffet Lunch Experience on Village Tour Sri Lanka!');
+                  Share.share(
+                    'Check out the Traditional Village Buffet Lunch Experience on Village Tour Sri Lanka!',
+                  );
                 },
               ),
             ),
@@ -119,7 +121,8 @@ class _BuffetLunchExperienceScreenState
               onAuthenticated: () {
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(
-                    builder: (context) => TravelerMainScreen(initialIndex: index),
+                    builder: (context) =>
+                        TravelerMainScreen(initialIndex: index),
                   ),
                   (route) => false,
                 );
@@ -144,7 +147,9 @@ class _BuffetLunchExperienceScreenState
       decoration: BoxDecoration(
         borderRadius: AppRadius.largeRadius,
         image: const DecorationImage(
-          image: AssetImage('assets/images/sign-in/auth_rural_landscape.png'), // Fallback asset
+          image: AssetImage(
+            'assets/images/sign-in/auth_rural_landscape.png',
+          ), // Fallback asset
           fit: BoxFit.cover,
         ),
       ),
@@ -290,9 +295,7 @@ class _BuffetLunchExperienceScreenState
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: AppRadius.cardRadius,
-        border: Border.all(
-          color: AppColors.border.withValues(alpha: 0.5),
-        ),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -300,7 +303,9 @@ class _BuffetLunchExperienceScreenState
           const CircleAvatar(
             backgroundColor: AppColors.primaryDark,
             radius: 24,
-            backgroundImage: AssetImage('assets/images/buffet_lunch/buffet_lunch_host.png'),
+            backgroundImage: AssetImage(
+              'assets/images/buffet_lunch/buffet_lunch_host.png',
+            ),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
@@ -375,8 +380,16 @@ class _BuffetLunchExperienceScreenState
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         _buildHighlightItem(Icons.grass, '3 Rice Varieties', 'Heirloom / Red'),
-        _buildHighlightItem(Icons.soup_kitchen, '5 Village Curries', 'Clay pot cooked'),
-        _buildHighlightItem(Icons.set_meal, 'Freshwater Fish', 'Crispy pan fried'),
+        _buildHighlightItem(
+          Icons.soup_kitchen,
+          '5 Village Curries',
+          'Clay pot cooked',
+        ),
+        _buildHighlightItem(
+          Icons.set_meal,
+          'Freshwater Fish',
+          'Crispy pan fried',
+        ),
         _buildHighlightItem(Icons.restaurant, 'Curd & Treacle', 'Wild Kithul'),
       ],
     );
@@ -393,9 +406,7 @@ class _BuffetLunchExperienceScreenState
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: AppRadius.cardRadius,
-          border: Border.all(
-            color: AppColors.border.withValues(alpha: 0.5),
-          ),
+          border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -483,9 +494,7 @@ class _BuffetLunchExperienceScreenState
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: AppRadius.cardRadius,
-        border: Border.all(
-          color: AppColors.border.withValues(alpha: 0.5),
-        ),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -581,9 +590,7 @@ class _BuffetLunchExperienceScreenState
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: AppRadius.cardRadius,
-            border: Border.all(
-              color: AppColors.border.withValues(alpha: 0.5),
-            ),
+            border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
           ),
           child: Column(
             children: [
@@ -649,12 +656,7 @@ class _BuffetLunchExperienceScreenState
                 ),
               ),
               if (!isLast)
-                Expanded(
-                  child: Container(
-                    width: 2,
-                    color: AppColors.border,
-                  ),
-                ),
+                Expanded(child: Container(width: 2, color: AppColors.border)),
             ],
           ),
           const SizedBox(width: AppSpacing.md),
@@ -721,9 +723,7 @@ class _BuffetLunchExperienceScreenState
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: AppRadius.cardRadius,
-            border: Border.all(
-              color: AppColors.border.withValues(alpha: 0.5),
-            ),
+            border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
           ),
           child: Column(
             children: [
@@ -806,9 +806,7 @@ class _BuffetLunchExperienceScreenState
       decoration: BoxDecoration(
         color: const Color(0xFFE8F3ED),
         borderRadius: AppRadius.cardRadius,
-        border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

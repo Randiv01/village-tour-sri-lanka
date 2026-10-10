@@ -56,7 +56,10 @@ class _HostBookingsScreenState extends State<HostBookingsScreen> {
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
+      ),
       child: Row(
         children: tabs.map((tab) {
           final isSelected = _statusFilter == tab['value'];
@@ -100,7 +103,9 @@ class _HostBookingsScreenState extends State<HostBookingsScreen> {
 
         // Apply filter
         if (_statusFilter != 'all') {
-          bookings = bookings.where((b) => b.bookingStatus == _statusFilter).toList();
+          bookings = bookings
+              .where((b) => b.bookingStatus == _statusFilter)
+              .toList();
         }
 
         if (bookings.isEmpty) {
@@ -112,7 +117,10 @@ class _HostBookingsScreenState extends State<HostBookingsScreen> {
                 const SizedBox(height: 16),
                 Text(
                   'No $_statusFilter bookings',
-                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 16),
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 16,
+                  ),
                 ),
               ],
             ),
@@ -184,13 +192,20 @@ class _HostBookingsScreenState extends State<HostBookingsScreen> {
                   Expanded(
                     child: Text(
                       booking.homestayTitle,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primaryDark),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: AppColors.primaryDark,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: statusColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
@@ -202,7 +217,11 @@ class _HostBookingsScreenState extends State<HostBookingsScreen> {
                         const SizedBox(width: 4),
                         Text(
                           booking.bookingStatus.toUpperCase(),
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: statusColor),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: statusColor,
+                          ),
                         ),
                       ],
                     ),
@@ -212,17 +231,31 @@ class _HostBookingsScreenState extends State<HostBookingsScreen> {
               const SizedBox(height: AppSpacing.md),
               Row(
                 children: [
-                  const Icon(Icons.person_outline, size: 16, color: AppColors.textSecondary),
+                  const Icon(
+                    Icons.person_outline,
+                    size: 16,
+                    color: AppColors.textSecondary,
+                  ),
                   const SizedBox(width: 8),
-                  Text(booking.travelerName, style: const TextStyle(color: AppColors.textPrimary)),
+                  Text(
+                    booking.travelerName,
+                    style: const TextStyle(color: AppColors.textPrimary),
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
               Row(
                 children: [
-                  const Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.textSecondary),
+                  const Icon(
+                    Icons.calendar_today_outlined,
+                    size: 16,
+                    color: AppColors.textSecondary,
+                  ),
                   const SizedBox(width: 8),
-                  Text('$checkIn - $checkOut', style: const TextStyle(color: AppColors.textPrimary)),
+                  Text(
+                    '$checkIn - $checkOut',
+                    style: const TextStyle(color: AppColors.textPrimary),
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
@@ -231,14 +264,25 @@ class _HostBookingsScreenState extends State<HostBookingsScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.group_outlined, size: 16, color: AppColors.textSecondary),
+                      const Icon(
+                        Icons.group_outlined,
+                        size: 16,
+                        color: AppColors.textSecondary,
+                      ),
                       const SizedBox(width: 8),
-                      Text('${booking.guestCount} Guests', style: const TextStyle(color: AppColors.textPrimary)),
+                      Text(
+                        '${booking.guestCount} Guests',
+                        style: const TextStyle(color: AppColors.textPrimary),
+                      ),
                     ],
                   ),
                   Text(
                     'Rs. ${booking.totalAmount}',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primaryDark),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: AppColors.primaryDark,
+                    ),
                   ),
                 ],
               ),

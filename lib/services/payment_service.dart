@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+
 import '../../models/payment.dart';
 import '../../repositories/payment_repository.dart';
 import '../../repositories/guide_booking_repository.dart';
 import '../../repositories/homestay_booking_repository.dart';
+
 import 'dart:math';
 
 class PaymentService {
   final PaymentRepository _paymentRepo = PaymentRepository();
   final GuideBookingRepository _bookingRepo = GuideBookingRepository();
-  final HomestayBookingRepository _homestayBookingRepo = HomestayBookingRepository();
+  final HomestayBookingRepository _homestayBookingRepo =
+      HomestayBookingRepository();
 
   Future<void> processMockPayment({
     required BuildContext context,
@@ -42,7 +45,9 @@ class PaymentService {
     }
 
     final now = DateTime.now();
-    final mockTxId = result == true ? 'MOCK-${Random().nextInt(999999).toString().padLeft(6, '0')}' : null;
+    final mockTxId = result == true
+        ? 'MOCK-${Random().nextInt(999999).toString().padLeft(6, '0')}'
+        : null;
 
     // Create the Payment record with the final outcome
     final payment = PaymentModel(
@@ -57,7 +62,7 @@ class PaymentService {
       transactionId: mockTxId,
       paidAt: result == true ? now : null,
     );
-    
+
     try {
       await _paymentRepo.createPayment(payment);
     } catch (e) {
@@ -127,7 +132,7 @@ class _MockPaymentScreenState extends State<MockPaymentScreen> {
   final _holderNameController = TextEditingController();
   final _expiryController = TextEditingController();
   final _cvvController = TextEditingController();
-  
+
   bool _isProcessing = false;
   String? _errorMessage;
 
@@ -148,18 +153,18 @@ class _MockPaymentScreenState extends State<MockPaymentScreen> {
     if (expiryParts.length == 2) {
       final month = int.tryParse(expiryParts[0]) ?? 0;
       final year = int.tryParse(expiryParts[1]) ?? 0;
-      
+
       if (month < 1 || month > 12) {
         setState(() {
           _errorMessage = 'Please enter a valid expiry month.';
         });
         return;
       }
-      
+
       final now = DateTime.now();
       final currentYear = now.year % 100;
       final currentMonth = now.month;
-      
+
       if (year < currentYear || (year == currentYear && month < currentMonth)) {
         setState(() {
           _errorMessage = 'Card has expired. Please use a valid card.';
@@ -184,7 +189,7 @@ class _MockPaymentScreenState extends State<MockPaymentScreen> {
       '5555555555555555', // Mastercard
       '378282246310005', // Amex
     ];
-    
+
     if (validCards.contains(cardNumber)) {
       // Success
       Navigator.pop(context, true);
@@ -192,14 +197,14 @@ class _MockPaymentScreenState extends State<MockPaymentScreen> {
       // Failure
       setState(() {
         _isProcessing = false;
-        _errorMessage = 'Your payment could not be completed. Please try again.';
+        _errorMessage =
+            'Your payment could not be completed. Please try again.';
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Payment Gateway'),
@@ -224,30 +229,49 @@ class _MockPaymentScreenState extends State<MockPaymentScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Booking Summary', style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
+                  Text(
+                    'Booking Summary',
+                    style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                  ),
                   const SizedBox(height: 8),
-                  Text(widget.description, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  Text(
+                    widget.description,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Total Amount', style: TextStyle(fontSize: 16)),
+                      const Text(
+                        'Total Amount',
+                        style: TextStyle(fontSize: 16),
+                      ),
                       Text(
                         '${widget.currency} ${NumberFormat('#,##0.00').format(widget.amount)}',
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.green),
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green,
+                        ),
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Payment Form
-            const Text('Payment Method', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text(
+              'Payment Method',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 16),
-            
+
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -262,7 +286,10 @@ class _MockPaymentScreenState extends State<MockPaymentScreen> {
                     children: [
                       const Icon(Icons.credit_card, color: Colors.blue),
                       const SizedBox(width: 8),
-                      const Text('Credit / Debit Card', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const Text(
+                        'Credit / Debit Card',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -274,9 +301,7 @@ class _MockPaymentScreenState extends State<MockPaymentScreen> {
                       border: OutlineInputBorder(),
                     ),
                     keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      CardNumberFormatter(),
-                    ],
+                    inputFormatters: [CardNumberFormatter()],
                   ),
                   const SizedBox(height: 16),
                   TextField(
@@ -299,9 +324,7 @@ class _MockPaymentScreenState extends State<MockPaymentScreen> {
                             border: OutlineInputBorder(),
                           ),
                           keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            ExpiryDateFormatter(),
-                          ],
+                          inputFormatters: [ExpiryDateFormatter()],
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -326,7 +349,7 @@ class _MockPaymentScreenState extends State<MockPaymentScreen> {
                 ],
               ),
             ),
-            
+
             if (_errorMessage != null) ...[
               const SizedBox(height: 16),
               Container(
@@ -336,36 +359,49 @@ class _MockPaymentScreenState extends State<MockPaymentScreen> {
                   children: [
                     const Icon(Icons.error_outline, color: Colors.red),
                     const SizedBox(width: 8),
-                    Expanded(child: Text(_errorMessage!, style: const TextStyle(color: Colors.red))),
+                    Expanded(
+                      child: Text(
+                        _errorMessage!,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ),
                   ],
                 ),
               ),
             ],
-            
+
             const SizedBox(height: 24),
-            
+
             ElevatedButton(
               onPressed: _isProcessing ? null : _processPayment,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
               child: _isProcessing
                   ? const SizedBox(
                       height: 20,
                       width: 20,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
                     )
                   : Text(
                       'Pay ${widget.currency} ${NumberFormat('#,##0').format(widget.amount)}',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Security Badge
             Container(
               padding: const EdgeInsets.symmetric(vertical: 12),
@@ -381,28 +417,55 @@ class _MockPaymentScreenState extends State<MockPaymentScreen> {
                   SizedBox(width: 8),
                   Text(
                     '100% Secure Payment',
-                    style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: Colors.green,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 16),
-            
+
             // Supported Cards
             const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('Supported by: ', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                Text(
+                  'Supported by: ',
+                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                ),
                 SizedBox(width: 8),
-                Text('VISA', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.w900, fontSize: 14)),
+                Text(
+                  'VISA',
+                  style: TextStyle(
+                    color: Colors.blue,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                  ),
+                ),
                 SizedBox(width: 8),
                 Text('•', style: TextStyle(color: Colors.grey, fontSize: 14)),
                 SizedBox(width: 8),
-                Text('Mastercard', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 14)),
+                Text(
+                  'Mastercard',
+                  style: TextStyle(
+                    color: Colors.orange,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
                 SizedBox(width: 8),
                 Text('•', style: TextStyle(color: Colors.grey, fontSize: 14)),
                 SizedBox(width: 8),
-                Text('AMEX', style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 14)),
+                Text(
+                  'AMEX',
+                  style: TextStyle(
+                    color: Colors.blueAccent,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -415,7 +478,10 @@ class _MockPaymentScreenState extends State<MockPaymentScreen> {
 
 class CardNumberFormatter extends TextInputFormatter {
   @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     var text = newValue.text.replaceAll(RegExp(r'\D'), '');
     if (text.length > 16) return oldValue;
     var buffer = StringBuffer();
@@ -435,7 +501,10 @@ class CardNumberFormatter extends TextInputFormatter {
 
 class ExpiryDateFormatter extends TextInputFormatter {
   @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     var text = newValue.text.replaceAll(RegExp(r'\D'), '');
     if (text.length > 4) return oldValue;
     var buffer = StringBuffer();

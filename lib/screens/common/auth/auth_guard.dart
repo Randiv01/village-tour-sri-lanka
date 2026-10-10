@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_text_styles.dart';
 import '../../../theme/app_spacing.dart';
@@ -66,14 +67,20 @@ class AuthGuard {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text('Sign In / Create Account', style: TextStyle(color: Colors.white, fontSize: 16)),
+              child: const Text(
+                'Sign In / Create Account',
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
             ),
             const SizedBox(height: AppSpacing.sm),
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
               },
-              child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
             ),
           ],
         ),

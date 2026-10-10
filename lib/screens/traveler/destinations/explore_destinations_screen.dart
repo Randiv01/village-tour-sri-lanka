@@ -13,7 +13,9 @@ import '../../../../widgets/cards/homestay_card.dart';
 import '../map/offline_map_screen.dart';
 import 'destination_details_screen.dart';
 import '../../common/homestays/homestay_details_screen.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../../../models/homestay.dart';
 
 class ExploreDestinationsScreen extends StatefulWidget {
@@ -319,7 +321,10 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
                         );
                       },
                       child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                          vertical: AppSpacing.sm,
+                        ),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
                           color: AppColors.softSecondarySurface,
@@ -340,7 +345,8 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
                               children: [
                                 TileLayer(
                                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                                  userAgentPackageName: 'com.villagetoursrilanka.app',
+                                  userAgentPackageName:
+                                      'com.villagetoursrilanka.app',
                                   tileProvider: CachedTileProvider(),
                                 ),
                               ],
@@ -366,15 +372,20 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(Icons.explore, color: Colors.white, size: 28),
+                                  const Icon(
+                                    Icons.explore,
+                                    color: Colors.white,
+                                    size: 28,
+                                  ),
                                   const SizedBox(width: 8),
                                   Text(
                                     'Explore Offline Map',
-                                    style: AppTextStyles.sectionHeading.copyWith(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 22,
-                                    ),
+                                    style: AppTextStyles.sectionHeading
+                                        .copyWith(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 22,
+                                        ),
                                   ),
                                 ],
                               ),
@@ -390,272 +401,304 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
             body: Column(
               children: [
                 // Search Bar
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: (val) {
-                    setState(() {
-                      _searchQuery = val;
-                    });
-                  },
-                  decoration: InputDecoration(
-                    hintText: 'Search destinations...',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() {
-                                _searchQuery = '';
-                              });
-                            },
-                          )
-                        : null,
-                    filled: true,
-                    fillColor: AppColors.surface,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 0,
-                      horizontal: AppSpacing.md,
-                    ),
-                  ),
-                ),
-              ),
-
-              // Tabs (Destinations / Homestays)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => setState(() => _showHomestays = false),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            decoration: BoxDecoration(
-                              color: !_showHomestays ? AppColors.softSecondarySurface : Colors.transparent,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              'Destinations',
-                              textAlign: TextAlign.center,
-                              style: AppTextStyles.labelLarge.copyWith(
-                                color: !_showHomestays ? AppColors.primaryDark : AppColors.textSecondary,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => setState(() => _showHomestays = true),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            decoration: BoxDecoration(
-                              color: _showHomestays ? AppColors.softSecondarySurface : Colors.transparent,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              'Homestays',
-                              textAlign: TextAlign.center,
-                              style: AppTextStyles.labelLarge.copyWith(
-                                color: _showHomestays ? AppColors.primaryDark : AppColors.textSecondary,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Filters Row
-              if (!_showHomestays)
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            if (_selectedLocation != null && _selectedLocation != 'All Locations') ...[
-                              ActionChip(
-                                label: Text(_selectedLocation!),
-                                onPressed: () => setState(() => _selectedLocation = null),
-                                avatar: const Icon(Icons.close, size: 16),
-                                backgroundColor: AppColors.softSecondarySurface,
-                              ),
-                              const SizedBox(width: AppSpacing.sm),
-                            ],
-                            if (_popularOnly) ...[
-                              ActionChip(
-                                label: const Text('Popular'),
-                                onPressed: () => setState(() => _popularOnly = false),
-                                avatar: const Icon(Icons.close, size: 16),
-                                backgroundColor: AppColors.softSecondarySurface,
-                              ),
-                              const SizedBox(width: AppSpacing.sm),
-                            ],
-                            if (_sortBy != 'Recommended') ...[
-                              ActionChip(
-                                label: Text('Sort: $_sortBy'),
-                                onPressed: () => setState(() => _sortBy = 'Recommended'),
-                                avatar: const Icon(Icons.close, size: 16),
-                                backgroundColor: AppColors.softSecondarySurface,
-                              ),
-                              const SizedBox(width: AppSpacing.sm),
-                            ],
-                            if (_activeFilterCount == 0)
-                              Text(
-                                'All Destinations',
-                                style: AppTextStyles.labelLarge.copyWith(color: AppColors.textSecondary),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Stack(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.tune),
-                          tooltip: 'Filter destinations',
-                          onPressed: () => _showFilterSheet(allDestinations),
-                        ),
-                        if (_activeFilterCount > 0)
-                          Positioned(
-                            right: 8,
-                            top: 8,
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: const BoxDecoration(
-                                color: AppColors.primary,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Text(
-                                '$_activeFilterCount',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              // Grid
-              Expanded(
-                child: _showHomestays
-                    ? _buildHomestaysGrid()
-                    : filteredDestinations.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Text(
-                                  'No destinations found\nTry a different search or adjust your filters.',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(color: AppColors.textSecondary),
-                                ),
-                                const SizedBox(height: AppSpacing.md),
-                                TextButton(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (val) {
+                      setState(() {
+                        _searchQuery = val;
+                      });
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'Search destinations...',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
                               onPressed: () {
                                 _searchController.clear();
                                 setState(() {
                                   _searchQuery = '';
-                                  _selectedLocation = null;
-                                  _popularOnly = false;
-                                  _sortBy = 'Recommended';
                                 });
                               },
-                              child: const Text('Clear Filters'),
+                            )
+                          : null,
+                      filled: true,
+                      fillColor: AppColors.surface,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 0,
+                        horizontal: AppSpacing.md,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Tabs (Destinations / Homestays)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.sm,
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setState(() => _showHomestays = false),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: !_showHomestays
+                                    ? AppColors.softSecondarySurface
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                'Destinations',
+                                textAlign: TextAlign.center,
+                                style: AppTextStyles.labelLarge.copyWith(
+                                  color: !_showHomestays
+                                      ? AppColors.primaryDark
+                                      : AppColors.textSecondary,
+                                ),
+                              ),
                             ),
+                          ),
+                        ),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setState(() => _showHomestays = true),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: _showHomestays
+                                    ? AppColors.softSecondarySurface
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                'Homestays',
+                                textAlign: TextAlign.center,
+                                style: AppTextStyles.labelLarge.copyWith(
+                                  color: _showHomestays
+                                      ? AppColors.primaryDark
+                                      : AppColors.textSecondary,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Filters Row
+                if (!_showHomestays)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.sm,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                if (_selectedLocation != null &&
+                                    _selectedLocation != 'All Locations') ...[
+                                  ActionChip(
+                                    label: Text(_selectedLocation!),
+                                    onPressed: () => setState(
+                                      () => _selectedLocation = null,
+                                    ),
+                                    avatar: const Icon(Icons.close, size: 16),
+                                    backgroundColor:
+                                        AppColors.softSecondarySurface,
+                                  ),
+                                  const SizedBox(width: AppSpacing.sm),
+                                ],
+                                if (_popularOnly) ...[
+                                  ActionChip(
+                                    label: const Text('Popular'),
+                                    onPressed: () =>
+                                        setState(() => _popularOnly = false),
+                                    avatar: const Icon(Icons.close, size: 16),
+                                    backgroundColor:
+                                        AppColors.softSecondarySurface,
+                                  ),
+                                  const SizedBox(width: AppSpacing.sm),
+                                ],
+                                if (_sortBy != 'Recommended') ...[
+                                  ActionChip(
+                                    label: Text('Sort: $_sortBy'),
+                                    onPressed: () =>
+                                        setState(() => _sortBy = 'Recommended'),
+                                    avatar: const Icon(Icons.close, size: 16),
+                                    backgroundColor:
+                                        AppColors.softSecondarySurface,
+                                  ),
+                                  const SizedBox(width: AppSpacing.sm),
+                                ],
+                                if (_activeFilterCount == 0)
+                                  Text(
+                                    'All Destinations',
+                                    style: AppTextStyles.labelLarge.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Stack(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.tune),
+                              tooltip: 'Filter destinations',
+                              onPressed: () =>
+                                  _showFilterSheet(allDestinations),
+                            ),
+                            if (_activeFilterCount > 0)
+                              Positioned(
+                                right: 8,
+                                top: 8,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.primary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Text(
+                                    '$_activeFilterCount',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
                           ],
                         ),
-                      )
-                    : GridView.builder(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.md,
-                          vertical: AppSpacing.sm,
-                        ),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: AppSpacing.md,
-                              mainAxisSpacing: AppSpacing.md,
-                              childAspectRatio: 0.75,
-                            ),
-                        itemCount: filteredDestinations.length,
-                        itemBuilder: (context, index) {
-                          final dest = filteredDestinations[index];
-                          String imageUrl = '';
-                          if (dest.images.isNotEmpty) {
-                            imageUrl = dest.images.first.url;
-                          } else if (dest.imageUrl != null) {
-                            imageUrl = dest.imageUrl!;
-                          }
+                      ],
+                    ),
+                  ),
 
-                          imageUrl = CloudinaryUtils.getOptimizedUrl(
-                            imageUrl,
-                            width: 400,
-                            height: 400,
-                          );
-
-                          return DestinationCard(
-                            margin: EdgeInsets.zero,
-                            title: dest.name,
-                            subtitle: dest.locationName,
-                            category: 'DESTINATION',
-                            imageUrl: imageUrl,
-                            width: double.infinity,
-                            isPopular: dest.isPopular,
-                            shortDescription: dest.shortDescription,
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      DestinationDetailsScreen(
-                                        destination: dest,
-                                      ),
+                // Grid
+                Expanded(
+                  child: _showHomestays
+                      ? _buildHomestaysGrid()
+                      : filteredDestinations.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text(
+                                'No destinations found\nTry a different search or adjust your filters.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
                                 ),
-                              );
-                            },
-                          );
-                        },
-                      ),
-              ),
-            ],
-          ),
-        );
-      },
+                              ),
+                              const SizedBox(height: AppSpacing.md),
+                              TextButton(
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() {
+                                    _searchQuery = '';
+                                    _selectedLocation = null;
+                                    _popularOnly = false;
+                                    _sortBy = 'Recommended';
+                                  });
+                                },
+                                child: const Text('Clear Filters'),
+                              ),
+                            ],
+                          ),
+                        )
+                      : GridView.builder(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.md,
+                            vertical: AppSpacing.sm,
+                          ),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: AppSpacing.md,
+                                mainAxisSpacing: AppSpacing.md,
+                                childAspectRatio: 0.75,
+                              ),
+                          itemCount: filteredDestinations.length,
+                          itemBuilder: (context, index) {
+                            final dest = filteredDestinations[index];
+                            String imageUrl = '';
+                            if (dest.images.isNotEmpty) {
+                              imageUrl = dest.images.first.url;
+                            } else if (dest.imageUrl != null) {
+                              imageUrl = dest.imageUrl!;
+                            }
+
+                            imageUrl = CloudinaryUtils.getOptimizedUrl(
+                              imageUrl,
+                              width: 400,
+                              height: 400,
+                            );
+
+                            return DestinationCard(
+                              margin: EdgeInsets.zero,
+                              title: dest.name,
+                              subtitle: dest.locationName,
+                              category: 'DESTINATION',
+                              imageUrl: imageUrl,
+                              width: double.infinity,
+                              isPopular: dest.isPopular,
+                              shortDescription: dest.shortDescription,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        DestinationDetailsScreen(
+                                          destination: dest,
+                                        ),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
   Widget _buildHomestaysGrid() {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('homestays').where('status', isEqualTo: 'Active').snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('homestays')
+          .where('status', isEqualTo: 'Active')
+          .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return const Center(child: Text('Error loading homestays.'));
@@ -666,7 +709,7 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
         }
 
         final docs = snapshot.data?.docs ?? [];
-        
+
         var filteredDocs = docs;
         if (_searchQuery.isNotEmpty) {
           final q = _searchQuery.toLowerCase();
@@ -684,7 +727,9 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  _searchQuery.isNotEmpty ? 'No homestays found for "$_searchQuery".' : 'No homestays available right now.',
+                  _searchQuery.isNotEmpty
+                      ? 'No homestays found for "$_searchQuery".'
+                      : 'No homestays available right now.',
                   style: const TextStyle(color: AppColors.textSecondary),
                 ),
                 if (_searchQuery.isNotEmpty) ...[
@@ -705,12 +750,15 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.sm,
+          ),
           itemCount: filteredDocs.length,
           itemBuilder: (context, index) {
             final doc = filteredDocs[index];
             final data = doc.data() as Map<String, dynamic>;
-            
+
             return Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.lg),
               child: HomestayCard(
@@ -719,9 +767,8 @@ class _ExploreDestinationsScreenState extends State<ExploreDestinationsScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => HomestayDetailsScreen(
-                        homestayId: doc.id,
-                      ),
+                      builder: (context) =>
+                          HomestayDetailsScreen(homestayId: doc.id),
                     ),
                   );
                 },

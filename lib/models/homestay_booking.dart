@@ -18,7 +18,8 @@ class HomestayBooking {
   final double addOnAmount;
   final double totalAmount;
   final String currency;
-  final String bookingStatus; // 'pending', 'accepted', 'rejected', 'confirmed', 'cancelled'
+  final String
+  bookingStatus; // 'pending', 'accepted', 'rejected', 'confirmed', 'cancelled'
   final String paymentStatus; // 'unpaid', 'failed', 'paid', 'refunded'
   final String? rejectionReason;
   final List<Map<String, dynamic>> selectedAddOns; // { title, price, quantity }
@@ -74,14 +75,17 @@ class HomestayBooking {
       numberOfNights: (map['numberOfNights'] as num?)?.toInt() ?? 1,
       guestCount: (map['guestCount'] as num?)?.toInt() ?? 1,
       pricePerNight: (map['pricePerNight'] as num?)?.toDouble() ?? 0.0,
-      accommodationAmount: (map['accommodationAmount'] as num?)?.toDouble() ?? 0.0,
+      accommodationAmount:
+          (map['accommodationAmount'] as num?)?.toDouble() ?? 0.0,
       addOnAmount: (map['addOnAmount'] as num?)?.toDouble() ?? 0.0,
       totalAmount: (map['totalAmount'] as num?)?.toDouble() ?? 0.0,
       currency: map['currency'] ?? 'LKR',
       bookingStatus: map['bookingStatus'] ?? 'pending',
       paymentStatus: map['paymentStatus'] ?? 'unpaid',
       rejectionReason: map['rejectionReason'],
-      selectedAddOns: List<Map<String, dynamic>>.from(map['selectedAddOns'] ?? []),
+      selectedAddOns: List<Map<String, dynamic>>.from(
+        map['selectedAddOns'] ?? [],
+      ),
       createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
       updatedAt: (map['updatedAt'] as Timestamp?)?.toDate(),
       acceptedAt: (map['acceptedAt'] as Timestamp?)?.toDate(),

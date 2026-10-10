@@ -22,7 +22,7 @@ class TravelerProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
-    
+
     if (currentUser == null) {
       return Scaffold(
         backgroundColor: AppColors.background,
@@ -30,9 +30,16 @@ class TravelerProfileScreen extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.account_circle_outlined, size: 64, color: AppColors.textSecondary),
+              const Icon(
+                Icons.account_circle_outlined,
+                size: 64,
+                color: AppColors.textSecondary,
+              ),
               const SizedBox(height: AppSpacing.md),
-              Text('Please sign in to view your profile', style: AppTextStyles.bodyLarge),
+              Text(
+                'Please sign in to view your profile',
+                style: AppTextStyles.bodyLarge,
+              ),
             ],
           ),
         ),
@@ -40,10 +47,15 @@ class TravelerProfileScreen extends StatelessWidget {
     }
 
     return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance.collection('users').doc(currentUser.uid).snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .snapshots(),
       builder: (context, snapshot) {
         UserModel? userModel;
-        if (snapshot.hasData && snapshot.data!.exists && snapshot.data!.data() != null) {
+        if (snapshot.hasData &&
+            snapshot.data!.exists &&
+            snapshot.data!.data() != null) {
           final data = snapshot.data!.data() as Map<String, dynamic>;
           userModel = UserModel.fromMap(data, snapshot.data!.id);
         }
@@ -53,7 +65,9 @@ class TravelerProfileScreen extends StatelessWidget {
           appBar: AppBar(
             title: Text(
               'User Profile',
-              style: AppTextStyles.screenHeading.copyWith(color: AppColors.primaryDark),
+              style: AppTextStyles.screenHeading.copyWith(
+                color: AppColors.primaryDark,
+              ),
             ),
             backgroundColor: AppColors.background,
             elevation: 0,
@@ -68,7 +82,11 @@ class TravelerProfileScreen extends StatelessWidget {
                           shape: BoxShape.circle,
                           border: Border.all(color: AppColors.border),
                         ),
-                        child: const Icon(Icons.arrow_back_ios_new, size: 16, color: AppColors.primaryDark),
+                        child: const Icon(
+                          Icons.arrow_back_ios_new,
+                          size: 16,
+                          color: AppColors.primaryDark,
+                        ),
                       ),
                       onPressed: onBackTap,
                     ),
@@ -85,12 +103,18 @@ class TravelerProfileScreen extends StatelessWidget {
                         shape: BoxShape.circle,
                         border: Border.all(color: AppColors.border),
                       ),
-                      child: const Icon(Icons.settings_outlined, size: 18, color: AppColors.primaryDark),
+                      child: const Icon(
+                        Icons.settings_outlined,
+                        size: 18,
+                        color: AppColors.primaryDark,
+                      ),
                     ),
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                        MaterialPageRoute(
+                          builder: (context) => const SettingsScreen(),
+                        ),
                       );
                     },
                   ),
@@ -104,10 +128,10 @@ class TravelerProfileScreen extends StatelessWidget {
   }
 
   Widget _buildBody(
-    BuildContext context, 
-    AsyncSnapshot<DocumentSnapshot> snapshot, 
-    UserModel? userModel, 
-    User currentUser
+    BuildContext context,
+    AsyncSnapshot<DocumentSnapshot> snapshot,
+    UserModel? userModel,
+    User currentUser,
   ) {
     if (snapshot.hasError) {
       return Center(
@@ -116,13 +140,18 @@ class TravelerProfileScreen extends StatelessWidget {
           children: [
             const Icon(Icons.error_outline, size: 48, color: AppColors.error),
             const SizedBox(height: AppSpacing.md),
-            Text('Unable to load your profile.', style: AppTextStyles.bodyLarge),
+            Text(
+              'Unable to load your profile.',
+              style: AppTextStyles.bodyLarge,
+            ),
             const SizedBox(height: AppSpacing.md),
             ElevatedButton.icon(
               onPressed: () {},
               icon: const Icon(Icons.refresh),
               label: const Text('Try Again'),
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryDark),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryDark,
+              ),
             ),
           ],
         ),
@@ -136,7 +165,10 @@ class TravelerProfileScreen extends StatelessWidget {
           children: [
             CircularProgressIndicator(color: AppColors.primary),
             SizedBox(height: AppSpacing.md),
-            Text('Loading profile...', style: TextStyle(color: AppColors.textSecondary)),
+            Text(
+              'Loading profile...',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
           ],
         ),
       );
@@ -162,17 +194,28 @@ class TravelerProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAccountPreferencesSection(BuildContext context, UserModel user, User firebaseAuthUser) {
-    final String email = user.email.isNotEmpty ? user.email : (firebaseAuthUser.email ?? 'Not added');
-    final String phone = user.phoneNumber.isNotEmpty ? user.phoneNumber : 'Not added';
-    final int favCount = user.favorites.length + user.favoriteDestinations.length;
+  Widget _buildAccountPreferencesSection(
+    BuildContext context,
+    UserModel user,
+    User firebaseAuthUser,
+  ) {
+    final String email = user.email.isNotEmpty
+        ? user.email
+        : (firebaseAuthUser.email ?? 'Not added');
+    final String phone = user.phoneNumber.isNotEmpty
+        ? user.phoneNumber
+        : 'Not added';
+    final int favCount =
+        user.favorites.length + user.favoriteDestinations.length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Account & Preferences',
-          style: AppTextStyles.sectionHeading.copyWith(color: AppColors.primaryDark),
+          style: AppTextStyles.sectionHeading.copyWith(
+            color: AppColors.primaryDark,
+          ),
         ),
         const SizedBox(height: AppSpacing.md),
         Container(
@@ -190,7 +233,9 @@ class TravelerProfileScreen extends StatelessWidget {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => EditProfileScreen(userModel: user)),
+                    MaterialPageRoute(
+                      builder: (_) => EditProfileScreen(userModel: user),
+                    ),
                   );
                 },
               ),
@@ -234,9 +279,18 @@ class TravelerProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPreferenceRow(IconData icon, String title, String subtitle, {Widget? trailingWidget, VoidCallback? onTap}) {
+  Widget _buildPreferenceRow(
+    IconData icon,
+    String title,
+    String subtitle, {
+    Widget? trailingWidget,
+    VoidCallback? onTap,
+  }) {
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 4),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: 4,
+      ),
       leading: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
@@ -245,9 +299,25 @@ class TravelerProfileScreen extends StatelessWidget {
         ),
         child: Icon(icon, color: const Color(0xFF5A7162), size: 20),
       ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primaryDark)),
-      subtitle: Text(subtitle, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-      trailing: trailingWidget ?? const Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 20),
+      title: Text(
+        title,
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+          color: AppColors.primaryDark,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+      ),
+      trailing:
+          trailingWidget ??
+          const Icon(
+            Icons.chevron_right,
+            color: AppColors.textSecondary,
+            size: 20,
+          ),
       onTap: onTap ?? () {},
     );
   }
@@ -281,15 +351,28 @@ class TravelerProfileScreen extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(borderRadius: AppRadius.cardRadius),
-        title: Text('Sign out?', style: AppTextStyles.labelLarge.copyWith(fontSize: 18, color: AppColors.primaryDark)),
+        title: Text(
+          'Sign out?',
+          style: AppTextStyles.labelLarge.copyWith(
+            fontSize: 18,
+            color: AppColors.primaryDark,
+          ),
+        ),
         content: Text(
           'Are you sure you want to sign out of your account?',
-          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: AppTextStyles.buttonText.copyWith(color: AppColors.textSecondary)),
+            child: Text(
+              'Cancel',
+              style: AppTextStyles.buttonText.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -299,7 +382,9 @@ class TravelerProfileScreen extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.error,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             child: const Text('Sign Out'),
           ),
@@ -313,7 +398,10 @@ class _IdentityCard extends StatefulWidget {
   final UserModel userModel;
   final User firebaseAuthUser;
 
-  const _IdentityCard({required this.userModel, required this.firebaseAuthUser});
+  const _IdentityCard({
+    required this.userModel,
+    required this.firebaseAuthUser,
+  });
 
   @override
   State<_IdentityCard> createState() => _IdentityCardState();
@@ -339,9 +427,9 @@ class _IdentityCardState extends State<_IdentityCard> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to update image')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Failed to update image')));
     } finally {
       if (mounted) setState(() => _isLoadingImage = false);
     }
@@ -352,17 +440,20 @@ class _IdentityCardState extends State<_IdentityCard> {
     try {
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser != null) {
-        await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).update({
-          'profileImageUrl': FieldValue.delete(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUser.uid)
+            .update({
+              'profileImageUrl': FieldValue.delete(),
+              'updatedAt': FieldValue.serverTimestamp(),
+            });
         await currentUser.updatePhotoURL(null);
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to remove image')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Failed to remove image')));
     } finally {
       if (mounted) setState(() => _isLoadingImage = false);
     }
@@ -383,12 +474,19 @@ class _IdentityCardState extends State<_IdentityCard> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 40, height: 4,
+                  width: 40,
+                  height: 4,
                   margin: const EdgeInsets.only(bottom: AppSpacing.md),
-                  decoration: BoxDecoration(color: AppColors.border, borderRadius: AppRadius.pillRadius),
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: AppRadius.pillRadius,
+                  ),
                 ),
                 ListTile(
-                  leading: const Icon(Icons.photo_library, color: AppColors.primary),
+                  leading: const Icon(
+                    Icons.photo_library,
+                    color: AppColors.primary,
+                  ),
                   title: Text('Change Photo', style: AppTextStyles.labelLarge),
                   onTap: () async {
                     Navigator.pop(context);
@@ -402,10 +500,19 @@ class _IdentityCardState extends State<_IdentityCard> {
                     if (image != null) _updateImage(image);
                   },
                 ),
-                if (widget.userModel.profileImageUrl != null && widget.userModel.profileImageUrl!.isNotEmpty)
+                if (widget.userModel.profileImageUrl != null &&
+                    widget.userModel.profileImageUrl!.isNotEmpty)
                   ListTile(
-                    leading: const Icon(Icons.delete_outline, color: AppColors.error),
-                    title: Text('Remove Photo', style: AppTextStyles.labelLarge.copyWith(color: AppColors.error)),
+                    leading: const Icon(
+                      Icons.delete_outline,
+                      color: AppColors.error,
+                    ),
+                    title: Text(
+                      'Remove Photo',
+                      style: AppTextStyles.labelLarge.copyWith(
+                        color: AppColors.error,
+                      ),
+                    ),
                     onTap: () {
                       Navigator.pop(context);
                       _removeImage();
@@ -425,12 +532,16 @@ class _IdentityCardState extends State<_IdentityCard> {
         ? widget.userModel.fullName
         : (widget.firebaseAuthUser.displayName ?? 'Traveler');
 
-    final String imageUrl = (widget.userModel.profileImageUrl != null && widget.userModel.profileImageUrl!.isNotEmpty) 
-        ? widget.userModel.profileImageUrl! 
+    final String imageUrl =
+        (widget.userModel.profileImageUrl != null &&
+            widget.userModel.profileImageUrl!.isNotEmpty)
+        ? widget.userModel.profileImageUrl!
         : (widget.firebaseAuthUser.photoURL ?? '');
 
-    final String location = widget.userModel.location.isNotEmpty ? widget.userModel.location : 'Not added';
-    
+    final String location = widget.userModel.location.isNotEmpty
+        ? widget.userModel.location
+        : 'Not added';
+
     String roleDisplay = 'Traveler';
     if (widget.userModel.role == 'host') roleDisplay = 'Homestay Host';
     if (widget.userModel.role == 'guide') roleDisplay = 'Tour Guide';
@@ -448,7 +559,7 @@ class _IdentityCardState extends State<_IdentityCard> {
             color: Color(0x05000000),
             blurRadius: 10,
             offset: Offset(0, 4),
-          )
+          ),
         ],
       ),
       child: Stack(
@@ -479,14 +590,22 @@ class _IdentityCardState extends State<_IdentityCard> {
                           CircleAvatar(
                             radius: 36,
                             backgroundColor: AppColors.softSecondarySurface,
-                            backgroundImage: imageUrl.isNotEmpty ? NetworkImage(imageUrl) : null,
-                            child: imageUrl.isEmpty 
-                                ? const Icon(Icons.person, size: 36, color: AppColors.textSecondary)
+                            backgroundImage: imageUrl.isNotEmpty
+                                ? NetworkImage(imageUrl)
+                                : null,
+                            child: imageUrl.isEmpty
+                                ? const Icon(
+                                    Icons.person,
+                                    size: 36,
+                                    color: AppColors.textSecondary,
+                                  )
                                 : null,
                           ),
                           if (_isLoadingImage)
                             const Positioned.fill(
-                              child: CircularProgressIndicator(color: AppColors.primaryDark),
+                              child: CircularProgressIndicator(
+                                color: AppColors.primaryDark,
+                              ),
                             ),
                           Positioned(
                             bottom: 0,
@@ -497,7 +616,11 @@ class _IdentityCardState extends State<_IdentityCard> {
                                 color: AppColors.primaryDark,
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.edit, color: Colors.white, size: 12),
+                              child: const Icon(
+                                Icons.edit,
+                                color: Colors.white,
+                                size: 12,
+                              ),
                             ),
                           ),
                         ],
@@ -518,19 +641,31 @@ class _IdentityCardState extends State<_IdentityCard> {
                           const SizedBox(height: 4),
                           Row(
                             children: [
-                              const Icon(Icons.location_on_outlined, size: 14, color: AppColors.secondary),
+                              const Icon(
+                                Icons.location_on_outlined,
+                                size: 14,
+                                color: AppColors.secondary,
+                              ),
                               const SizedBox(width: 4),
                               Text(
                                 location,
-                                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: AppColors.textSecondary,
+                                ),
                               ),
                               const SizedBox(width: 8),
-                              const Icon(Icons.person_outline, size: 14, color: AppColors.secondary),
+                              const Icon(
+                                Icons.person_outline,
+                                size: 14,
+                                color: AppColors.secondary,
+                              ),
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
                                   roleDisplay,
-                                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),

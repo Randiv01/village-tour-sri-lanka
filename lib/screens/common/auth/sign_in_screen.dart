@@ -10,8 +10,6 @@ import 'sign_up_screen.dart';
 import 'complete_profile_screen.dart';
 import 'phone_auth_screen.dart';
 
-
-
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
 
@@ -27,13 +25,13 @@ class _SignInScreenState extends State<SignInScreen> {
 
   bool _isLoading = false;
 
-
-
   Future<void> _signInWithGoogle() async {
     setState(() => _isLoading = true);
     try {
       final userCredential = await _authService.signInWithGoogle();
-      final profile = await _authService.getUserProfile(userCredential.user!.uid);
+      final profile = await _authService.getUserProfile(
+        userCredential.user!.uid,
+      );
 
       if (profile != null) {
         if (profile.role == 'admin') {
@@ -72,9 +70,7 @@ class _SignInScreenState extends State<SignInScreen> {
   void _signInWithPhone() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => const PhoneAuthScreen(isSignUp: false),
-      ),
+      MaterialPageRoute(builder: (_) => const PhoneAuthScreen(isSignUp: false)),
     );
   }
 
@@ -99,7 +95,7 @@ class _SignInScreenState extends State<SignInScreen> {
         await Future.delayed(const Duration(milliseconds: 700));
 
         if (mounted) {
-          // Pop back to the root route (AuthGate) which will automatically 
+          // Pop back to the root route (AuthGate) which will automatically
           // build the correct dashboard based on the new auth state.
           Navigator.of(context).popUntil((route) => route.isFirst);
         }

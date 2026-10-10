@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -49,7 +50,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void initState() {
     super.initState();
     final authUser = FirebaseAuth.instance.currentUser;
-    
+
     _initName = widget.userModel.fullName.isNotEmpty
         ? widget.userModel.fullName
         : (authUser?.displayName ?? '');
@@ -63,7 +64,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _phoneController = TextEditingController(text: _initPhone);
     _locationController = TextEditingController(text: _initLocation);
     _languagesController = TextEditingController(text: _initLanguages);
-    _specializationController = TextEditingController(text: _initSpecialization);
+    _specializationController = TextEditingController(
+      text: _initSpecialization,
+    );
     _bioController = TextEditingController(text: _initBio);
   }
 
@@ -84,7 +87,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (_phoneController.text.trim() != _initPhone) return true;
     if (_locationController.text.trim() != _initLocation) return true;
     if (_languagesController.text.trim() != _initLanguages) return true;
-    if (_specializationController.text.trim() != _initSpecialization) return true;
+    if (_specializationController.text.trim() != _initSpecialization) {
+      return true;
+    }
     if (_bioController.text.trim() != _initBio) return true;
     return false;
   }
@@ -97,19 +102,37 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(borderRadius: AppRadius.cardRadius),
-        title: Text('Discard Changes?', style: AppTextStyles.labelLarge.copyWith(fontSize: 18, color: AppColors.primaryDark)),
-        content: Text('Your changes have not been saved.', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary)),
+        title: Text(
+          'Discard Changes?',
+          style: AppTextStyles.labelLarge.copyWith(
+            fontSize: 18,
+            color: AppColors.primaryDark,
+          ),
+        ),
+        content: Text(
+          'Your changes have not been saved.',
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancel', style: AppTextStyles.buttonText.copyWith(color: AppColors.textSecondary)),
+            child: Text(
+              'Cancel',
+              style: AppTextStyles.buttonText.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.error,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             child: const Text('Discard'),
           ),
@@ -135,13 +158,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 40, height: 4,
+                  width: 40,
+                  height: 4,
                   margin: const EdgeInsets.only(bottom: AppSpacing.md),
-                  decoration: BoxDecoration(color: AppColors.border, borderRadius: AppRadius.pillRadius),
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: AppRadius.pillRadius,
+                  ),
                 ),
                 ListTile(
-                  leading: const Icon(Icons.photo_library, color: AppColors.primary),
-                  title: Text('Choose from Gallery', style: AppTextStyles.labelLarge),
+                  leading: const Icon(
+                    Icons.photo_library,
+                    color: AppColors.primary,
+                  ),
+                  title: Text(
+                    'Choose from Gallery',
+                    style: AppTextStyles.labelLarge,
+                  ),
                   onTap: () async {
                     Navigator.pop(context);
                     final image = await _picker.pickImage(
@@ -159,7 +192,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   },
                 ),
                 ListTile(
-                  leading: const Icon(Icons.camera_alt, color: AppColors.primary),
+                  leading: const Icon(
+                    Icons.camera_alt,
+                    color: AppColors.primary,
+                  ),
                   title: Text('Take Photo', style: AppTextStyles.labelLarge),
                   onTap: () async {
                     Navigator.pop(context);
@@ -177,10 +213,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     }
                   },
                 ),
-                if ((widget.userModel.profileImageUrl != null && widget.userModel.profileImageUrl!.isNotEmpty) || _selectedImage != null)
+                if ((widget.userModel.profileImageUrl != null &&
+                        widget.userModel.profileImageUrl!.isNotEmpty) ||
+                    _selectedImage != null)
                   ListTile(
-                    leading: const Icon(Icons.delete_outline, color: AppColors.error),
-                    title: Text('Remove Photo', style: AppTextStyles.labelLarge.copyWith(color: AppColors.error)),
+                    leading: const Icon(
+                      Icons.delete_outline,
+                      color: AppColors.error,
+                    ),
+                    title: Text(
+                      'Remove Photo',
+                      style: AppTextStyles.labelLarge.copyWith(
+                        color: AppColors.error,
+                      ),
+                    ),
                     onTap: () {
                       Navigator.pop(context);
                       setState(() {
@@ -204,7 +250,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     try {
       final currentUser = FirebaseAuth.instance.currentUser;
-      if (currentUser == null) throw 'Authentication required. Please sign in again.';
+      if (currentUser == null) {
+        throw 'Authentication required. Please sign in again.';
+      }
 
       String? newImageUrl = widget.userModel.profileImageUrl;
 
@@ -212,7 +260,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (_removePhoto) {
         newImageUrl = null;
       } else if (_selectedImage != null) {
-        final uploadResult = await _cloudinaryService.uploadImage(_selectedImage!);
+        final uploadResult = await _cloudinaryService.uploadImage(
+          _selectedImage!,
+        );
         if (uploadResult != null) {
           newImageUrl = uploadResult.secureUrl;
         } else {
@@ -237,10 +287,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         'profileImageUrl': newImageUrl,
       };
 
-      await _authService.updateUserProfile(
-        uid: currentUser.uid,
-        data: updates,
-      );
+      await _authService.updateUserProfile(uid: currentUser.uid, data: updates);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -270,8 +317,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final currentAuthUser = FirebaseAuth.instance.currentUser;
     final String currentImageUrl = !_removePhoto
         ? (_selectedImage != null
-            ? ''
-            : (widget.userModel.profileImageUrl ?? currentAuthUser?.photoURL ?? ''))
+              ? ''
+              : (widget.userModel.profileImageUrl ??
+                    currentAuthUser?.photoURL ??
+                    ''))
         : '';
 
     return PopScope(
@@ -290,11 +339,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           elevation: 0,
           title: Text(
             'Edit Profile',
-            style: AppTextStyles.screenHeading.copyWith(color: AppColors.primaryDark),
+            style: AppTextStyles.screenHeading.copyWith(
+              color: AppColors.primaryDark,
+            ),
           ),
           centerTitle: true,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: AppColors.primaryDark),
+            icon: const Icon(
+              Icons.arrow_back_ios_new,
+              size: 18,
+              color: AppColors.primaryDark,
+            ),
             onPressed: () async {
               if (await _onWillPop() && context.mounted) {
                 Navigator.pop(context);
@@ -309,7 +364,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   children: [
                     CircularProgressIndicator(color: AppColors.primary),
                     SizedBox(height: AppSpacing.md),
-                    Text('Saving changes...', style: TextStyle(color: AppColors.textSecondary)),
+                    Text(
+                      'Saving changes...',
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
                   ],
                 ),
               )
@@ -330,14 +388,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 children: [
                                   CircleAvatar(
                                     radius: 54,
-                                    backgroundColor: AppColors.softSecondarySurface,
+                                    backgroundColor:
+                                        AppColors.softSecondarySurface,
                                     backgroundImage: _selectedImage != null
                                         ? FileImage(File(_selectedImage!.path))
                                         : (currentImageUrl.isNotEmpty
-                                            ? NetworkImage(currentImageUrl)
-                                            : null) as ImageProvider?,
-                                    child: (_selectedImage == null && currentImageUrl.isEmpty)
-                                        ? const Icon(Icons.person, size: 54, color: AppColors.textSecondary)
+                                                  ? NetworkImage(
+                                                      currentImageUrl,
+                                                    )
+                                                  : null)
+                                              as ImageProvider?,
+                                    child:
+                                        (_selectedImage == null &&
+                                            currentImageUrl.isEmpty)
+                                        ? const Icon(
+                                            Icons.person,
+                                            size: 54,
+                                            color: AppColors.textSecondary,
+                                          )
                                         : null,
                                   ),
                                   Positioned(
@@ -348,9 +416,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                       decoration: BoxDecoration(
                                         color: AppColors.primaryDark,
                                         shape: BoxShape.circle,
-                                        border: Border.all(color: Colors.white, width: 2),
+                                        border: Border.all(
+                                          color: Colors.white,
+                                          width: 2,
+                                        ),
                                       ),
-                                      child: const Icon(Icons.camera_alt, color: Colors.white, size: 16),
+                                      child: const Icon(
+                                        Icons.camera_alt,
+                                        color: Colors.white,
+                                        size: 16,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -359,8 +434,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             const SizedBox(height: AppSpacing.sm),
                             TextButton.icon(
                               onPressed: _showImageOptions,
-                              icon: const Icon(Icons.photo_camera_outlined, size: 16, color: AppColors.primary),
-                              label: Text('Change Profile Photo', style: AppTextStyles.labelLarge.copyWith(color: AppColors.primary)),
+                              icon: const Icon(
+                                Icons.photo_camera_outlined,
+                                size: 16,
+                                color: AppColors.primary,
+                              ),
+                              label: Text(
+                                'Change Profile Photo',
+                                style: AppTextStyles.labelLarge.copyWith(
+                                  color: AppColors.primary,
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -396,7 +480,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               : (currentAuthUser?.email ?? '—'),
                           readOnly: true,
                           enabled: false,
-                          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
                           decoration: _inputDecoration(
                             labelText: 'Email Address (Read-only)',
                             prefixIcon: Icons.email_outlined,
@@ -502,11 +588,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             backgroundColor: AppColors.primaryDark,
                             foregroundColor: Colors.white,
                             elevation: 0,
-                            shape: RoundedRectangleBorder(borderRadius: AppRadius.inputButtonRadius),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: AppRadius.inputButtonRadius,
+                            ),
                           ),
                           child: const Text(
                             'Save Changes',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
@@ -522,7 +613,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget _buildSectionHeader(String title) {
     return Text(
       title,
-      style: AppTextStyles.labelLarge.copyWith(color: AppColors.primaryDark, fontWeight: FontWeight.bold),
+      style: AppTextStyles.labelLarge.copyWith(
+        color: AppColors.primaryDark,
+        fontWeight: FontWeight.bold,
+      ),
     );
   }
 
@@ -551,10 +645,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       labelText: labelText,
       hintText: hintText,
       prefixIcon: Icon(prefixIcon, color: AppColors.primary, size: 20),
-      suffixIcon: suffixIcon != null ? Icon(suffixIcon, color: AppColors.textSecondary, size: 18) : null,
+      suffixIcon: suffixIcon != null
+          ? Icon(suffixIcon, color: AppColors.textSecondary, size: 18)
+          : null,
       filled: true,
       fillColor: AppColors.background,
-      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.md),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.md,
+      ),
       border: OutlineInputBorder(
         borderRadius: AppRadius.inputButtonRadius,
         borderSide: const BorderSide(color: AppColors.border),

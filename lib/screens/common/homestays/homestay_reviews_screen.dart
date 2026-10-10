@@ -1,9 +1,11 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
+
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../theme/app_spacing.dart';
@@ -77,9 +79,12 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
     final ImagePicker picker = ImagePicker();
     final List<XFile> images = await picker.pickMultiImage();
     if (images.isNotEmpty) {
-      if (_selectedPhotos.length + _existingPhotoUrls.length + images.length > 5) {
+      if (_selectedPhotos.length + _existingPhotoUrls.length + images.length >
+          5) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Maximum 5 photos allowed.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Maximum 5 photos allowed.')),
+        );
         return;
       }
       setState(() {
@@ -93,7 +98,7 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
       _selectedPhotos.removeAt(index);
     });
   }
-  
+
   void _removeExistingPhoto(int index) {
     setState(() {
       _existingPhotoUrls.removeAt(index);
@@ -102,15 +107,21 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
 
   Future<void> _submitReview() async {
     if (_rating == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a rating.')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please select a rating.')));
       return;
     }
     if (_reviewController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please write a review.')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please write a review.')));
       return;
     }
     if (_currentUserId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please log in to submit a review.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please log in to submit a review.')),
+      );
       return;
     }
 
@@ -119,7 +130,10 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
     });
 
     try {
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(_currentUserId).get();
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(_currentUserId)
+          .get();
       final userData = userDoc.data();
 
       // Upload photos
@@ -142,12 +156,15 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
         'tags': _selectedTags,
         'reviewText': _reviewController.text,
         'images': finalPhotoUrls,
-        'timestamp': FieldValue.serverTimestamp(), // Always update timestamp on edit
+        'timestamp':
+            FieldValue.serverTimestamp(), // Always update timestamp on edit
       };
 
       await FirebaseFirestore.instance
           .collection('homestay_reviews')
-          .doc('${widget.homestayId}_$_currentUserId') // User can only have one review per homestay
+          .doc(
+            '${widget.homestayId}_$_currentUserId',
+          ) // User can only have one review per homestay
           .set(reviewData, SetOptions(merge: true));
 
       if (!mounted) return;
@@ -159,10 +176,19 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
         _existingPhotoUrls = [];
         _isEditing = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_isEditing ? 'Review updated successfully!' : 'Review submitted successfully!')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _isEditing
+                ? 'Review updated successfully!'
+                : 'Review submitted successfully!',
+          ),
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to submit review: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Failed to submit review: $e')));
     } finally {
       if (mounted) {
         setState(() {
@@ -188,10 +214,12 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
         _selectedPhotos = [];
         _existingPhotoUrls = [];
       });
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Review deleted.')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Review deleted.')));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to delete review: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Failed to delete review: $e')));
     }
   }
 
@@ -205,7 +233,11 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
       _selectedPhotos = [];
     });
     if (_scrollController.hasClients) {
-      _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
     }
   }
 
@@ -220,7 +252,9 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
         final reviews = snapshot.data?.docs ?? [];
         return SingleChildScrollView(
           controller: widget.isEmbedded ? null : _scrollController,
-          physics: widget.isEmbedded ? const NeverScrollableScrollPhysics() : null,
+          physics: widget.isEmbedded
+              ? const NeverScrollableScrollPhysics()
+              : null,
           padding: EdgeInsets.all(widget.isEmbedded ? 0 : AppSpacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -233,7 +267,7 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
             ],
           ),
         );
-      }
+      },
     );
 
     if (widget.isEmbedded) {
@@ -262,12 +296,25 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
           unselectedItemColor: AppColors.textSecondary,
           selectedFontSize: 10,
           unselectedFontSize: 10,
-          currentIndex: 1, // Assume Explore is selected since we're viewing a homestay
+          currentIndex:
+              1, // Assume Explore is selected since we're viewing a homestay
           items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(Icons.explore_outlined), label: 'Explore'),
-            BottomNavigationBarItem(icon: Icon(Icons.calendar_today_outlined), label: 'Bookings'),
-            BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_outlined),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.explore_outlined),
+              label: 'Explore',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.calendar_today_outlined),
+              label: 'Bookings',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline),
+              label: 'Profile',
+            ),
           ],
         ),
       ),
@@ -276,7 +323,10 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
 
   Widget _buildAppBar() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -289,7 +339,11 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
                 color: Colors.white,
                 border: Border.all(color: AppColors.border, width: 0.5),
               ),
-              child: const Icon(Icons.arrow_back_ios_new, size: 16, color: AppColors.primaryDark),
+              child: const Icon(
+                Icons.arrow_back_ios_new,
+                size: 16,
+                color: AppColors.primaryDark,
+              ),
             ),
           ),
           Column(
@@ -317,7 +371,11 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
               color: Colors.white,
               border: Border.all(color: AppColors.border, width: 0.5),
             ),
-            child: const Icon(Icons.notifications_none, size: 16, color: AppColors.primaryDark),
+            child: const Icon(
+              Icons.notifications_none,
+              size: 16,
+              color: AppColors.primaryDark,
+            ),
           ),
         ],
       ),
@@ -327,7 +385,7 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
   Widget _buildOverallRatingSection(List<QueryDocumentSnapshot> reviews) {
     int totalReviews = reviews.length;
     double averageRating = 0;
-    
+
     if (totalReviews > 0) {
       double sum = 0;
       for (var doc in reviews) {
@@ -364,7 +422,9 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        totalReviews > 0 ? averageRating.toStringAsFixed(1) : '0.0',
+                        totalReviews > 0
+                            ? averageRating.toStringAsFixed(1)
+                            : '0.0',
                         style: const TextStyle(
                           fontSize: 36,
                           fontWeight: FontWeight.bold,
@@ -374,16 +434,34 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
                       ),
                       const SizedBox(width: 8),
                       Row(
-                        children: List.generate(5, (index) => Icon(Icons.star, color: index < averageRating.round() ? Colors.amber : AppColors.border, size: 18)),
+                        children: List.generate(
+                          5,
+                          (index) => Icon(
+                            Icons.star,
+                            color: index < averageRating.round()
+                                ? Colors.amber
+                                : AppColors.border,
+                            size: 18,
+                          ),
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Text('$totalReviews verified guest reviews', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                  Text(
+                    '$totalReviews verified guest reviews',
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
                 ],
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF3F3F3),
                   borderRadius: BorderRadius.circular(12),
@@ -394,20 +472,41 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
                   children: [
                     Row(
                       children: const [
-                        Icon(Icons.verified_user, size: 12, color: Color(0xFF1E6B52)),
+                        Icon(
+                          Icons.verified_user,
+                          size: 12,
+                          color: Color(0xFF1E6B52),
+                        ),
                         SizedBox(width: 4),
-                        Text('VERIFIED RURAL HOST', style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
+                        Text(
+                          'VERIFIED RURAL HOST',
+                          style: TextStyle(
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 2),
-                    Text(widget.hostName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primaryDark)),
+                    Text(
+                      widget.hostName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        color: AppColors.primaryDark,
+                      ),
+                    ),
                   ],
                 ),
               ),
             ],
           ),
           const SizedBox(height: 24),
-          _buildRatingBar('Hospitality & Warmth', hospitality > 5.0 ? 5.0 : hospitality),
+          _buildRatingBar(
+            'Hospitality & Warmth',
+            hospitality > 5.0 ? 5.0 : hospitality,
+          ),
           _buildRatingBar('Authenticity & Culture', authenticity),
           _buildRatingBar('Claypot Food & Dining', food),
           _buildRatingBar('Mudhouse Cleanliness', cleanliness),
@@ -424,7 +523,13 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
         children: [
           Expanded(
             flex: 2,
-            child: Text(title, style: const TextStyle(fontSize: 12, color: AppColors.primaryDark)),
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.primaryDark,
+              ),
+            ),
           ),
           Expanded(
             flex: 3,
@@ -434,13 +539,22 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
                   child: LinearProgressIndicator(
                     value: rating / 5.0,
                     backgroundColor: const Color(0xFFE8F6F3),
-                    valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF1E6B52)),
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      Color(0xFF1E6B52),
+                    ),
                     minHeight: 6,
                     borderRadius: BorderRadius.circular(3),
                   ),
                 ),
                 const SizedBox(width: 8),
-                Text(rating.toStringAsFixed(1), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primaryDark)),
+                Text(
+                  rating.toStringAsFixed(1),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primaryDark,
+                  ),
+                ),
               ],
             ),
           ),
@@ -467,25 +581,56 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: const [
-                    Text('SHARE YOUR EXPERIENCE', style: TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF1E6B52), fontSize: 14)),
+                    Text(
+                      'SHARE YOUR EXPERIENCE',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF1E6B52),
+                        fontSize: 14,
+                      ),
+                    ),
                     SizedBox(height: 4),
-                    Text('Support our local host family with your honest feedback', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                    Text(
+                      'Support our local host family with your honest feedback',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
                   ],
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFDF7E7),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: const Color(0xFFE0D8C3)),
                 ),
-                child: const Text('Rate\nHost', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1E6B52)), textAlign: TextAlign.center),
-              )
+                child: const Text(
+                  'Rate\nHost',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    color: Color(0xFF1E6B52),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
-          const Text('Overall Rating (Tap to score):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primaryDark)),
+          const Text(
+            'Overall Rating (Tap to score):',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+              color: AppColors.primaryDark,
+            ),
+          ),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.all(8),
@@ -506,31 +651,57 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
                       margin: const EdgeInsets.only(right: 8),
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: index < _rating ? const Color(0xFF1E6B52) : Colors.white,
-                        border: Border.all(color: index < _rating ? const Color(0xFF1E6B52) : AppColors.border),
+                        color: index < _rating
+                            ? const Color(0xFF1E6B52)
+                            : Colors.white,
+                        border: Border.all(
+                          color: index < _rating
+                              ? const Color(0xFF1E6B52)
+                              : AppColors.border,
+                        ),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Icon(Icons.star, color: index < _rating ? Colors.amber : AppColors.border, size: 20),
+                      child: Icon(
+                        Icons.star,
+                        color: index < _rating
+                            ? Colors.amber
+                            : AppColors.border,
+                        size: 20,
+                      ),
                     ),
                   );
                 }),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFDF7E7),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     _rating > 0 ? 'Good ($_rating.0)' : 'Rate',
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF9E6541), fontSize: 12),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF9E6541),
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          const Text('What went well? (Select multiple):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primaryDark)),
+          const Text(
+            'What went well? (Select multiple):',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+              color: AppColors.primaryDark,
+            ),
+          ),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -540,18 +711,42 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
               return GestureDetector(
                 onTap: () => _toggleTag(tag),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: isSelected ? const Color(0xFF1E6B52) : Colors.white,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: isSelected ? const Color(0xFF1E6B52) : AppColors.border),
+                    border: Border.all(
+                      color: isSelected
+                          ? const Color(0xFF1E6B52)
+                          : AppColors.border,
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(isSelected ? Icons.check : Icons.add, size: 14, color: isSelected ? Colors.white : AppColors.textSecondary),
+                      Icon(
+                        isSelected ? Icons.check : Icons.add,
+                        size: 14,
+                        color: isSelected
+                            ? Colors.white
+                            : AppColors.textSecondary,
+                      ),
                       const SizedBox(width: 4),
-                      Text(tag, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : AppColors.textSecondary, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                      Text(
+                        tag,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isSelected
+                              ? Colors.white
+                              : AppColors.textSecondary,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -559,7 +754,14 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
             }).toList(),
           ),
           const SizedBox(height: AppSpacing.lg),
-          const Text('Detailed Feedback:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primaryDark)),
+          const Text(
+            'Detailed Feedback:',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+              color: AppColors.primaryDark,
+            ),
+          ),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -572,14 +774,28 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
               maxLines: 4,
               decoration: const InputDecoration(
                 border: InputBorder.none,
-                hintText: 'Share details of your own experience at this place...',
-                hintStyle: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                hintText:
+                    'Share details of your own experience at this place...',
+                hintStyle: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
               ),
-              style: const TextStyle(fontSize: 13, color: AppColors.primaryDark),
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.primaryDark,
+              ),
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          const Text('Add photos of your stay / meals (Max 5):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primaryDark)),
+          const Text(
+            'Add photos of your stay / meals (Max 5):',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+              color: AppColors.primaryDark,
+            ),
+          ),
           const SizedBox(height: 8),
           if (_existingPhotoUrls.isNotEmpty || _selectedPhotos.isNotEmpty) ...[
             SizedBox(
@@ -587,14 +803,18 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 children: [
-                  ..._existingPhotoUrls.asMap().entries.map((entry) => _buildPhotoPreview(
-                        url: entry.value,
-                        onRemove: () => _removeExistingPhoto(entry.key),
-                      )),
-                  ..._selectedPhotos.asMap().entries.map((entry) => _buildPhotoPreview(
-                        file: entry.value,
-                        onRemove: () => _removePhoto(entry.key),
-                      )),
+                  ..._existingPhotoUrls.asMap().entries.map(
+                    (entry) => _buildPhotoPreview(
+                      url: entry.value,
+                      onRemove: () => _removeExistingPhoto(entry.key),
+                    ),
+                  ),
+                  ..._selectedPhotos.asMap().entries.map(
+                    (entry) => _buildPhotoPreview(
+                      file: entry.value,
+                      onRemove: () => _removePhoto(entry.key),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -609,17 +829,36 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
                     child: Container(
                       height: 100,
                       decoration: BoxDecoration(
-                        border: Border.all(color: const Color(0xFFE0D8C3), style: BorderStyle.solid),
+                        border: Border.all(
+                          color: const Color(0xFFE0D8C3),
+                          style: BorderStyle.solid,
+                        ),
                         borderRadius: BorderRadius.circular(12),
                         color: Colors.white,
                       ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: const [
-                          Icon(Icons.camera_alt_outlined, color: AppColors.textSecondary),
+                          Icon(
+                            Icons.camera_alt_outlined,
+                            color: AppColors.textSecondary,
+                          ),
                           SizedBox(height: 4),
-                          Text('+ Add more photos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primaryDark)),
-                          Text('JPEG, PNG up to 10MB', style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+                          Text(
+                            '+ Add more photos',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                              color: AppColors.primaryDark,
+                            ),
+                          ),
+                          Text(
+                            'JPEG, PNG up to 10MB',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -640,7 +879,9 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
                   _existingPhotoUrls = [];
                 });
               },
-              child: const Center(child: Text('Cancel Edit', style: TextStyle(color: Colors.red))),
+              child: const Center(
+                child: Text('Cancel Edit', style: TextStyle(color: Colors.red)),
+              ),
             ),
           SizedBox(
             width: double.infinity,
@@ -649,11 +890,28 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF1E6B52),
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-              child: _isSubmitting 
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : Text(_isEditing ? 'Update Guest Review →' : 'Submit Guest Review →', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              child: _isSubmitting
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Text(
+                      _isEditing
+                          ? 'Update Guest Review →'
+                          : 'Submit Guest Review →',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
             ),
           ),
         ],
@@ -661,7 +919,11 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
     );
   }
 
-  Widget _buildPhotoPreview({String? url, XFile? file, required VoidCallback onRemove}) {
+  Widget _buildPhotoPreview({
+    String? url,
+    XFile? file,
+    required VoidCallback onRemove,
+  }) {
     return Container(
       width: 100,
       margin: const EdgeInsets.only(right: 8),
@@ -669,9 +931,14 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: url != null 
-              ? Image.network(url, width: 100, height: 100, fit: BoxFit.cover)
-              : Image.file(File(file!.path), width: 100, height: 100, fit: BoxFit.cover),
+            child: url != null
+                ? Image.network(url, width: 100, height: 100, fit: BoxFit.cover)
+                : Image.file(
+                    File(file!.path),
+                    width: 100,
+                    height: 100,
+                    fit: BoxFit.cover,
+                  ),
           ),
           Positioned(
             top: 4,
@@ -701,7 +968,7 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
     }).length;
 
     List<QueryDocumentSnapshot> filteredReviews = List.from(allReviews);
-    
+
     // Default sort by timestamp descending
     filteredReviews.sort((a, b) {
       final aData = a.data() as Map<String, dynamic>;
@@ -738,8 +1005,18 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: const [
-            Text('Guest Feedback', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF1E6B52))),
-            Text('Sorted by: Most Relevant', style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+            Text(
+              'Guest Feedback',
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 16,
+                color: Color(0xFF1E6B52),
+              ),
+            ),
+            Text(
+              'Sorted by: Most Relevant',
+              style: TextStyle(fontSize: 10, color: AppColors.textSecondary),
+            ),
           ],
         ),
         const SizedBox(height: 12),
@@ -748,7 +1025,10 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
           child: Row(
             children: [
               _buildFilterChip('All (${allReviews.length})', 'All'),
-              _buildFilterChip('With Photos ($photoReviewsCount)', 'With Photos'),
+              _buildFilterChip(
+                'With Photos ($photoReviewsCount)',
+                'With Photos',
+              ),
               _buildFilterChip('Highest Rated', 'Highest Rated'),
               _buildFilterChip('Lowest Rated', 'Lowest Rated'),
             ],
@@ -756,13 +1036,17 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
         ),
         const SizedBox(height: 16),
         if (filteredReviews.isEmpty)
-          const Center(child: Padding(
-            padding: EdgeInsets.all(24.0),
-            child: Text('No reviews found for this filter.'),
-          ))
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(24.0),
+              child: Text('No reviews found for this filter.'),
+            ),
+          )
         else
           Column(
-            children: filteredReviews.map((doc) => _buildReviewCard(doc)).toList(),
+            children: filteredReviews
+                .map((doc) => _buildReviewCard(doc))
+                .toList(),
           ),
       ],
     );
@@ -782,7 +1066,9 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFF1E6B52) : Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isSelected ? const Color(0xFF1E6B52) : AppColors.border),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF1E6B52) : AppColors.border,
+          ),
         ),
         child: Text(
           label,
@@ -805,7 +1091,7 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
       timestamp = (data['timestamp'] as Timestamp).toDate();
     }
     final formattedDate = DateFormat('MMM yyyy').format(timestamp);
-    
+
     final images = data['images'] as List<dynamic>? ?? [];
 
     return Container(
@@ -814,7 +1100,10 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
       decoration: BoxDecoration(
         color: isMyReview ? const Color(0xFFFDF7E7) : Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: isMyReview ? const Color(0xFFE0D8C3) : AppColors.border, width: isMyReview ? 2 : 1),
+        border: Border.all(
+          color: isMyReview ? const Color(0xFFE0D8C3) : AppColors.border,
+          width: isMyReview ? 2 : 1,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -828,28 +1117,63 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
                   children: [
                     Row(
                       children: [
-                        Text(data['userName'] ?? 'Guest', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primaryDark)),
+                        Text(
+                          data['userName'] ?? 'Guest',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: AppColors.primaryDark,
+                          ),
+                        ),
                         const SizedBox(width: 4),
-                        const Text('(Guest)', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                        const Text(
+                          '(Guest)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
                         if (isMyReview) ...[
                           const SizedBox(width: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(color: const Color(0xFF1E6B52), borderRadius: BorderRadius.circular(4)),
-                            child: const Text('You', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1E6B52),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              'You',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
-                        ]
+                        ],
                       ],
                     ),
                     const SizedBox(height: 2),
-                    Text('Stayed 2 nights · $formattedDate', style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+                    Text(
+                      'Stayed 2 nights · $formattedDate',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
                   ],
                 ),
               ),
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFDF7E7),
                       borderRadius: BorderRadius.circular(8),
@@ -859,7 +1183,14 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
                       children: [
                         const Icon(Icons.star, color: Colors.amber, size: 14),
                         const SizedBox(width: 4),
-                        Text(data['rating']?.toString() ?? '5.0', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primaryDark)),
+                        Text(
+                          data['rating']?.toString() ?? '5.0',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                            color: AppColors.primaryDark,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -867,14 +1198,22 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
                     const SizedBox(width: 8),
                     GestureDetector(
                       onTap: () => _editReview(data),
-                      child: const Icon(Icons.edit_outlined, color: Color(0xFF1E6B52), size: 20),
+                      child: const Icon(
+                        Icons.edit_outlined,
+                        color: Color(0xFF1E6B52),
+                        size: 20,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     GestureDetector(
                       onTap: _deleteReview,
-                      child: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                      child: const Icon(
+                        Icons.delete_outline,
+                        color: Colors.red,
+                        size: 20,
+                      ),
                     ),
-                  ]
+                  ],
                 ],
               ),
             ],
@@ -882,7 +1221,11 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
           const SizedBox(height: 12),
           Text(
             '"${data['reviewText'] ?? ''}"',
-            style: const TextStyle(fontSize: 13, height: 1.5, color: AppColors.primaryDark),
+            style: const TextStyle(
+              fontSize: 13,
+              height: 1.5,
+              color: AppColors.primaryDark,
+            ),
           ),
           if (images.isNotEmpty) ...[
             const SizedBox(height: 12),
@@ -896,41 +1239,64 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
                     margin: const EdgeInsets.only(right: 8),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
-                      child: Image.network(images[index], width: 80, height: 80, fit: BoxFit.cover),
+                      child: Image.network(
+                        images[index],
+                        width: 80,
+                        height: 80,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   );
                 },
               ),
             ),
           ],
-          if (data['hostResponse'] != null && data['hostResponse'].toString().isNotEmpty) ...[
+          if (data['hostResponse'] != null &&
+              data['hostResponse'].toString().isNotEmpty) ...[
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: const Color(0xFFF5F8F7),
                 borderRadius: BorderRadius.circular(12),
-                border: const Border(left: BorderSide(color: Color(0xFF1E6B52), width: 3)),
+                border: const Border(
+                  left: BorderSide(color: Color(0xFF1E6B52), width: 3),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.subdirectory_arrow_right, size: 16, color: Color(0xFF1E6B52)),
+                      const Icon(
+                        Icons.subdirectory_arrow_right,
+                        size: 16,
+                        color: Color(0xFF1E6B52),
+                      ),
                       const SizedBox(width: 4),
-                      Text('Response from ${widget.hostName}:', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primaryDark)),
+                      Text(
+                        'Response from ${widget.hostName}:',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '"${data['hostResponse']}"',
-                    style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: AppColors.textSecondary),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontStyle: FontStyle.italic,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
             ),
-          ]
+          ],
         ],
       ),
     );

@@ -24,7 +24,7 @@ class AddHomestayScreen extends StatefulWidget {
 class _AddHomestayScreenState extends State<AddHomestayScreen> {
   final _formKey = GlobalKey<FormState>();
   final _homestayRepo = HomestayRepository();
-  
+
   // Controllers
   final _titleController = TextEditingController();
   final _locationController = TextEditingController();
@@ -35,25 +35,45 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
 
   // Basic Info
   String _propertyType = 'Entire Homestay';
-  final List<String> _propertyTypes = ['Entire Homestay', 'Private Room', 'Shared Room'];
+  final List<String> _propertyTypes = [
+    'Entire Homestay',
+    'Private Room',
+    'Shared Room',
+  ];
 
   // Amenities
   final List<String> _availableAmenities = [
-    'Wi-Fi', 'Free Parking', 'Breakfast', 'Private Bathroom', 
-    'Hot Water', 'Air Conditioning', 'Fan', 'Kitchen', 'Garden', 'TV'
+    'Wi-Fi',
+    'Free Parking',
+    'Breakfast',
+    'Private Bathroom',
+    'Hot Water',
+    'Air Conditioning',
+    'Fan',
+    'Kitchen',
+    'Garden',
+    'TV',
   ];
   final List<String> _selectedAmenities = [];
 
   // House Rules
   final List<String> _availableRules = [
-    'No Smoking', 'No Parties', 'Pets Allowed', 'Children Allowed'
+    'No Smoking',
+    'No Parties',
+    'Pets Allowed',
+    'Children Allowed',
   ];
   final List<String> _selectedRules = [];
 
   // Availability Days
   final Map<String, bool> _availableDays = {
-    'monday': true, 'tuesday': true, 'wednesday': true,
-    'thursday': true, 'friday': true, 'saturday': true, 'sunday': true,
+    'monday': true,
+    'tuesday': true,
+    'wednesday': true,
+    'thursday': true,
+    'friday': true,
+    'saturday': true,
+    'sunday': true,
   };
 
   // Unavailable Dates
@@ -63,8 +83,17 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
   String _checkInTime = '2:00 PM';
   String _checkOutTime = '11:00 AM';
   final List<String> _timeOptions = [
-    '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', 
-    '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM'
+    '8:00 AM',
+    '9:00 AM',
+    '10:00 AM',
+    '11:00 AM',
+    '12:00 PM',
+    '1:00 PM',
+    '2:00 PM',
+    '3:00 PM',
+    '4:00 PM',
+    '5:00 PM',
+    '6:00 PM',
   ];
 
   // Add-ons
@@ -101,7 +130,9 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
           if (images.length > remainingSlots) {
             _selectedImages.addAll(images.take(remainingSlots));
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('You can only upload up to 10 images in total.')),
+              const SnackBar(
+                content: Text('You can only upload up to 10 images in total.'),
+              ),
             );
           } else {
             _selectedImages.addAll(images);
@@ -129,7 +160,12 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
     if (picked != null) {
       setState(() {
         // Avoid duplicates
-        if (!_unavailableDates.any((d) => d.year == picked.year && d.month == picked.month && d.day == picked.day)) {
+        if (!_unavailableDates.any(
+          (d) =>
+              d.year == picked.year &&
+              d.month == picked.month &&
+              d.day == picked.day,
+        )) {
           _unavailableDates.add(picked);
           _unavailableDates.sort();
         }
@@ -140,7 +176,7 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
   void _showAddOnDialog() {
     final titleCtrl = TextEditingController();
     final priceCtrl = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -150,7 +186,9 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
           children: [
             TextField(
               controller: titleCtrl,
-              decoration: const InputDecoration(labelText: 'Title (e.g. Buffet Lunch)'),
+              decoration: const InputDecoration(
+                labelText: 'Title (e.g. Buffet Lunch)',
+              ),
             ),
             const SizedBox(height: 8),
             TextField(
@@ -161,7 +199,10 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             onPressed: () {
               final title = titleCtrl.text.trim();
@@ -182,10 +223,12 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
 
   Future<void> _saveAndPublish() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     if (_selectedImages.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please add at least 1 image for your homestay.')),
+        const SnackBar(
+          content: Text('Please add at least 1 image for your homestay.'),
+        ),
       );
       return;
     }
@@ -239,7 +282,10 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Homestay published successfully!'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('Homestay published successfully!'),
+            backgroundColor: Colors.green,
+          ),
         );
         Navigator.pop(context); // Go back to host home
       }
@@ -247,7 +293,10 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
       debugPrint('Error saving homestay: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save homestay: $e'), backgroundColor: AppColors.error),
+          SnackBar(
+            content: Text('Failed to save homestay: $e'),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     } finally {
@@ -277,7 +326,11 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
                 border: Border.all(color: AppColors.border),
                 color: Colors.white,
               ),
-              child: const Icon(Icons.arrow_back, size: 18, color: AppColors.textPrimary),
+              child: const Icon(
+                Icons.arrow_back,
+                size: 18,
+                color: AppColors.textPrimary,
+              ),
             ),
             onPressed: () => Navigator.pop(context),
           ),
@@ -313,7 +366,7 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
                     const SizedBox(height: AppSpacing.xl),
                     _buildSectionHeader('4. Gallery'),
                     _buildGallerySection(),
-                    
+
                     const SizedBox(height: AppSpacing.xl),
                     _buildSectionHeader('5. Description'),
                     _buildDescriptionSection(),
@@ -344,7 +397,7 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
               ),
             ),
           ),
-          
+
           // Bottom Sticky Button
           Positioned(
             left: 0,
@@ -355,7 +408,11 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -5)),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -5),
+                  ),
                 ],
               ),
               child: SafeArea(
@@ -364,18 +421,38 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryDark,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                  child: _isSaving 
-                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Text('Save and Publish', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-                          SizedBox(width: 8),
-                          Icon(Icons.arrow_forward, color: Colors.white, size: 20),
-                        ],
-                      ),
+                  child: _isSaving
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Text(
+                              'Save and Publish',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Icon(
+                              Icons.arrow_forward,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ],
+                        ),
                 ),
               ),
             ),
@@ -392,7 +469,9 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
         alignment: Alignment.centerLeft,
         child: Text(
           title,
-          style: AppTextStyles.labelLarge.copyWith(color: AppColors.primaryDark),
+          style: AppTextStyles.labelLarge.copyWith(
+            color: AppColors.primaryDark,
+          ),
         ),
       ),
     );
@@ -420,21 +499,29 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
           _buildTextField(
             controller: _titleController,
             hintText: 'e.g. Galewela Riverside Cottage',
-            validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+            validator: (value) =>
+                value == null || value.isEmpty ? 'Required' : null,
           ),
           const SizedBox(height: AppSpacing.lg),
-          
+
           _buildFieldLabel('Property Type'),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
             initialValue: _propertyType,
             decoration: InputDecoration(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               filled: true,
               fillColor: Colors.white,
             ),
-            items: _propertyTypes.map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(),
+            items: _propertyTypes
+                .map((type) => DropdownMenuItem(value: type, child: Text(type)))
+                .toList(),
             onChanged: (val) => setState(() => _propertyType = val!),
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -444,8 +531,13 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
           _buildTextField(
             controller: _locationController,
             hintText: 'e.g. Nilagama, Galewela',
-            prefixIcon: const Icon(Icons.location_on_outlined, size: 18, color: AppColors.primaryDark),
-            validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+            prefixIcon: const Icon(
+              Icons.location_on_outlined,
+              size: 18,
+              color: AppColors.primaryDark,
+            ),
+            validator: (value) =>
+                value == null || value.isEmpty ? 'Required' : null,
           ),
         ],
       ),
@@ -460,7 +552,10 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildFieldLabel('Price per night (Rs.)'),
-              const Text('Village rate guideline', style: TextStyle(fontSize: 10, color: AppColors.secondary)),
+              const Text(
+                'Village rate guideline',
+                style: TextStyle(fontSize: 10, color: AppColors.secondary),
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -470,7 +565,13 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
             keyboardType: TextInputType.number,
             prefixIcon: const Padding(
               padding: EdgeInsets.all(12.0),
-              child: Text('Rs.', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryDark)),
+              child: Text(
+                'Rs.',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryDark,
+                ),
+              ),
             ),
             validator: (value) {
               if (value == null || value.isEmpty) return 'Required';
@@ -544,13 +645,23 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Pin Location', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryDark)),
+              const Text(
+                'Pin Location',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: AppColors.primaryDark,
+                ),
+              ),
               if (_selectedLocationPoint != null)
                 const Icon(Icons.check_circle, size: 16, color: Colors.green),
             ],
           ),
           const SizedBox(height: 4),
-          const Text('Tap on the map to set your homestay location', style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+          const Text(
+            'Tap on the map to set your homestay location',
+            style: TextStyle(fontSize: 10, color: AppColors.textSecondary),
+          ),
           const SizedBox(height: AppSpacing.md),
           SizedBox(
             height: 200,
@@ -569,7 +680,8 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
                 ),
                 children: [
                   TileLayer(
-                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    urlTemplate:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                     userAgentPackageName: 'com.villagetoursrilanka.app',
                   ),
                   if (_selectedLocationPoint != null)
@@ -579,7 +691,11 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
                           point: _selectedLocationPoint!,
                           width: 40,
                           height: 40,
-                          child: const Icon(Icons.location_on, color: AppColors.primary, size: 40),
+                          child: const Icon(
+                            Icons.location_on,
+                            color: AppColors.primary,
+                            size: 40,
+                          ),
                         ),
                       ],
                     ),
@@ -594,21 +710,36 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
 
   static IconData _amenityIcon(String amenity) {
     switch (amenity) {
-      case 'Wi-Fi':            return Icons.wifi_rounded;
-      case 'Free Parking':     return Icons.local_parking_rounded;
-      case 'Breakfast':        return Icons.free_breakfast_rounded;
-      case 'Private Bathroom': return Icons.bathtub_outlined;
-      case 'Hot Water':        return Icons.water_drop_outlined;
-      case 'Air Conditioning': return Icons.ac_unit_rounded;
-      case 'Fan':              return Icons.wind_power_rounded;
-      case 'Kitchen':          return Icons.kitchen_rounded;
-      case 'Garden':           return Icons.yard_rounded;
-      case 'TV':               return Icons.tv_rounded;
-      case 'No Smoking':       return Icons.smoke_free_rounded;
-      case 'No Parties':       return Icons.do_not_disturb_on_rounded;
-      case 'Pets Allowed':     return Icons.pets_rounded;
-      case 'Children Allowed': return Icons.child_care_rounded;
-      default:                 return Icons.check_circle_outline_rounded;
+      case 'Wi-Fi':
+        return Icons.wifi_rounded;
+      case 'Free Parking':
+        return Icons.local_parking_rounded;
+      case 'Breakfast':
+        return Icons.free_breakfast_rounded;
+      case 'Private Bathroom':
+        return Icons.bathtub_outlined;
+      case 'Hot Water':
+        return Icons.water_drop_outlined;
+      case 'Air Conditioning':
+        return Icons.ac_unit_rounded;
+      case 'Fan':
+        return Icons.wind_power_rounded;
+      case 'Kitchen':
+        return Icons.kitchen_rounded;
+      case 'Garden':
+        return Icons.yard_rounded;
+      case 'TV':
+        return Icons.tv_rounded;
+      case 'No Smoking':
+        return Icons.smoke_free_rounded;
+      case 'No Parties':
+        return Icons.do_not_disturb_on_rounded;
+      case 'Pets Allowed':
+        return Icons.pets_rounded;
+      case 'Children Allowed':
+        return Icons.child_care_rounded;
+      default:
+        return Icons.check_circle_outline_rounded;
     }
   }
 
@@ -620,8 +751,13 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
         children: _availableAmenities.map((amenity) {
           final isSelected = _selectedAmenities.contains(amenity);
           return FilterChip(
-            avatar: Icon(_amenityIcon(amenity), size: 16,
-                color: isSelected ? AppColors.primaryDark : AppColors.textSecondary),
+            avatar: Icon(
+              _amenityIcon(amenity),
+              size: 16,
+              color: isSelected
+                  ? AppColors.primaryDark
+                  : AppColors.textSecondary,
+            ),
             label: Text(amenity),
             selected: isSelected,
             onSelected: (selected) {
@@ -650,8 +786,22 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Gallery', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryDark)),
-              Text('${_selectedImages.length}/10 photos', style: const TextStyle(fontSize: 10, color: AppColors.secondary, fontWeight: FontWeight.bold)),
+              const Text(
+                'Gallery',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: AppColors.primaryDark,
+                ),
+              ),
+              Text(
+                '${_selectedImages.length}/10 photos',
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: AppColors.secondary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: AppSpacing.md),
@@ -669,11 +819,24 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
                   children: [
                     Container(
                       padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), shape: BoxShape.circle),
-                      child: const Icon(Icons.camera_alt_outlined, color: AppColors.primaryDark),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.camera_alt_outlined,
+                        color: AppColors.primaryDark,
+                      ),
                     ),
                     const SizedBox(height: 12),
-                    const Text('Tap to add photos', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryDark, fontSize: 12)),
+                    const Text(
+                      'Tap to add photos',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryDark,
+                        fontSize: 12,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -688,26 +851,53 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: Image.file(File(_selectedImages[i].path), width: 80, height: 80, fit: BoxFit.cover),
+                        child: Image.file(
+                          File(_selectedImages[i].path),
+                          width: 80,
+                          height: 80,
+                          fit: BoxFit.cover,
+                        ),
                       ),
                       Positioned(
-                        top: 4, right: 4,
+                        top: 4,
+                        right: 4,
                         child: GestureDetector(
                           onTap: () => _removeImage(i),
                           child: Container(
                             padding: const EdgeInsets.all(2),
-                            decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.5), shape: BoxShape.circle),
-                            child: const Icon(Icons.close, color: Colors.white, size: 14),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.5),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.close,
+                              color: Colors.white,
+                              size: 14,
+                            ),
                           ),
                         ),
                       ),
                       if (i == 0)
                         Positioned(
-                          bottom: 4, left: 4,
+                          bottom: 4,
+                          left: 4,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(color: AppColors.primaryDark, borderRadius: BorderRadius.circular(8)),
-                            child: const Text('Cover', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryDark,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              'Cover',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 8,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ),
                     ],
@@ -716,9 +906,17 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
                   GestureDetector(
                     onTap: _pickImages,
                     child: Container(
-                      width: 80, height: 80,
-                      decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
-                      child: const Icon(Icons.add, color: AppColors.textSecondary),
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: const Icon(
+                        Icons.add,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ),
               ],
@@ -740,18 +938,30 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
           filled: true,
           fillColor: Colors.white,
         ),
-        validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+        validator: (value) =>
+            value == null || value.isEmpty ? 'Required' : null,
       ),
     );
   }
 
   Widget _buildAvailabilitySection() {
-    final days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    final days = [
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+      'sunday',
+    ];
     return _buildSectionContainer(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Select days when you accept bookings:', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+          const Text(
+            'Select days when you accept bookings:',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+          ),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
@@ -759,7 +969,9 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
             children: days.map((day) {
               final isAvailable = _availableDays[day] ?? true;
               return FilterChip(
-                label: Text(day.substring(0, 1).toUpperCase() + day.substring(1)),
+                label: Text(
+                  day.substring(0, 1).toUpperCase() + day.substring(1),
+                ),
                 selected: isAvailable,
                 onSelected: (val) => setState(() => _availableDays[day] = val),
                 selectedColor: AppColors.primaryDark.withValues(alpha: 0.2),
@@ -777,16 +989,22 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Select specific dates to block (blackout dates):', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+          const Text(
+            'Select specific dates to block (blackout dates):',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+          ),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
-              ..._unavailableDates.map((date) => Chip(
-                label: Text(DateFormat('MMM dd, yyyy').format(date)),
-                onDeleted: () => setState(() => _unavailableDates.remove(date)),
-              )),
+              ..._unavailableDates.map(
+                (date) => Chip(
+                  label: Text(DateFormat('MMM dd, yyyy').format(date)),
+                  onDeleted: () =>
+                      setState(() => _unavailableDates.remove(date)),
+                ),
+              ),
               ActionChip(
                 label: const Text('+ Add Date'),
                 onPressed: _selectUnavailableDate,
@@ -812,10 +1030,17 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
                 DropdownButtonFormField<String>(
                   initialValue: _checkInTime,
                   decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                  items: _timeOptions.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+                  items: _timeOptions
+                      .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                      .toList(),
                   onChanged: (val) => setState(() => _checkInTime = val!),
                 ),
               ],
@@ -831,10 +1056,17 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
                 DropdownButtonFormField<String>(
                   initialValue: _checkOutTime,
                   decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                  items: _timeOptions.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+                  items: _timeOptions
+                      .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                      .toList(),
                   onChanged: (val) => setState(() => _checkOutTime = val!),
                 ),
               ],
@@ -853,8 +1085,13 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
         children: _availableRules.map((rule) {
           final isSelected = _selectedRules.contains(rule);
           return FilterChip(
-            avatar: Icon(_amenityIcon(rule), size: 16,
-                color: isSelected ? AppColors.primaryDark : AppColors.textSecondary),
+            avatar: Icon(
+              _amenityIcon(rule),
+              size: 16,
+              color: isSelected
+                  ? AppColors.primaryDark
+                  : AppColors.textSecondary,
+            ),
             label: Text(rule),
             selected: isSelected,
             onSelected: (selected) {
@@ -880,7 +1117,10 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Offer optional extras (e.g. Meals, Activities)', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+          const Text(
+            'Offer optional extras (e.g. Meals, Activities)',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+          ),
           const SizedBox(height: 12),
           if (_addOns.isNotEmpty)
             ListView.builder(
@@ -894,7 +1134,10 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
                   title: Text(addOn['title']),
                   subtitle: Text('Rs. ${addOn['price']} / person'),
                   trailing: IconButton(
-                    icon: const Icon(Icons.delete_outline, color: AppColors.error),
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      color: AppColors.error,
+                    ),
                     onPressed: () => setState(() => _addOns.removeAt(index)),
                   ),
                 );
@@ -914,9 +1157,16 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
     return RichText(
       text: TextSpan(
         text: label,
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryDark),
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 13,
+          color: AppColors.primaryDark,
+        ),
         children: const [
-          TextSpan(text: ' *', style: TextStyle(color: Colors.red)),
+          TextSpan(
+            text: ' *',
+            style: TextStyle(color: Colors.red),
+          ),
         ],
       ),
     );
@@ -936,7 +1186,10 @@ class _AddHomestayScreenState extends State<AddHomestayScreen> {
       decoration: InputDecoration(
         hintText: hintText,
         prefixIcon: prefixIcon,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
         fillColor: Colors.white,

@@ -13,6 +13,7 @@ import '../../../../theme/app_text_styles.dart';
 import '../../../../utils/cloudinary_utils.dart';
 import '../destinations/destination_details_screen.dart';
 import '../../common/homestays/homestay_details_screen.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CachedTileProvider extends TileProvider {
@@ -20,9 +21,7 @@ class CachedTileProvider extends TileProvider {
 
   @override
   ImageProvider getImage(TileCoordinates coordinates, TileLayer options) {
-    return CachedNetworkImageProvider(
-      getTileUrl(coordinates, options),
-    );
+    return CachedNetworkImageProvider(getTileUrl(coordinates, options));
   }
 }
 
@@ -46,7 +45,7 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
 
   List<Destination> _destinations = [];
   Destination? _selectedDest;
-  
+
   List<Map<String, dynamic>> _homestays = [];
   Map<String, dynamic>? _selectedHomestay;
 
@@ -69,13 +68,19 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
   Future<void> _loadData() async {
     try {
       final dests = await _repository.getActiveDestinationsStream().first;
-      final homestaysSnapshot = await FirebaseFirestore.instance.collection('homestays').where('status', isEqualTo: 'Active').get();
-      
-      final loadedHomestays = homestaysSnapshot.docs.map((doc) {
-        final data = doc.data();
-        data['id'] = doc.id;
-        return data;
-      }).where((d) => d['latitude'] != null && d['longitude'] != null).toList();
+      final homestaysSnapshot = await FirebaseFirestore.instance
+          .collection('homestays')
+          .where('status', isEqualTo: 'Active')
+          .get();
+
+      final loadedHomestays = homestaysSnapshot.docs
+          .map((doc) {
+            final data = doc.data();
+            data['id'] = doc.id;
+            return data;
+          })
+          .where((d) => d['latitude'] != null && d['longitude'] != null)
+          .toList();
 
       if (mounted) {
         setState(() {
@@ -83,7 +88,9 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
             _destinations = [widget.selectedDestination!];
             _homestays = [];
           } else {
-            _destinations = dests.where((d) => d.latitude != null && d.longitude != null).toList();
+            _destinations = dests
+                .where((d) => d.latitude != null && d.longitude != null)
+                .toList();
             _homestays = loadedHomestays;
           }
           _isLoading = false;
@@ -111,14 +118,18 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
         return;
       }
     }
-    
+
     if (permission == LocationPermission.deniedForever) {
       if (mounted) setState(() => _locationPermissionDenied = true);
       return;
     }
 
     try {
-      final position = await Geolocator.getCurrentPosition(locationSettings: const LocationSettings(accuracy: LocationAccuracy.best));
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.best,
+        ),
+      );
       if (mounted) {
         setState(() {
           _currentPosition = position;
@@ -138,11 +149,17 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
   }
 
   void _zoomIn() {
-    _mapController.move(_mapController.camera.center, _mapController.camera.zoom + 1);
+    _mapController.move(
+      _mapController.camera.center,
+      _mapController.camera.zoom + 1,
+    );
   }
 
   void _zoomOut() {
-    _mapController.move(_mapController.camera.center, _mapController.camera.zoom - 1);
+    _mapController.move(
+      _mapController.camera.center,
+      _mapController.camera.zoom - 1,
+    );
   }
 
   void _showCurrentLocation() {
@@ -154,8 +171,8 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
     }
     if (_currentPosition != null) {
       _mapController.move(
-        LatLng(_currentPosition!.latitude, _currentPosition!.longitude), 
-        14.0
+        LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+        14.0,
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -179,7 +196,11 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
     } else if (dest.imageUrl != null) {
       imageUrl = dest.imageUrl!;
     }
-    imageUrl = CloudinaryUtils.getOptimizedUrl(imageUrl, width: 200, height: 200);
+    imageUrl = CloudinaryUtils.getOptimizedUrl(
+      imageUrl,
+      width: 200,
+      height: 200,
+    );
 
     return Container(
       margin: const EdgeInsets.all(AppSpacing.md),
@@ -192,7 +213,7 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
             color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, -5),
-          )
+          ),
         ],
       ),
       child: Column(
@@ -209,7 +230,8 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
                     width: 60,
                     height: 60,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.terrain, size: 40),
+                    errorBuilder: (context, error, stackTrace) =>
+                        const Icon(Icons.terrain, size: 40),
                   ),
                 )
               else
@@ -220,7 +242,10 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
                     color: AppColors.softSecondarySurface,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.terrain, color: AppColors.textSecondary),
+                  child: const Icon(
+                    Icons.terrain,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
@@ -229,19 +254,27 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
                   children: [
                     Text(
                       dest.name,
-                      style: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.bold),
+                      style: AppTextStyles.labelLarge.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(Icons.location_on, size: 14, color: AppColors.secondary),
+                        const Icon(
+                          Icons.location_on,
+                          size: 14,
+                          color: AppColors.secondary,
+                        ),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             dest.locationName,
-                            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.secondary),
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColors.secondary,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -269,30 +302,43 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
                     backgroundColor: AppColors.surface,
                     foregroundColor: AppColors.primary,
                     side: const BorderSide(color: AppColors.primary),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   onPressed: () async {
                     if (dest.latitude != null && dest.longitude != null) {
-                      final url = 'https://www.google.com/maps/dir/?api=1&destination=${dest.latitude},${dest.longitude}';
+                      final url =
+                          'https://www.google.com/maps/dir/?api=1&destination=${dest.latitude},${dest.longitude}';
                       if (await canLaunchUrl(Uri.parse(url))) {
-                        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                        await launchUrl(
+                          Uri.parse(url),
+                          mode: LaunchMode.externalApplication,
+                        );
                       } else {
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Could not open map directions.')),
+                            const SnackBar(
+                              content: Text('Could not open map directions.'),
+                            ),
                           );
                         }
                       }
                     } else {
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Destination location is unknown.')),
+                          const SnackBar(
+                            content: Text('Destination location is unknown.'),
+                          ),
                         );
                       }
                     }
                   },
                   icon: const Icon(Icons.directions, size: 18),
-                  label: const Text('Directions', style: TextStyle(fontSize: 13)),
+                  label: const Text(
+                    'Directions',
+                    style: TextStyle(fontSize: 13),
+                  ),
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -301,18 +347,24 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   onPressed: () {
                     Navigator.pop(context); // Close bottom sheet
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => DestinationDetailsScreen(destination: dest),
+                        builder: (context) =>
+                            DestinationDetailsScreen(destination: dest),
                       ),
                     );
                   },
-                  child: const Text('View Destination', style: TextStyle(fontSize: 13)),
+                  child: const Text(
+                    'View Destination',
+                    style: TextStyle(fontSize: 13),
+                  ),
                 ),
               ),
             ],
@@ -333,7 +385,11 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
   Widget _buildHomestayBottomInfoCard(Map<String, dynamic> homestay) {
     final images = List<String>.from(homestay['images'] ?? []);
     String imageUrl = images.isNotEmpty ? images.first : '';
-    imageUrl = CloudinaryUtils.getOptimizedUrl(imageUrl, width: 200, height: 200);
+    imageUrl = CloudinaryUtils.getOptimizedUrl(
+      imageUrl,
+      width: 200,
+      height: 200,
+    );
 
     return Container(
       margin: const EdgeInsets.all(AppSpacing.md),
@@ -346,7 +402,7 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
             color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, -5),
-          )
+          ),
         ],
       ),
       child: Column(
@@ -363,7 +419,8 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
                     width: 60,
                     height: 60,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.home, size: 40),
+                    errorBuilder: (context, error, stackTrace) =>
+                        const Icon(Icons.home, size: 40),
                   ),
                 )
               else
@@ -383,19 +440,27 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
                   children: [
                     Text(
                       homestay['title'] ?? 'Homestay',
-                      style: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.bold),
+                      style: AppTextStyles.labelLarge.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(Icons.location_on, size: 14, color: AppColors.secondary),
+                        const Icon(
+                          Icons.location_on,
+                          size: 14,
+                          color: AppColors.secondary,
+                        ),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             homestay['location'] ?? 'Location',
-                            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.secondary),
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColors.secondary,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -423,30 +488,44 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
                     backgroundColor: AppColors.surface,
                     foregroundColor: Colors.purple,
                     side: const BorderSide(color: Colors.purple),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   onPressed: () async {
-                    if (homestay['latitude'] != null && homestay['longitude'] != null) {
-                      final url = 'https://www.google.com/maps/dir/?api=1&destination=${homestay['latitude']},${homestay['longitude']}';
+                    if (homestay['latitude'] != null &&
+                        homestay['longitude'] != null) {
+                      final url =
+                          'https://www.google.com/maps/dir/?api=1&destination=${homestay['latitude']},${homestay['longitude']}';
                       if (await canLaunchUrl(Uri.parse(url))) {
-                        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                        await launchUrl(
+                          Uri.parse(url),
+                          mode: LaunchMode.externalApplication,
+                        );
                       } else {
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Could not open map directions.')),
+                            const SnackBar(
+                              content: Text('Could not open map directions.'),
+                            ),
                           );
                         }
                       }
                     } else {
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Homestay location is unknown.')),
+                          const SnackBar(
+                            content: Text('Homestay location is unknown.'),
+                          ),
                         );
                       }
                     }
                   },
                   icon: const Icon(Icons.directions, size: 18),
-                  label: const Text('Directions', style: TextStyle(fontSize: 13)),
+                  label: const Text(
+                    'Directions',
+                    style: TextStyle(fontSize: 13),
+                  ),
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -455,20 +534,24 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.purple,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   onPressed: () {
                     Navigator.pop(context); // Close bottom sheet
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => HomestayDetailsScreen(
-                          homestayId: homestay['id'],
-                        ),
+                        builder: (context) =>
+                            HomestayDetailsScreen(homestayId: homestay['id']),
                       ),
                     );
                   },
-                  child: const Text('View Homestay', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  child: const Text(
+                    'View Homestay',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
                 ),
               ),
             ],
@@ -487,7 +570,9 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.primaryDark),
-        titleTextStyle: AppTextStyles.sectionHeading.copyWith(color: AppColors.primaryDark),
+        titleTextStyle: AppTextStyles.sectionHeading.copyWith(
+          color: AppColors.primaryDark,
+        ),
         actions: [
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -498,11 +583,7 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.cloud_done, 
-                  size: 16, 
-                  color: AppColors.primaryDark,
-                ),
+                Icon(Icons.cloud_done, size: 16, color: AppColors.primaryDark),
                 const SizedBox(width: 6),
                 Text(
                   'Offline Map Available',
@@ -516,22 +597,33 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
           ),
         ],
       ),
-        body: _isLoading
+      body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Builder(
               builder: (context) {
-                LatLng? currentLoc = _currentPosition != null 
-                    ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude) 
+                LatLng? currentLoc = _currentPosition != null
+                    ? LatLng(
+                        _currentPosition!.latitude,
+                        _currentPosition!.longitude,
+                      )
                     : null;
-                LatLng? destLoc = widget.selectedDestination != null && widget.selectedDestination!.latitude != null
-                    ? LatLng(widget.selectedDestination!.latitude!, widget.selectedDestination!.longitude!)
+                LatLng? destLoc =
+                    widget.selectedDestination != null &&
+                        widget.selectedDestination!.latitude != null
+                    ? LatLng(
+                        widget.selectedDestination!.latitude!,
+                        widget.selectedDestination!.longitude!,
+                      )
                     : null;
-                
+
                 final points = <LatLng>[];
                 if (destLoc != null) points.add(destLoc);
                 if (currentLoc != null) points.add(currentLoc);
 
-                final bounds = widget.showOnlySelected && points.length > 1 && points[0] != points[1]
+                final bounds =
+                    widget.showOnlySelected &&
+                        points.length > 1 &&
+                        points[0] != points[1]
                     ? LatLngBounds.fromPoints(points)
                     : null;
 
@@ -552,148 +644,172 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
                         maxZoom: 18,
                       ),
                       children: [
-                    TileLayer(
-                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName: 'com.villagetoursrilanka.app',
-                      tileProvider: CachedTileProvider(),
-                    ),
-                    if (widget.showOnlySelected && currentLoc != null && destLoc != null)
-                      PolylineLayer(
-                        polylines: [
-                          Polyline(
-                            points: [currentLoc, destLoc],
-                            strokeWidth: 4.0,
-                            color: AppColors.primary,
-                            pattern: const StrokePattern.dotted(),
-                          ),
-                        ],
-                      ),
-                    if (_currentPosition != null)
-                      MarkerLayer(
-                        markers: [
-                          Marker(
-                            point: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
-                            width: 40,
-                            height: 40,
-                            child: const Icon(
-                              Icons.my_location,
-                              color: Colors.blue,
-                              size: 30,
-                            ),
-                          ),
-                        ],
-                      ),
-                    MarkerLayer(
-                      markers: [
-                        ..._destinations.map((dest) {
-                          final isSelected = _selectedDest?.id == dest.id;
-                          return Marker(
-                            point: LatLng(dest.latitude!, dest.longitude!),
-                            width: isSelected ? 50 : 40,
-                            height: isSelected ? 50 : 40,
-                            child: GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _selectedDest = dest;
-                                  _selectedHomestay = null;
-                                });
-                                _showDestinationInfo(dest);
-                              },
-                              child: Icon(
-                                Icons.location_on,
-                                color: isSelected ? AppColors.primaryDark : AppColors.primary,
-                                size: isSelected ? 50 : 40,
+                        TileLayer(
+                          urlTemplate:
+                              'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                          userAgentPackageName: 'com.villagetoursrilanka.app',
+                          tileProvider: CachedTileProvider(),
+                        ),
+                        if (widget.showOnlySelected &&
+                            currentLoc != null &&
+                            destLoc != null)
+                          PolylineLayer(
+                            polylines: [
+                              Polyline(
+                                points: [currentLoc, destLoc],
+                                strokeWidth: 4.0,
+                                color: AppColors.primary,
+                                pattern: const StrokePattern.dotted(),
                               ),
-                            ),
-                          );
-                        }),
-                        ..._homestays.map((homestay) {
-                          final isSelected = _selectedHomestay?['id'] == homestay['id'];
-                          return Marker(
-                            point: LatLng(
-                              (homestay['latitude'] as num).toDouble(),
-                              (homestay['longitude'] as num).toDouble()
-                            ),
-                            width: isSelected ? 50 : 40,
-                            height: isSelected ? 50 : 40,
-                            child: GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _selectedHomestay = homestay;
-                                  _selectedDest = null;
-                                });
-                                _showHomestayInfo(homestay);
-                              },
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  Icon(
+                            ],
+                          ),
+                        if (_currentPosition != null)
+                          MarkerLayer(
+                            markers: [
+                              Marker(
+                                point: LatLng(
+                                  _currentPosition!.latitude,
+                                  _currentPosition!.longitude,
+                                ),
+                                width: 40,
+                                height: 40,
+                                child: const Icon(
+                                  Icons.my_location,
+                                  color: Colors.blue,
+                                  size: 30,
+                                ),
+                              ),
+                            ],
+                          ),
+                        MarkerLayer(
+                          markers: [
+                            ..._destinations.map((dest) {
+                              final isSelected = _selectedDest?.id == dest.id;
+                              return Marker(
+                                point: LatLng(dest.latitude!, dest.longitude!),
+                                width: isSelected ? 50 : 40,
+                                height: isSelected ? 50 : 40,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedDest = dest;
+                                      _selectedHomestay = null;
+                                    });
+                                    _showDestinationInfo(dest);
+                                  },
+                                  child: Icon(
                                     Icons.location_on,
-                                    color: isSelected ? Colors.deepPurple : Colors.purple,
+                                    color: isSelected
+                                        ? AppColors.primaryDark
+                                        : AppColors.primary,
                                     size: isSelected ? 50 : 40,
                                   ),
-                                  Positioned(
-                                    top: isSelected ? 10 : 8,
-                                    child: Icon(
-                                      Icons.home,
-                                      color: Colors.white,
-                                      size: isSelected ? 16 : 12,
-                                    ),
+                                ),
+                              );
+                            }),
+                            ..._homestays.map((homestay) {
+                              final isSelected =
+                                  _selectedHomestay?['id'] == homestay['id'];
+                              return Marker(
+                                point: LatLng(
+                                  (homestay['latitude'] as num).toDouble(),
+                                  (homestay['longitude'] as num).toDouble(),
+                                ),
+                                width: isSelected ? 50 : 40,
+                                height: isSelected ? 50 : 40,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedHomestay = homestay;
+                                      _selectedDest = null;
+                                    });
+                                    _showHomestayInfo(homestay);
+                                  },
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.location_on,
+                                        color: isSelected
+                                            ? Colors.deepPurple
+                                            : Colors.purple,
+                                        size: isSelected ? 50 : 40,
+                                      ),
+                                      Positioned(
+                                        top: isSelected ? 10 : 8,
+                                        child: Icon(
+                                          Icons.home,
+                                          color: Colors.white,
+                                          size: isSelected ? 16 : 12,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }),
+                                ),
+                              );
+                            }),
+                          ],
+                        ),
                       ],
                     ),
+
+                    // Map Controls
+                    Positioned(
+                      right: 16,
+                      bottom: 40,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          FloatingActionButton.small(
+                            heroTag: 'btnShowAll',
+                            backgroundColor: AppColors.surface,
+                            onPressed: _showAllDestinations,
+                            tooltip: 'Show All',
+                            child: const Icon(
+                              Icons.map,
+                              color: AppColors.primaryDark,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          FloatingActionButton.small(
+                            heroTag: 'btnLocation',
+                            backgroundColor: AppColors.surface,
+                            onPressed: _showCurrentLocation,
+                            tooltip: 'Current Location',
+                            child: const Icon(
+                              Icons.my_location,
+                              color: AppColors.primaryDark,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          FloatingActionButton.small(
+                            heroTag: 'btnZoomIn',
+                            backgroundColor: AppColors.surface,
+                            onPressed: _zoomIn,
+                            tooltip: 'Zoom In',
+                            child: const Icon(
+                              Icons.add,
+                              color: AppColors.primaryDark,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          FloatingActionButton.small(
+                            heroTag: 'btnZoomOut',
+                            backgroundColor: AppColors.surface,
+                            onPressed: _zoomOut,
+                            tooltip: 'Zoom Out',
+                            child: const Icon(
+                              Icons.remove,
+                              color: AppColors.primaryDark,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
-                ),
-                
-                // Map Controls
-                Positioned(
-                  right: 16,
-                  bottom: 40,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      FloatingActionButton.small(
-                        heroTag: 'btnShowAll',
-                        backgroundColor: AppColors.surface,
-                        onPressed: _showAllDestinations,
-                        tooltip: 'Show All',
-                        child: const Icon(Icons.map, color: AppColors.primaryDark),
-                      ),
-                      const SizedBox(height: 8),
-                      FloatingActionButton.small(
-                        heroTag: 'btnLocation',
-                        backgroundColor: AppColors.surface,
-                        onPressed: _showCurrentLocation,
-                        tooltip: 'Current Location',
-                        child: const Icon(Icons.my_location, color: AppColors.primaryDark),
-                      ),
-                      const SizedBox(height: 8),
-                      FloatingActionButton.small(
-                        heroTag: 'btnZoomIn',
-                        backgroundColor: AppColors.surface,
-                        onPressed: _zoomIn,
-                        tooltip: 'Zoom In',
-                        child: const Icon(Icons.add, color: AppColors.primaryDark),
-                      ),
-                      const SizedBox(height: 8),
-                      FloatingActionButton.small(
-                        heroTag: 'btnZoomOut',
-                        backgroundColor: AppColors.surface,
-                        onPressed: _zoomOut,
-                        tooltip: 'Zoom Out',
-                        child: const Icon(Icons.remove, color: AppColors.primaryDark),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            );
-          }),
+                );
+              },
+            ),
     );
   }
 }

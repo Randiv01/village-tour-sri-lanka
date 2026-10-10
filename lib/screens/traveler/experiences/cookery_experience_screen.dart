@@ -48,9 +48,7 @@ class _CookeryExperienceScreenState extends State<CookeryExperienceScreen> {
         ),
         title: Text(
           'Cookery Experience',
-          style: AppTextStyles.screenHeading.copyWith(
-            fontSize: 18,
-          ),
+          style: AppTextStyles.screenHeading.copyWith(fontSize: 18),
         ),
         actions: [
           Padding(
@@ -71,7 +69,9 @@ class _CookeryExperienceScreenState extends State<CookeryExperienceScreen> {
                 ),
                 onPressed: () {
                   // ignore: deprecated_member_use
-                  Share.share('Check out the Traditional Village Cookery & Mudhouse Feast on Village Tour Sri Lanka!');
+                  Share.share(
+                    'Check out the Traditional Village Cookery & Mudhouse Feast on Village Tour Sri Lanka!',
+                  );
                 },
               ),
             ),
@@ -112,7 +112,8 @@ class _CookeryExperienceScreenState extends State<CookeryExperienceScreen> {
               onAuthenticated: () {
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(
-                    builder: (context) => TravelerMainScreen(initialIndex: index),
+                    builder: (context) =>
+                        TravelerMainScreen(initialIndex: index),
                   ),
                   (route) => false,
                 );
@@ -137,7 +138,9 @@ class _CookeryExperienceScreenState extends State<CookeryExperienceScreen> {
       decoration: BoxDecoration(
         borderRadius: AppRadius.largeRadius,
         image: const DecorationImage(
-          image: AssetImage('assets/images/sign-in/auth_rural_landscape.png'), // Fallback asset
+          image: AssetImage(
+            'assets/images/sign-in/auth_rural_landscape.png',
+          ), // Fallback asset
           fit: BoxFit.cover,
         ),
         color: Colors.grey[800], // Fallback color
@@ -169,7 +172,9 @@ class _CookeryExperienceScreenState extends State<CookeryExperienceScreen> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFC47F46), // Matching UI image color
+                        color: const Color(
+                          0xFFC47F46,
+                        ), // Matching UI image color
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -215,7 +220,10 @@ class _CookeryExperienceScreenState extends State<CookeryExperienceScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.6),
                         borderRadius: BorderRadius.circular(8),
@@ -223,7 +231,11 @@ class _CookeryExperienceScreenState extends State<CookeryExperienceScreen> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.access_time, color: Color(0xFFE8B255), size: 14),
+                          const Icon(
+                            Icons.access_time,
+                            color: Color(0xFFE8B255),
+                            size: 14,
+                          ),
                           const SizedBox(width: 6),
                           Text(
                             '2.5 Hours • Small Groups (Max 8)',
@@ -261,9 +273,7 @@ class _CookeryExperienceScreenState extends State<CookeryExperienceScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: AppRadius.cardRadius,
-        border: Border.all(
-          color: AppColors.border.withValues(alpha: 0.5),
-        ),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -277,7 +287,9 @@ class _CookeryExperienceScreenState extends State<CookeryExperienceScreen> {
                   shape: BoxShape.circle,
                   border: Border.all(color: const Color(0xFFC47F46), width: 2),
                   image: const DecorationImage(
-                    image: AssetImage('assets/images/buffet_lunch/buffet_lunch_host.png'),
+                    image: AssetImage(
+                      'assets/images/buffet_lunch/buffet_lunch_host.png',
+                    ),
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -320,7 +332,10 @@ class _CookeryExperienceScreenState extends State<CookeryExperienceScreen> {
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFAFAF7),
                     borderRadius: BorderRadius.circular(8),
@@ -378,9 +393,7 @@ class _CookeryExperienceScreenState extends State<CookeryExperienceScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: AppRadius.cardRadius,
-        border: Border.all(
-          color: AppColors.border.withValues(alpha: 0.5),
-        ),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -472,7 +485,9 @@ class _CookeryExperienceScreenState extends State<CookeryExperienceScreen> {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: isLastOrange ? const Color(0xFFC47F46) : const Color(0xFF2C5E47),
+                  color: isLastOrange
+                      ? const Color(0xFFC47F46)
+                      : const Color(0xFF2C5E47),
                   shape: BoxShape.circle,
                 ),
                 child: Center(
@@ -488,13 +503,9 @@ class _CookeryExperienceScreenState extends State<CookeryExperienceScreen> {
               ),
               if (!isLast)
                 Expanded(
-                  child: Container(
-                    width: 2,
-                    color: const Color(0xFFE5DBC7),
-                  ),
+                  child: Container(width: 2, color: const Color(0xFFE5DBC7)),
                 ),
-              if (isLast)
-                const SizedBox(height: 24),
+              if (isLast) const SizedBox(height: 24),
             ],
           ),
           const SizedBox(width: AppSpacing.md),
@@ -533,9 +544,7 @@ class _CookeryExperienceScreenState extends State<CookeryExperienceScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFFEFE8DA), // Match background color from image
         borderRadius: AppRadius.cardRadius,
-        border: Border.all(
-          color: AppColors.border.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -570,7 +579,11 @@ class _CookeryExperienceScreenState extends State<CookeryExperienceScreen> {
             spacing: 8,
             runSpacing: 10,
             children: [
-              _buildInclusionChip('🌿', 'Vegan & Vegetarian Friendly', isGreen: true),
+              _buildInclusionChip(
+                '🌿',
+                'Vegan & Vegetarian Friendly',
+                isGreen: true,
+              ),
               _buildInclusionChip('📖', 'Secret Family Recipe Booklet'),
               _buildInclusionChip('🥘', 'All Farm Ingredients Included'),
               _buildInclusionChip('☕', 'Herbal Drinks & Dessert'),
@@ -582,7 +595,11 @@ class _CookeryExperienceScreenState extends State<CookeryExperienceScreen> {
     );
   }
 
-  Widget _buildInclusionChip(String emoji, String text, {bool isGreen = false}) {
+  Widget _buildInclusionChip(
+    String emoji,
+    String text, {
+    bool isGreen = false,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
@@ -615,9 +632,7 @@ class _CookeryExperienceScreenState extends State<CookeryExperienceScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: AppRadius.cardRadius,
-        border: Border.all(
-          color: AppColors.border.withValues(alpha: 0.5),
-        ),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -653,7 +668,10 @@ class _CookeryExperienceScreenState extends State<CookeryExperienceScreen> {
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFE0F2E9),
                   borderRadius: BorderRadius.circular(16),
@@ -724,9 +742,7 @@ class _CookeryExperienceScreenState extends State<CookeryExperienceScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFFFAFAF7),
         borderRadius: AppRadius.cardRadius,
-        border: Border.all(
-          color: const Color(0xFFE5E2D9),
-        ),
+        border: Border.all(color: const Color(0xFFE5E2D9)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -757,9 +773,7 @@ class _CookeryExperienceScreenState extends State<CookeryExperienceScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: AppRadius.cardRadius,
-        border: Border.all(
-          color: AppColors.border.withValues(alpha: 0.5),
-        ),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -788,10 +802,7 @@ class _CookeryExperienceScreenState extends State<CookeryExperienceScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
-                    '2.5 – 3',
-                    style: AppTextStyles.labelLarge,
-                  ),
+                  Text('2.5 – 3', style: AppTextStyles.labelLarge),
                   Text(
                     'Hours',
                     style: AppTextStyles.bodyMedium.copyWith(
@@ -838,9 +849,7 @@ class _CookeryExperienceScreenState extends State<CookeryExperienceScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFFFAFAF7),
         borderRadius: AppRadius.cardRadius,
-        border: Border.all(
-          color: const Color(0xFFE5E2D9),
-        ),
+        border: Border.all(color: const Color(0xFFE5E2D9)),
       ),
       child: Row(
         children: [
@@ -870,17 +879,23 @@ class _CookeryExperienceScreenState extends State<CookeryExperienceScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: isYellowBadge ? const Color(0xFFFFF7E6) : const Color(0xFFE0F2E9),
+              color: isYellowBadge
+                  ? const Color(0xFFFFF7E6)
+                  : const Color(0xFFE0F2E9),
               borderRadius: BorderRadius.circular(4),
               border: Border.all(
-                color: isYellowBadge ? const Color(0xFFFFD591) : const Color(0xFF86D6AC),
+                color: isYellowBadge
+                    ? const Color(0xFFFFD591)
+                    : const Color(0xFF86D6AC),
               ),
             ),
             child: Text(
               badgeText,
               style: AppTextStyles.caption.copyWith(
                 fontWeight: FontWeight.bold,
-                color: isYellowBadge ? const Color(0xFF8C4A00) : const Color(0xFF1E6B52),
+                color: isYellowBadge
+                    ? const Color(0xFF8C4A00)
+                    : const Color(0xFF1E6B52),
               ),
             ),
           ),

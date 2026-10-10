@@ -18,6 +18,8 @@ class TravelerMainScreen extends StatefulWidget {
 
 class _TravelerMainScreenState extends State<TravelerMainScreen> {
   late int _currentIndex;
+  final GlobalKey<TravelerHomeScreenState> _homeKey =
+      GlobalKey<TravelerHomeScreenState>();
 
   @override
   void initState() {
@@ -27,9 +29,15 @@ class _TravelerMainScreenState extends State<TravelerMainScreen> {
 
   List<Widget> get _pages => [
     TravelerHomeScreen(
+      key: _homeKey,
       onProfileTap: () {
         setState(() {
           _currentIndex = 3;
+        });
+      },
+      onSearchTap: () {
+        setState(() {
+          _currentIndex = 1;
         });
       },
     ),
@@ -51,7 +59,13 @@ class _TravelerMainScreenState extends State<TravelerMainScreen> {
       body: _pages[_currentIndex],
       bottomNavigationBar: AppBottomNavigation(
         currentIndex: _currentIndex,
+        exploreKey: TravelerHomeScreen.exploreNavKey,
         onTap: (index) {
+          if (index == 0 && _currentIndex == 0) {
+            _homeKey.currentState?.resetToHome();
+            return;
+          }
+
           if (index == 2 || index == 3) {
             AuthGuard.requireAuth(
               context: context,

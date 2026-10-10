@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+
 import 'dart:async';
+
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../theme/app_spacing.dart';
@@ -27,7 +29,7 @@ class OtpVerificationScreen extends StatefulWidget {
 class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   final _authService = AuthService();
   final _otpController = TextEditingController();
-  
+
   bool _isLoading = false;
   int _countdown = 60;
   Timer? _timer;
@@ -88,7 +90,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       );
 
       // Check if user exists in Firestore
-      final profile = await _authService.getUserProfile(userCredential.user!.uid);
+      final profile = await _authService.getUserProfile(
+        userCredential.user!.uid,
+      );
 
       if (profile != null) {
         // User exists, route automatically (handled by AuthGate)
@@ -122,9 +126,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   Future<void> _resendCode() async {
     if (_countdown > 0) return;
-    
+
     setState(() => _isLoading = true);
-    
+
     try {
       await _authService.verifyPhoneNumber(
         phoneNumber: widget.phoneNumber,
@@ -192,12 +196,17 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               RichText(
                 textAlign: TextAlign.center,
                 text: TextSpan(
-                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
                   children: [
                     const TextSpan(text: 'Enter the 6-digit code sent to\n'),
                     TextSpan(
                       text: widget.phoneNumber,
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryDark),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryDark,
+                      ),
                     ),
                   ],
                 ),
@@ -208,7 +217,11 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 keyboardType: TextInputType.number,
                 maxLength: 6,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 24, letterSpacing: 8, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 24,
+                  letterSpacing: 8,
+                  fontWeight: FontWeight.bold,
+                ),
                 decoration: InputDecoration(
                   hintText: '000000',
                   counterText: '',
@@ -244,13 +257,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                         width: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
                         ),
                       )
-                    : const Text(
-                        'Verify Code',
-                        style: TextStyle(fontSize: 16),
-                      ),
+                    : const Text('Verify Code', style: TextStyle(fontSize: 16)),
               ),
               const SizedBox(height: AppSpacing.xxl),
               Row(
@@ -260,16 +272,25 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                     onPressed: _isLoading ? null : () => Navigator.pop(context),
                     child: const Text(
                       'Change Number',
-                      style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   const Text(' | ', style: TextStyle(color: AppColors.border)),
                   TextButton(
-                    onPressed: (_countdown > 0 || _isLoading) ? null : _resendCode,
+                    onPressed: (_countdown > 0 || _isLoading)
+                        ? null
+                        : _resendCode,
                     child: Text(
-                      _countdown > 0 ? 'Resend in ${_countdown}s' : 'Resend Code',
+                      _countdown > 0
+                          ? 'Resend in ${_countdown}s'
+                          : 'Resend Code',
                       style: TextStyle(
-                        color: _countdown > 0 ? AppColors.textSecondary : AppColors.secondary,
+                        color: _countdown > 0
+                            ? AppColors.textSecondary
+                            : AppColors.secondary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),

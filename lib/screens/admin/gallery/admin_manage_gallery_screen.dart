@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_spacing.dart';
 import '../../../theme/app_text_styles.dart';
@@ -285,7 +286,7 @@ class _AdminManageGalleryScreenState extends State<AdminManageGalleryScreen> {
       ),
     );
   }
-  
+
   Widget _buildLoadingState() {
     return ListView.builder(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -352,10 +353,7 @@ class _AdminManageGalleryScreenState extends State<AdminManageGalleryScreen> {
         children: [
           const Icon(Icons.error_outline, size: 48, color: AppColors.error),
           const SizedBox(height: 16),
-          Text(
-            'We couldn\'t load images',
-            style: AppTextStyles.sectionHeading,
-          ),
+          Text('We couldn\'t load images', style: AppTextStyles.sectionHeading),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () {
@@ -399,7 +397,9 @@ class _AdminManageGalleryScreenState extends State<AdminManageGalleryScreen> {
   }
 
   Widget _buildImageCard(GalleryImage image) {
-    final bool isPublished = image.status == 'published' || image.status == 'Published (Visible to Users)';
+    final bool isPublished =
+        image.status == 'published' ||
+        image.status == 'Published (Visible to Users)';
 
     return Card(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
@@ -432,9 +432,7 @@ class _AdminManageGalleryScreenState extends State<AdminManageGalleryScreen> {
                         child: SizedBox(
                           width: 24,
                           height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                          ),
+                          child: CircularProgressIndicator(strokeWidth: 2),
                         ),
                       ),
                     );

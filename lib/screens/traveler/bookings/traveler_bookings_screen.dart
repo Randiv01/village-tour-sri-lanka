@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -64,7 +65,8 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String _typeFilter = 'all'; // all | guide | homestay
-  String _statusFilter = 'all'; // all | pending | confirmed | rejected | cancelled
+  String _statusFilter =
+      'all'; // all | pending | confirmed | rejected | cancelled
   String _sortOrder = 'newest'; // newest | oldest | price_high | price_low
   DateTimeRange? _dateRange;
 
@@ -73,7 +75,9 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
     super.initState();
     _initStreams();
     _searchController.addListener(() {
-      setState(() => _searchQuery = _searchController.text.trim().toLowerCase());
+      setState(
+        () => _searchQuery = _searchController.text.trim().toLowerCase(),
+      );
     });
   }
 
@@ -89,52 +93,52 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
         .where('guestId', isEqualTo: user.uid)
         .snapshots()
         .listen((snapshot) {
-      _guideBookings = snapshot.docs.map((doc) {
-        final b = GuideBooking.fromMap(doc.data(), doc.id);
-        return UnifiedBooking(
-          id: b.id,
-          type: 'guide',
-          title: b.packageTitle,
-          status: b.status,
-          paymentStatus: b.paymentStatus,
-          startDate: b.startDate,
-          endDate: b.endDate,
-          guestCount: b.numberOfGuests,
-          totalPrice: b.totalPrice,
-          currency: b.currency,
-          rejectionReason: b.rejectionReason,
-          createdAt: b.createdAt ?? DateTime.now(),
-          userId: b.guestId,
-        );
-      }).toList();
-      _emitCombined();
-    });
+          _guideBookings = snapshot.docs.map((doc) {
+            final b = GuideBooking.fromMap(doc.data(), doc.id);
+            return UnifiedBooking(
+              id: b.id,
+              type: 'guide',
+              title: b.packageTitle,
+              status: b.status,
+              paymentStatus: b.paymentStatus,
+              startDate: b.startDate,
+              endDate: b.endDate,
+              guestCount: b.numberOfGuests,
+              totalPrice: b.totalPrice,
+              currency: b.currency,
+              rejectionReason: b.rejectionReason,
+              createdAt: b.createdAt ?? DateTime.now(),
+              userId: b.guestId,
+            );
+          }).toList();
+          _emitCombined();
+        });
 
     _homestaySub = FirebaseFirestore.instance
         .collection('homestay_bookings')
         .where('travelerId', isEqualTo: user.uid)
         .snapshots()
         .listen((snapshot) {
-      _homestayBookings = snapshot.docs.map((doc) {
-        final b = HomestayBooking.fromMap(doc.data(), doc.id);
-        return UnifiedBooking(
-          id: b.id,
-          type: 'homestay',
-          title: b.homestayTitle,
-          status: b.bookingStatus,
-          paymentStatus: b.paymentStatus,
-          startDate: b.checkInDate,
-          endDate: b.checkOutDate,
-          guestCount: b.guestCount,
-          totalPrice: b.totalAmount,
-          currency: b.currency,
-          rejectionReason: b.rejectionReason,
-          createdAt: b.createdAt ?? DateTime.now(),
-          userId: b.travelerId,
-        );
-      }).toList();
-      _emitCombined();
-    });
+          _homestayBookings = snapshot.docs.map((doc) {
+            final b = HomestayBooking.fromMap(doc.data(), doc.id);
+            return UnifiedBooking(
+              id: b.id,
+              type: 'homestay',
+              title: b.homestayTitle,
+              status: b.bookingStatus,
+              paymentStatus: b.paymentStatus,
+              startDate: b.checkInDate,
+              endDate: b.checkOutDate,
+              guestCount: b.guestCount,
+              totalPrice: b.totalAmount,
+              currency: b.currency,
+              rejectionReason: b.rejectionReason,
+              createdAt: b.createdAt ?? DateTime.now(),
+              userId: b.travelerId,
+            );
+          }).toList();
+          _emitCombined();
+        });
   }
 
   void _emitCombined() {
@@ -146,14 +150,20 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
   List<UnifiedBooking> _applyFilters(List<UnifiedBooking> all) {
     var list = all.where((b) {
       // Search query
-      if (_searchQuery.isNotEmpty && !b.title.toLowerCase().contains(_searchQuery)) return false;
+      if (_searchQuery.isNotEmpty &&
+          !b.title.toLowerCase().contains(_searchQuery)) {
+        return false;
+      }
       // Type filter
       if (_typeFilter != 'all' && b.type != _typeFilter) return false;
       // Status filter
       if (_statusFilter != 'all' && b.status != _statusFilter) return false;
       // Date range
       if (_dateRange != null) {
-        if (b.startDate.isBefore(_dateRange!.start) || b.startDate.isAfter(_dateRange!.end)) return false;
+        if (b.startDate.isBefore(_dateRange!.start) ||
+            b.startDate.isAfter(_dateRange!.end)) {
+          return false;
+        }
       }
       return true;
     }).toList();
@@ -219,7 +229,8 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
                 // Handle bar
                 Center(
                   child: Container(
-                    width: 40, height: 4,
+                    width: 40,
+                    height: 4,
                     decoration: BoxDecoration(
                       color: const Color(0xFFE0E0E0),
                       borderRadius: BorderRadius.circular(2),
@@ -230,15 +241,27 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Filter & Sort', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primaryDark)),
+                    const Text(
+                      'Filter & Sort',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryDark,
+                      ),
+                    ),
                     TextButton(
                       onPressed: () {
                         setLocal(() {
-                          tmpType = 'all'; tmpStatus = 'all';
-                          tmpSort = 'newest'; tmpDate = null;
+                          tmpType = 'all';
+                          tmpStatus = 'all';
+                          tmpSort = 'newest';
+                          tmpDate = null;
                         });
                       },
-                      child: const Text('Reset All', style: TextStyle(color: AppColors.secondary)),
+                      child: const Text(
+                        'Reset All',
+                        style: TextStyle(color: AppColors.secondary),
+                      ),
                     ),
                   ],
                 ),
@@ -249,11 +272,23 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
                 const SizedBox(height: 10),
                 Row(
                   children: [
-                    _filterChip('All', tmpType == 'all', () => setLocal(() => tmpType = 'all')),
+                    _filterChip(
+                      'All',
+                      tmpType == 'all',
+                      () => setLocal(() => tmpType = 'all'),
+                    ),
                     const SizedBox(width: 8),
-                    _filterChip('🏠 Homestay', tmpType == 'homestay', () => setLocal(() => tmpType = 'homestay')),
+                    _filterChip(
+                      '🏠 Homestay',
+                      tmpType == 'homestay',
+                      () => setLocal(() => tmpType = 'homestay'),
+                    ),
                     const SizedBox(width: 8),
-                    _filterChip('🗺️ Tour Package', tmpType == 'guide', () => setLocal(() => tmpType = 'guide')),
+                    _filterChip(
+                      '🗺️ Tour Package',
+                      tmpType == 'guide',
+                      () => setLocal(() => tmpType = 'guide'),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -265,12 +300,36 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    _filterChip('All', tmpStatus == 'all', () => setLocal(() => tmpStatus = 'all')),
-                    _filterChip('⏳ Pending', tmpStatus == 'pending', () => setLocal(() => tmpStatus = 'pending')),
-                    _filterChip('✅ Confirmed', tmpStatus == 'confirmed', () => setLocal(() => tmpStatus = 'confirmed')),
-                    _filterChip('❌ Rejected', tmpStatus == 'rejected', () => setLocal(() => tmpStatus = 'rejected')),
-                    _filterChip('🚫 Cancelled', tmpStatus == 'cancelled', () => setLocal(() => tmpStatus = 'cancelled')),
-                    _filterChip('💳 Payment Due', tmpStatus == 'accepted', () => setLocal(() => tmpStatus = 'accepted')),
+                    _filterChip(
+                      'All',
+                      tmpStatus == 'all',
+                      () => setLocal(() => tmpStatus = 'all'),
+                    ),
+                    _filterChip(
+                      '⏳ Pending',
+                      tmpStatus == 'pending',
+                      () => setLocal(() => tmpStatus = 'pending'),
+                    ),
+                    _filterChip(
+                      '✅ Confirmed',
+                      tmpStatus == 'confirmed',
+                      () => setLocal(() => tmpStatus = 'confirmed'),
+                    ),
+                    _filterChip(
+                      '❌ Rejected',
+                      tmpStatus == 'rejected',
+                      () => setLocal(() => tmpStatus = 'rejected'),
+                    ),
+                    _filterChip(
+                      '🚫 Cancelled',
+                      tmpStatus == 'cancelled',
+                      () => setLocal(() => tmpStatus = 'cancelled'),
+                    ),
+                    _filterChip(
+                      '💳 Payment Due',
+                      tmpStatus == 'accepted',
+                      () => setLocal(() => tmpStatus = 'accepted'),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -282,10 +341,26 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    _filterChip('Newest First', tmpSort == 'newest', () => setLocal(() => tmpSort = 'newest')),
-                    _filterChip('Oldest First', tmpSort == 'oldest', () => setLocal(() => tmpSort = 'oldest')),
-                    _filterChip('Price: High → Low', tmpSort == 'price_high', () => setLocal(() => tmpSort = 'price_high')),
-                    _filterChip('Price: Low → High', tmpSort == 'price_low', () => setLocal(() => tmpSort = 'price_low')),
+                    _filterChip(
+                      'Newest First',
+                      tmpSort == 'newest',
+                      () => setLocal(() => tmpSort = 'newest'),
+                    ),
+                    _filterChip(
+                      'Oldest First',
+                      tmpSort == 'oldest',
+                      () => setLocal(() => tmpSort = 'oldest'),
+                    ),
+                    _filterChip(
+                      'Price: High → Low',
+                      tmpSort == 'price_high',
+                      () => setLocal(() => tmpSort = 'price_high'),
+                    ),
+                    _filterChip(
+                      'Price: Low → High',
+                      tmpSort == 'price_low',
+                      () => setLocal(() => tmpSort = 'price_low'),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -314,18 +389,28 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
                   },
                   borderRadius: BorderRadius.circular(12),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: tmpDate != null ? AppColors.primaryDark : AppColors.border,
+                        color: tmpDate != null
+                            ? AppColors.primaryDark
+                            : AppColors.border,
                         width: tmpDate != null ? 1.5 : 1,
                       ),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.calendar_month_outlined,
-                            color: tmpDate != null ? AppColors.primaryDark : AppColors.textSecondary, size: 20),
+                        Icon(
+                          Icons.calendar_month_outlined,
+                          color: tmpDate != null
+                              ? AppColors.primaryDark
+                              : AppColors.textSecondary,
+                          size: 20,
+                        ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
@@ -333,15 +418,23 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
                                 ? '${DateFormat('dd MMM yyyy').format(tmpDate!.start)}  →  ${DateFormat('dd MMM yyyy').format(tmpDate!.end)}'
                                 : 'Select date range',
                             style: TextStyle(
-                              color: tmpDate != null ? AppColors.primaryDark : AppColors.textSecondary,
-                              fontWeight: tmpDate != null ? FontWeight.w600 : FontWeight.normal,
+                              color: tmpDate != null
+                                  ? AppColors.primaryDark
+                                  : AppColors.textSecondary,
+                              fontWeight: tmpDate != null
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
                             ),
                           ),
                         ),
                         if (tmpDate != null)
                           GestureDetector(
                             onTap: () => setLocal(() => tmpDate = null),
-                            child: const Icon(Icons.close, size: 18, color: AppColors.textSecondary),
+                            child: const Icon(
+                              Icons.close,
+                              size: 18,
+                              color: AppColors.textSecondary,
+                            ),
                           ),
                       ],
                     ),
@@ -366,9 +459,17 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
                       backgroundColor: AppColors.primaryDark,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
-                    child: const Text('Apply Filters', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    child: const Text(
+                      'Apply Filters',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -380,7 +481,15 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
   }
 
   Widget _filterSectionTitle(String title) {
-    return Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textSecondary, letterSpacing: 0.5));
+    return Text(
+      title,
+      style: const TextStyle(
+        fontWeight: FontWeight.bold,
+        fontSize: 14,
+        color: AppColors.textSecondary,
+        letterSpacing: 0.5,
+      ),
+    );
   }
 
   Widget _filterChip(String label, bool selected, VoidCallback onTap) {
@@ -392,7 +501,9 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
         decoration: BoxDecoration(
           color: selected ? AppColors.primaryDark : Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: selected ? AppColors.primaryDark : AppColors.border),
+          border: Border.all(
+            color: selected ? AppColors.primaryDark : AppColors.border,
+          ),
         ),
         child: Text(
           label,
@@ -423,11 +534,14 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
       userId: booking.userId,
       amount: booking.totalPrice,
       currency: booking.currency,
-      description: '${booking.type == 'guide' ? 'Tour Package' : 'Homestay'}: ${booking.title}',
+      description:
+          '${booking.type == 'guide' ? 'Tour Package' : 'Homestay'}: ${booking.title}',
       onComplete: (success, transactionId) {
         if (success && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Payment successful! Booking confirmed.')),
+            const SnackBar(
+              content: Text('Payment successful! Booking confirmed.'),
+            ),
           );
         }
       },
@@ -439,13 +553,24 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Cancel Request', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: const Text('Are you sure you want to cancel this booking request?'),
+        title: const Text(
+          'Cancel Request',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          'Are you sure you want to cancel this booking request?',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('No')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('No'),
+          ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Cancel Request'),
           ),
         ],
@@ -453,14 +578,21 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
     );
 
     if (confirmed == true && mounted) {
-      final collection = booking.type == 'guide' ? 'guide_bookings' : 'homestay_bookings';
+      final collection = booking.type == 'guide'
+          ? 'guide_bookings'
+          : 'homestay_bookings';
       final statusField = booking.type == 'guide' ? 'status' : 'bookingStatus';
-      await FirebaseFirestore.instance.collection(collection).doc(booking.id).update({
-        statusField: 'cancelled',
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      await FirebaseFirestore.instance
+          .collection(collection)
+          .doc(booking.id)
+          .update({
+            statusField: 'cancelled',
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Booking request cancelled.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Booking request cancelled.')),
+        );
       }
     }
   }
@@ -470,7 +602,12 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F6EF),
       appBar: AppBar(
-        title: Text('My Bookings', style: AppTextStyles.screenHeading.copyWith(color: AppColors.primaryDark)),
+        title: Text(
+          'My Bookings',
+          style: AppTextStyles.screenHeading.copyWith(
+            color: AppColors.primaryDark,
+          ),
+        ),
         backgroundColor: const Color(0xFFF8F6EF),
         elevation: 0,
         centerTitle: true,
@@ -481,14 +618,21 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
           final allBookings = snapshot.data ?? [];
           final filtered = _applyFilters(allBookings);
 
-          final isLoading = snapshot.connectionState == ConnectionState.waiting &&
-              _guideBookings.isEmpty && _homestayBookings.isEmpty;
+          final isLoading =
+              snapshot.connectionState == ConnectionState.waiting &&
+              _guideBookings.isEmpty &&
+              _homestayBookings.isEmpty;
 
           return Column(
             children: [
               // Search + Filter bar
               Padding(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  0,
+                  AppSpacing.lg,
+                  AppSpacing.md,
+                ),
                 child: Row(
                   children: [
                     Expanded(
@@ -503,16 +647,29 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
                           controller: _searchController,
                           decoration: InputDecoration(
                             hintText: 'Search bookings...',
-                            hintStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
-                            prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary, size: 20),
+                            hintStyle: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 14,
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.search,
+                              color: AppColors.textSecondary,
+                              size: 20,
+                            ),
                             suffixIcon: _searchQuery.isNotEmpty
                                 ? IconButton(
-                                    icon: const Icon(Icons.close, size: 18, color: AppColors.textSecondary),
+                                    icon: const Icon(
+                                      Icons.close,
+                                      size: 18,
+                                      color: AppColors.textSecondary,
+                                    ),
                                     onPressed: () => _searchController.clear(),
                                   )
                                 : null,
                             border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 14,
+                            ),
                           ),
                         ),
                       ),
@@ -527,15 +684,21 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
                             width: 48,
                             height: 48,
                             decoration: BoxDecoration(
-                              color: _activeFilterCount > 0 ? AppColors.primaryDark : Colors.white,
+                              color: _activeFilterCount > 0
+                                  ? AppColors.primaryDark
+                                  : Colors.white,
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(
-                                color: _activeFilterCount > 0 ? AppColors.primaryDark : AppColors.border,
+                                color: _activeFilterCount > 0
+                                    ? AppColors.primaryDark
+                                    : AppColors.border,
                               ),
                             ),
                             child: Icon(
                               Icons.tune_rounded,
-                              color: _activeFilterCount > 0 ? Colors.white : AppColors.primaryDark,
+                              color: _activeFilterCount > 0
+                                  ? Colors.white
+                                  : AppColors.primaryDark,
                               size: 22,
                             ),
                           ),
@@ -553,7 +716,11 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
                                 child: Center(
                                   child: Text(
                                     '$_activeFilterCount',
-                                    style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -568,28 +735,57 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
               // Active filter chips row
               if (_activeFilterCount > 0)
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.sm),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    0,
+                    AppSpacing.lg,
+                    AppSpacing.sm,
+                  ),
                   child: Row(
                     children: [
-                      const Icon(Icons.filter_list, size: 16, color: AppColors.textSecondary),
+                      const Icon(
+                        Icons.filter_list,
+                        size: 16,
+                        color: AppColors.textSecondary,
+                      ),
                       const SizedBox(width: 6),
                       Expanded(
                         child: SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
                           child: Row(
                             children: [
-                              if (_typeFilter != 'all') _activeChip(_typeFilter == 'guide' ? '🗺️ Tour Package' : '🏠 Homestay'),
-                              if (_statusFilter != 'all') _activeChip(_statusLabel(_statusFilter)),
-                              if (_sortOrder != 'newest') _activeChip(_sortLabel(_sortOrder)),
-                              if (_dateRange != null) _activeChip('📅 ${DateFormat('dd MMM').format(_dateRange!.start)} - ${DateFormat('dd MMM').format(_dateRange!.end)}'),
+                              if (_typeFilter != 'all')
+                                _activeChip(
+                                  _typeFilter == 'guide'
+                                      ? '🗺️ Tour Package'
+                                      : '🏠 Homestay',
+                                ),
+                              if (_statusFilter != 'all')
+                                _activeChip(_statusLabel(_statusFilter)),
+                              if (_sortOrder != 'newest')
+                                _activeChip(_sortLabel(_sortOrder)),
+                              if (_dateRange != null)
+                                _activeChip(
+                                  '📅 ${DateFormat('dd MMM').format(_dateRange!.start)} - ${DateFormat('dd MMM').format(_dateRange!.end)}',
+                                ),
                             ],
                           ),
                         ),
                       ),
                       TextButton(
                         onPressed: _clearAllFilters,
-                        style: TextButton.styleFrom(minimumSize: Size.zero, padding: EdgeInsets.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-                        child: const Text('Clear', style: TextStyle(color: AppColors.secondary, fontSize: 12)),
+                        style: TextButton.styleFrom(
+                          minimumSize: Size.zero,
+                          padding: EdgeInsets.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: const Text(
+                          'Clear',
+                          style: TextStyle(
+                            color: AppColors.secondary,
+                            fontSize: 12,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -598,12 +794,21 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
               // Results count
               if (!isLoading && allBookings.isNotEmpty)
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.sm),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    0,
+                    AppSpacing.lg,
+                    AppSpacing.sm,
+                  ),
                   child: Row(
                     children: [
                       Text(
                         '${filtered.length} booking${filtered.length == 1 ? '' : 's'}',
-                        style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ],
                   ),
@@ -612,14 +817,24 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
               // List
               Expanded(
                 child: isLoading
-                    ? const Center(child: CircularProgressIndicator(color: AppColors.primaryDark))
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.primaryDark,
+                        ),
+                      )
                     : filtered.isEmpty
-                        ? _buildEmptyState(allBookings.isEmpty)
-                        : ListView.builder(
-                            padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.xxl),
-                            itemCount: filtered.length,
-                            itemBuilder: (context, index) => _buildBookingCard(filtered[index]),
-                          ),
+                    ? _buildEmptyState(allBookings.isEmpty)
+                    : ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.lg,
+                          0,
+                          AppSpacing.lg,
+                          AppSpacing.xxl,
+                        ),
+                        itemCount: filtered.length,
+                        itemBuilder: (context, index) =>
+                            _buildBookingCard(filtered[index]),
+                      ),
               ),
             ],
           );
@@ -641,7 +856,9 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
           const SizedBox(height: AppSpacing.md),
           Text(
             noBookingsAtAll ? 'No bookings yet' : 'No results found',
-            style: AppTextStyles.sectionHeading.copyWith(color: AppColors.primaryDark),
+            style: AppTextStyles.sectionHeading.copyWith(
+              color: AppColors.primaryDark,
+            ),
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
@@ -649,7 +866,9 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
                 ? 'Your homestay and tour bookings\nwill appear here.'
                 : 'Try adjusting your search\nor filters.',
             textAlign: TextAlign.center,
-            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
           ),
           if (!noBookingsAtAll) ...[
             const SizedBox(height: AppSpacing.lg),
@@ -657,11 +876,16 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
               onPressed: _clearAllFilters,
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: AppColors.primaryDark),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
-              child: const Text('Clear Filters', style: TextStyle(color: AppColors.primaryDark)),
+              child: const Text(
+                'Clear Filters',
+                style: TextStyle(color: AppColors.primaryDark),
+              ),
             ),
-          ]
+          ],
         ],
       ),
     );
@@ -676,27 +900,44 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.primaryDark.withValues(alpha: 0.2)),
       ),
-      child: Text(label, style: const TextStyle(color: AppColors.primaryDark, fontSize: 11, fontWeight: FontWeight.w600)),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: AppColors.primaryDark,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 
   String _statusLabel(String s) {
     switch (s) {
-      case 'pending': return '⏳ Pending';
-      case 'confirmed': return '✅ Confirmed';
-      case 'rejected': return '❌ Rejected';
-      case 'cancelled': return '🚫 Cancelled';
-      case 'accepted': return '💳 Payment Due';
-      default: return s;
+      case 'pending':
+        return '⏳ Pending';
+      case 'confirmed':
+        return '✅ Confirmed';
+      case 'rejected':
+        return '❌ Rejected';
+      case 'cancelled':
+        return '🚫 Cancelled';
+      case 'accepted':
+        return '💳 Payment Due';
+      default:
+        return s;
     }
   }
 
   String _sortLabel(String s) {
     switch (s) {
-      case 'oldest': return '↑ Oldest';
-      case 'price_high': return '💰 Price High';
-      case 'price_low': return '💰 Price Low';
-      default: return s;
+      case 'oldest':
+        return '↑ Oldest';
+      case 'price_high':
+        return '💰 Price High';
+      case 'price_low':
+        return '💰 Price Low';
+      default:
+        return s;
     }
   }
 
@@ -711,7 +952,8 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
       statusBgColor = Colors.orange.shade50;
       statusText = 'PENDING APPROVAL';
     } else if (booking.status == 'accepted') {
-      if (booking.paymentStatus == 'unpaid' || booking.paymentStatus == 'failed') {
+      if (booking.paymentStatus == 'unpaid' ||
+          booking.paymentStatus == 'failed') {
         statusColor = Colors.blue.shade700;
         statusBgColor = Colors.blue.shade50;
         statusText = 'PAYMENT REQUIRED';
@@ -737,7 +979,13 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border, width: 0.5),
-        boxShadow: const [BoxShadow(color: Color(0x05000000), blurRadius: 10, offset: Offset(0, 4))],
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x05000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -748,7 +996,10 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: booking.type == 'guide'
                         ? const Color(0xFFE3F2FD)
@@ -760,7 +1011,9 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      color: booking.type == 'guide' ? Colors.blue.shade700 : Colors.green.shade700,
+                      color: booking.type == 'guide'
+                          ? Colors.blue.shade700
+                          : Colors.green.shade700,
                     ),
                   ),
                 ),
@@ -768,7 +1021,11 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
                 Expanded(
                   child: Text(
                     booking.title,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primaryDark),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: AppColors.primaryDark,
+                    ),
                   ),
                 ),
               ],
@@ -780,35 +1037,63 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
                 color: statusBgColor,
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: Text(statusText, style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold)),
+              child: Text(
+                statusText,
+                style: TextStyle(
+                  color: statusColor,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
             const SizedBox(height: AppSpacing.md),
             Row(
               children: [
-                const Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.textSecondary),
+                const Icon(
+                  Icons.calendar_today_outlined,
+                  size: 14,
+                  color: AppColors.textSecondary,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   '${DateFormat('dd MMM yyyy').format(booking.startDate)} → ${DateFormat('dd MMM yyyy').format(booking.endDate)}',
-                  style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 6),
             Row(
               children: [
-                const Icon(Icons.group_outlined, size: 14, color: AppColors.textSecondary),
+                const Icon(
+                  Icons.group_outlined,
+                  size: 14,
+                  color: AppColors.textSecondary,
+                ),
                 const SizedBox(width: 6),
-                Text('${booking.guestCount} Guest${booking.guestCount > 1 ? 's' : ''}',
-                    style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                Text(
+                  '${booking.guestCount} Guest${booking.guestCount > 1 ? 's' : ''}',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
                 const Spacer(),
                 Text(
                   'Rs. ${NumberFormat('#,##0').format(booking.totalPrice)}',
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.primaryDark),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primaryDark,
+                  ),
                 ),
               ],
             ),
 
-            if (booking.status == 'rejected' && booking.rejectionReason != null) ...[
+            if (booking.status == 'rejected' &&
+                booking.rejectionReason != null) ...[
               const SizedBox(height: AppSpacing.md),
               Container(
                 padding: const EdgeInsets.all(12),
@@ -821,8 +1106,10 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
                     const Icon(Icons.info_outline, color: Colors.red, size: 16),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text('Reason: ${booking.rejectionReason}',
-                          style: const TextStyle(color: Colors.red, fontSize: 12)),
+                      child: Text(
+                        'Reason: ${booking.rejectionReason}',
+                        style: const TextStyle(color: Colors.red, fontSize: 12),
+                      ),
                     ),
                   ],
                 ),
@@ -843,12 +1130,18 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
                           side: const BorderSide(color: Colors.red),
                           foregroundColor: Colors.red,
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
-                        child: const Text('Cancel Request', style: TextStyle(fontWeight: FontWeight.w600)),
+                        child: const Text(
+                          'Cancel Request',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
                       ),
                     ),
-                  if (booking.status == 'pending' && showPayNow) const SizedBox(width: AppSpacing.md),
+                  if (booking.status == 'pending' && showPayNow)
+                    const SizedBox(width: AppSpacing.md),
                   if (showPayNow)
                     Expanded(
                       child: ElevatedButton(
@@ -857,9 +1150,14 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
                           backgroundColor: AppColors.primaryDark,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
-                        child: const Text('Pay Now', style: TextStyle(fontWeight: FontWeight.w600)),
+                        child: const Text(
+                          'Pay Now',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
                       ),
                     ),
                 ],

@@ -18,13 +18,11 @@ import '../../traveler/chat/traveler_host_chat_screen.dart';
 import 'homestay_reviews_screen.dart';
 
 enum DateState { available, booked, pending, unavailable, past }
+
 class HomestayDetailsScreen extends StatefulWidget {
   final String homestayId;
 
-  const HomestayDetailsScreen({
-    super.key,
-    required this.homestayId,
-  });
+  const HomestayDetailsScreen({super.key, required this.homestayId});
 
   @override
   State<HomestayDetailsScreen> createState() => _HomestayDetailsScreenState();
@@ -46,7 +44,11 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
   String? _error;
 
   // Booking states
-  DateTime _currentMonth = DateTime(DateTime.now().year, DateTime.now().month, 1);
+  DateTime _currentMonth = DateTime(
+    DateTime.now().year,
+    DateTime.now().month,
+    1,
+  );
   DateTime? _checkInDate;
   DateTime? _checkOutDate;
   int _guestCount = 1;
@@ -65,11 +67,16 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
     try {
       final h = await _homestayRepo.getHomestayById(widget.homestayId);
       if (h == null) throw Exception('Homestay not found');
-      final bookings = await _bookingRepo.getActiveBookingsForHomestay(widget.homestayId);
-      
+      final bookings = await _bookingRepo.getActiveBookingsForHomestay(
+        widget.homestayId,
+      );
+
       Map<String, dynamic>? hostData;
       try {
-        final hostDoc = await FirebaseFirestore.instance.collection('users').doc(h.hostId).get();
+        final hostDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(h.hostId)
+            .get();
         if (hostDoc.exists) hostData = hostDoc.data();
       } catch (_) {}
 
@@ -77,7 +84,10 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         try {
-          final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+          final userDoc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .get();
           if (userDoc.exists) {
             final favs = List<String>.from(userDoc.data()?['favorites'] ?? []);
             isFav = favs.contains(h.id);
@@ -94,7 +104,11 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
           _isLoading = false;
 
           // Auto-select dates starting from today if available
-          final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+          final today = DateTime(
+            DateTime.now().year,
+            DateTime.now().month,
+            DateTime.now().day,
+          );
           DateTime check = today;
           for (int i = 0; i < 60; i++) {
             final nextDay = check.add(const Duration(days: 1));
@@ -109,24 +123,37 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() { _isLoading = false; _error = e.toString(); });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _error = e.toString();
+        });
+      }
     }
   }
 
   Future<void> _toggleFavorite() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null || _homestay == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please sign in to favorite.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please sign in to favorite.')),
+      );
       return;
     }
     final newFav = !_isFavorite;
     setState(() => _isFavorite = newFav);
     try {
-      final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+      final userRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid);
       if (newFav) {
-        await userRef.update({'favorites': FieldValue.arrayUnion([_homestay!.id])});
+        await userRef.update({
+          'favorites': FieldValue.arrayUnion([_homestay!.id]),
+        });
       } else {
-        await userRef.update({'favorites': FieldValue.arrayRemove([_homestay!.id])});
+        await userRef.update({
+          'favorites': FieldValue.arrayRemove([_homestay!.id]),
+        });
       }
     } catch (e) {
       setState(() => _isFavorite = !newFav);
@@ -136,7 +163,9 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
   void _shareHomestay() {
     if (_homestay == null) return;
     // ignore: deprecated_member_use
-    Share.share('Village Tour Sri Lanka\n\nHomestay:\n${_homestay!.title}\n\nLocation:\n${_homestay!.location}\n\nPrice:\nRs. ${_homestay!.pricePerNight} / night\n\nExplore this homestay on Village Tour Sri Lanka.');
+    Share.share(
+      'Village Tour Sri Lanka\n\nHomestay:\n${_homestay!.title}\n\nLocation:\n${_homestay!.location}\n\nPrice:\nRs. ${_homestay!.pricePerNight} / night\n\nExplore this homestay on Village Tour Sri Lanka.',
+    );
   }
 
   @override
@@ -165,22 +194,43 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
   DateState _getDateState(DateTime day) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    
+
     if (day.isBefore(today)) return DateState.past;
-    
+
     for (var d in _homestay!.unavailableDates) {
-      if (d.year == day.year && d.month == day.month && d.day == day.day) return DateState.unavailable;
+      if (d.year == day.year && d.month == day.month && d.day == day.day) {
+        return DateState.unavailable;
+      }
     }
-    
-    const weekdays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+    const weekdays = [
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+      'sunday',
+    ];
     final weekday = weekdays[day.weekday - 1];
-    
-    if (_homestay!.availableDays[weekday] == false) return DateState.unavailable;
+
+    if (_homestay!.availableDays[weekday] == false) {
+      return DateState.unavailable;
+    }
 
     for (var b in _activeBookings) {
-      final bIn = DateTime(b.checkInDate.year, b.checkInDate.month, b.checkInDate.day);
-      final bOut = DateTime(b.checkOutDate.year, b.checkOutDate.month, b.checkOutDate.day);
-      if ((day.isAfter(bIn) || day.isAtSameMomentAs(bIn)) && day.isBefore(bOut)) {
+      final bIn = DateTime(
+        b.checkInDate.year,
+        b.checkInDate.month,
+        b.checkInDate.day,
+      );
+      final bOut = DateTime(
+        b.checkOutDate.year,
+        b.checkOutDate.month,
+        b.checkOutDate.day,
+      );
+      if ((day.isAfter(bIn) || day.isAtSameMomentAs(bIn)) &&
+          day.isBefore(bOut)) {
         if (b.bookingStatus == 'pending') return DateState.pending;
         return DateState.booked;
       }
@@ -215,18 +265,22 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
   Future<void> _checkAvailability() async {
     setState(() => _availabilityError = null);
     try {
-      final activeBookings = await _bookingRepo.getActiveBookingsForHomestay(widget.homestayId);
+      final activeBookings = await _bookingRepo.getActiveBookingsForHomestay(
+        widget.homestayId,
+      );
       setState(() => _activeBookings = activeBookings);
       bool overlap = false;
       for (var b in activeBookings) {
-        if (_checkInDate!.isBefore(b.checkOutDate) && _checkOutDate!.isAfter(b.checkInDate)) {
+        if (_checkInDate!.isBefore(b.checkOutDate) &&
+            _checkOutDate!.isAfter(b.checkInDate)) {
           overlap = true;
           break;
         }
       }
       if (overlap) {
         setState(() {
-          _availabilityError = 'Some dates in your selection are already booked.';
+          _availabilityError =
+              'Some dates in your selection are already booked.';
           _checkOutDate = null;
         });
       }
@@ -239,19 +293,29 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Confirm Request', style: TextStyle(color: AppColors.primaryDark)),
-        content: Text('Are you sure you want to request a booking for $nights night(s)?\n\nTotal: Rs. $totalAmount'),
+        title: const Text(
+          'Confirm Request',
+          style: TextStyle(color: AppColors.primaryDark),
+        ),
+        content: Text(
+          'Are you sure you want to request a booking for $nights night(s)?\n\nTotal: Rs. $totalAmount',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
               _submitRequest(totalAmount, nights);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryDark),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryDark,
+            ),
             child: const Text('Confirm', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -266,8 +330,13 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-      final userData = userDoc.exists ? userDoc.data() as Map<String, dynamic> : {};
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      final userData = userDoc.exists
+          ? userDoc.data() as Map<String, dynamic>
+          : {};
       final userName = userData['name'] ?? 'Traveler';
       final userEmail = userData['email'] ?? user.email ?? '';
 
@@ -295,13 +364,21 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Booking request sent to host!'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('Booking request sent to host!'),
+            backgroundColor: Colors.green,
+          ),
         );
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -311,12 +388,24 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator(color: AppColors.primaryDark)));
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(color: AppColors.primaryDark),
+        ),
+      );
     }
     if (_homestay == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Not found')),
-        body: Center(child: Padding(padding: const EdgeInsets.all(16.0), child: Text(_error ?? 'This homestay may have been deleted.', textAlign: TextAlign.center))),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              _error ?? 'This homestay may have been deleted.',
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
       );
     }
 
@@ -344,11 +433,17 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
         centerTitle: true,
         title: Text(
           'Homestay Details',
-          style: AppTextStyles.screenHeading.copyWith(color: AppColors.primaryDark, fontSize: 20),
+          style: AppTextStyles.screenHeading.copyWith(
+            color: AppColors.primaryDark,
+            fontSize: 20,
+          ),
         ),
         actions: [
           IconButton(
-            icon: Icon(_isFavorite ? Icons.favorite : Icons.favorite_border, color: _isFavorite ? Colors.red : AppColors.primaryDark),
+            icon: Icon(
+              _isFavorite ? Icons.favorite : Icons.favorite_border,
+              color: _isFavorite ? Colors.red : AppColors.primaryDark,
+            ),
             onPressed: _toggleFavorite,
           ),
           IconButton(
@@ -367,7 +462,9 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
                 children: [
                   _buildImageCarousel(),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -395,7 +492,11 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
                             homestayId: widget.homestayId,
                             homestayTitle: _homestay!.title,
                             homestayLocation: _homestay!.location,
-                            hostName: _hostData != null ? (_hostData!['name'] ?? _hostData!['fullName'] ?? 'Host') : 'Host',
+                            hostName: _hostData != null
+                                ? (_hostData!['name'] ??
+                                      _hostData!['fullName'] ??
+                                      'Host')
+                                : 'Host',
                             isEmbedded: true,
                           ),
                           const SizedBox(height: AppSpacing.lg),
@@ -410,7 +511,13 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
                           ],
                           _buildGuestsSection(),
                           const SizedBox(height: AppSpacing.xl),
-                          if (nights > 0) _buildPaymentSummary(nights, accommodationAmount, addOnAmount, totalAmount),
+                          if (nights > 0)
+                            _buildPaymentSummary(
+                              nights,
+                              accommodationAmount,
+                              addOnAmount,
+                              totalAmount,
+                            ),
                         ],
                         const SizedBox(height: AppSpacing.xxl),
                       ],
@@ -432,10 +539,16 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
         height: 280,
         color: AppColors.primaryDark.withValues(alpha: 0.1),
         width: double.infinity,
-        child: const Center(child: Icon(Icons.home_rounded, size: 64, color: AppColors.primaryDark)),
+        child: const Center(
+          child: Icon(
+            Icons.home_rounded,
+            size: 64,
+            color: AppColors.primaryDark,
+          ),
+        ),
       );
     }
-    
+
     return SizedBox(
       height: 280,
       child: Stack(
@@ -456,10 +569,7 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Image.network(
-                        images[index],
-                        fit: BoxFit.cover,
-                      ),
+                      Image.network(images[index], fit: BoxFit.cover),
                       // Cinematic bottom gradient
                       DecoratedBox(
                         decoration: BoxDecoration(
@@ -499,16 +609,30 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
               bottom: 16,
               right: 16,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.45),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4)],
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.2),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 4,
+                    ),
+                  ],
                 ),
                 child: Text(
                   '${_currentImageIndex + 1} / ${images.length}',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
                 ),
               ),
             ),
@@ -524,7 +648,11 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
         Expanded(
           child: Row(
             children: [
-              Icon(Icons.location_on_rounded, size: 16, color: AppColors.secondary.withValues(alpha: 0.8)),
+              Icon(
+                Icons.location_on_rounded,
+                size: 16,
+                color: AppColors.secondary.withValues(alpha: 0.8),
+              ),
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
@@ -551,11 +679,28 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.star_rounded, color: AppColors.tertiary, size: 16),
+                  const Icon(
+                    Icons.star_rounded,
+                    color: AppColors.tertiary,
+                    size: 16,
+                  ),
                   const SizedBox(width: 4),
-                  const Text('New', style: TextStyle(color: AppColors.primaryDark, fontSize: 13, fontWeight: FontWeight.bold)),
+                  const Text(
+                    'New',
+                    style: TextStyle(
+                      color: AppColors.primaryDark,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(width: 4),
-                  Text('(No reviews)', style: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.7), fontSize: 12)),
+                  Text(
+                    '(No reviews)',
+                    style: TextStyle(
+                      color: AppColors.textSecondary.withValues(alpha: 0.7),
+                      fontSize: 12,
+                    ),
+                  ),
                 ],
               );
             }
@@ -568,11 +713,28 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
             return Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.star_rounded, color: AppColors.tertiary, size: 16),
+                const Icon(
+                  Icons.star_rounded,
+                  color: AppColors.tertiary,
+                  size: 16,
+                ),
                 const SizedBox(width: 4),
-                Text(avg.toStringAsFixed(1), style: const TextStyle(color: AppColors.primaryDark, fontSize: 13, fontWeight: FontWeight.bold)),
+                Text(
+                  avg.toStringAsFixed(1),
+                  style: const TextStyle(
+                    color: AppColors.primaryDark,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(width: 4),
-                Text('(${docs.length} review${docs.length > 1 ? 's' : ''})', style: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.7), fontSize: 12)),
+                Text(
+                  '(${docs.length} review${docs.length > 1 ? 's' : ''})',
+                  style: TextStyle(
+                    color: AppColors.textSecondary.withValues(alpha: 0.7),
+                    fontSize: 12,
+                  ),
+                ),
               ],
             );
           },
@@ -598,7 +760,7 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
 
     // Get up to 3 amenities to highlight at the top
     final highlightAmenities = _homestay!.amenities.take(3).toList();
-    
+
     return Column(
       children: [
         Row(
@@ -609,12 +771,18 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Icon(_amenityIcon(amenity), size: 28, color: AppColors.textSecondary),
+                  Icon(
+                    _amenityIcon(amenity),
+                    size: 28,
+                    color: AppColors.textSecondary,
+                  ),
                   const SizedBox(height: 8),
                   Text(
-                    amenity, 
+                    amenity,
                     textAlign: TextAlign.center,
-                    style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold),
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -640,10 +808,20 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
             runSpacing: 8,
             children: [
               if (_hostData?['isSuperhost'] == true)
-                _buildInfoChip(Icons.workspace_premium_rounded, 'Superhost', isPrimary: true),
+                _buildInfoChip(
+                  Icons.workspace_premium_rounded,
+                  'Superhost',
+                  isPrimary: true,
+                ),
               _buildInfoChip(Icons.home_rounded, _homestay!.propertyType),
-              _buildInfoChip(Icons.meeting_room_rounded, '${_homestay!.rooms} Room${_homestay!.rooms > 1 ? 's' : ''}'),
-              _buildInfoChip(Icons.people_rounded, 'Max ${_homestay!.maxGuests} Guest${_homestay!.maxGuests > 1 ? 's' : ''}'),
+              _buildInfoChip(
+                Icons.meeting_room_rounded,
+                '${_homestay!.rooms} Room${_homestay!.rooms > 1 ? 's' : ''}',
+              ),
+              _buildInfoChip(
+                Icons.people_rounded,
+                'Max ${_homestay!.maxGuests} Guest${_homestay!.maxGuests > 1 ? 's' : ''}',
+              ),
             ],
           ),
         ),
@@ -651,8 +829,22 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text('Rs. ${_homestay!.pricePerNight}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.primaryDark)),
-            Text('per night', style: TextStyle(fontSize: 12, color: AppColors.textSecondary.withValues(alpha: 0.8), fontWeight: FontWeight.w500)),
+            Text(
+              'Rs. ${_homestay!.pricePerNight}',
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                color: AppColors.primaryDark,
+              ),
+            ),
+            Text(
+              'per night',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary.withValues(alpha: 0.8),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
         ),
       ],
@@ -684,15 +876,23 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
                         tabs[index],
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                          color: isSelected ? AppColors.primaryDark : AppColors.textSecondary,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color: isSelected
+                              ? AppColors.primaryDark
+                              : AppColors.textSecondary,
                           fontSize: 14,
                         ),
                       ),
                     ),
                     const SizedBox(height: 6),
                     if (isSelected)
-                      Container(height: 3, width: 40, color: AppColors.primaryDark)
+                      Container(
+                        height: 3,
+                        width: 40,
+                        color: AppColors.primaryDark,
+                      )
                     else
                       const SizedBox(height: 3),
                   ],
@@ -712,9 +912,19 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Login Required', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryDark)),
-          content: const Text('You need to be logged in to send a message to the host. Would you like to log in now?'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            'Login Required',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: AppColors.primaryDark,
+            ),
+          ),
+          content: const Text(
+            'You need to be logged in to send a message to the host. Would you like to log in now?',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -723,7 +933,10 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const SignInScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SignInScreen()),
+                );
               },
               child: const Text('Log In'),
             ),
@@ -735,12 +948,17 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
 
     final hostId = _homestay?.hostId;
     if (hostId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Host information not available.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Host information not available.')),
+      );
       return;
     }
 
     try {
-      final hostDoc = await FirebaseFirestore.instance.collection('users').doc(hostId).get();
+      final hostDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(hostId)
+          .get();
       if (!hostDoc.exists) return;
       final hostInfo = hostDoc.data()!;
 
@@ -751,8 +969,11 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
           builder: (context) => TravelerHostChatScreen(
             hostId: hostId,
             hostName: hostInfo['fullName'] ?? 'Host',
-            hostImage: hostInfo['profileImage'] ?? hostInfo['profileImageUrl'] ?? '',
-            hostLanguages: hostInfo['languages'] != null ? (hostInfo['languages'] as List).join(' & ') : 'English',
+            hostImage:
+                hostInfo['profileImage'] ?? hostInfo['profileImageUrl'] ?? '',
+            hostLanguages: hostInfo['languages'] != null
+                ? (hostInfo['languages'] as List).join(' & ')
+                : 'English',
             homestayId: _homestay?.id ?? 'unknown_id',
             homestayTitle: _homestay?.title ?? 'Homestay',
             homestayPrice: 'Rs. ${_homestay?.pricePerNight ?? 0}/night',
@@ -760,7 +981,10 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
         ),
       );
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     }
   }
 
@@ -768,16 +992,29 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: isPrimary ? AppColors.primary.withValues(alpha: 0.1) : Colors.white,
+        color: isPrimary
+            ? AppColors.primary.withValues(alpha: 0.1)
+            : Colors.white,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: isPrimary ? AppColors.primary.withValues(alpha: 0.3) : AppColors.border),
+        border: Border.all(
+          color: isPrimary
+              ? AppColors.primary.withValues(alpha: 0.3)
+              : AppColors.border,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 14, color: AppColors.primary),
           const SizedBox(width: 4),
-          Text(label, style: const TextStyle(color: AppColors.primaryDark, fontSize: 12, fontWeight: FontWeight.bold)),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.primaryDark,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );
@@ -787,102 +1024,195 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        
-        Text('About this place', style: AppTextStyles.sectionHeading.copyWith(color: AppColors.primaryDark, fontSize: 18)),
+        Text(
+          'About this place',
+          style: AppTextStyles.sectionHeading.copyWith(
+            color: AppColors.primaryDark,
+            fontSize: 18,
+          ),
+        ),
         const SizedBox(height: AppSpacing.sm),
-        Text(_homestay!.description, style: AppTextStyles.bodyMedium.copyWith(height: 1.5, color: AppColors.textSecondary)),
-        
+        Text(
+          _homestay!.description,
+          style: AppTextStyles.bodyMedium.copyWith(
+            height: 1.5,
+            color: AppColors.textSecondary,
+          ),
+        ),
+
         const SizedBox(height: AppSpacing.xl),
-        
-        Text('House Rules & Times', style: AppTextStyles.sectionHeading.copyWith(color: AppColors.primaryDark, fontSize: 18)),
+
+        Text(
+          'House Rules & Times',
+          style: AppTextStyles.sectionHeading.copyWith(
+            color: AppColors.primaryDark,
+            fontSize: 18,
+          ),
+        ),
         const SizedBox(height: AppSpacing.sm),
         // Check-in / Check-out
         Row(
           children: [
-            const Icon(Icons.login_rounded, size: 16, color: AppColors.textSecondary),
+            const Icon(
+              Icons.login_rounded,
+              size: 16,
+              color: AppColors.textSecondary,
+            ),
             const SizedBox(width: 8),
-            Text('Check-in: ${_homestay!.checkInTime}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+            Text(
+              'Check-in: ${_homestay!.checkInTime}',
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+              ),
+            ),
             const SizedBox(width: 16),
-            const Icon(Icons.logout_rounded, size: 16, color: AppColors.textSecondary),
+            const Icon(
+              Icons.logout_rounded,
+              size: 16,
+              color: AppColors.textSecondary,
+            ),
             const SizedBox(width: 8),
-            Text('Check-out: ${_homestay!.checkOutTime}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+            Text(
+              'Check-out: ${_homestay!.checkOutTime}',
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: AppSpacing.md),
         if (_homestay!.houseRules.isNotEmpty)
           Wrap(
-            spacing: 8, runSpacing: 8,
-            children: _homestay!.houseRules.map((r) => Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(_amenityIcon(r), size: 14, color: AppColors.textSecondary),
-                  const SizedBox(width: 6),
-                  Text(r, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                ],
-              ),
-            )).toList(),
+            spacing: 8,
+            runSpacing: 8,
+            children: _homestay!.houseRules
+                .map(
+                  (r) => Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _amenityIcon(r),
+                          size: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          r,
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+                .toList(),
           )
         else
-          const Text('No house rules specified.', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+          const Text(
+            'No house rules specified.',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+          ),
       ],
     );
   }
 
   static IconData _amenityIcon(String amenity) {
     switch (amenity) {
-      case 'Wi-Fi':            return Icons.wifi_rounded;
-      case 'Free Parking':     return Icons.local_parking_rounded;
-      case 'Breakfast':        return Icons.free_breakfast_rounded;
-      case 'Private Bathroom': return Icons.bathtub_outlined;
-      case 'Hot Water':        return Icons.water_drop_outlined;
-      case 'Air Conditioning': return Icons.ac_unit_rounded;
-      case 'Fan':              return Icons.wind_power_rounded;
-      case 'Kitchen':          return Icons.kitchen_rounded;
-      case 'Garden':           return Icons.yard_rounded;
-      case 'TV':               return Icons.tv_rounded;
-      case 'No Smoking':       return Icons.smoke_free_rounded;
-      case 'No Parties':       return Icons.do_not_disturb_on_rounded;
-      case 'Pets Allowed':     return Icons.pets_rounded;
-      case 'Children Allowed': return Icons.child_care_rounded;
-      default:                 return Icons.check_circle_outline_rounded;
+      case 'Wi-Fi':
+        return Icons.wifi_rounded;
+      case 'Free Parking':
+        return Icons.local_parking_rounded;
+      case 'Breakfast':
+        return Icons.free_breakfast_rounded;
+      case 'Private Bathroom':
+        return Icons.bathtub_outlined;
+      case 'Hot Water':
+        return Icons.water_drop_outlined;
+      case 'Air Conditioning':
+        return Icons.ac_unit_rounded;
+      case 'Fan':
+        return Icons.wind_power_rounded;
+      case 'Kitchen':
+        return Icons.kitchen_rounded;
+      case 'Garden':
+        return Icons.yard_rounded;
+      case 'TV':
+        return Icons.tv_rounded;
+      case 'No Smoking':
+        return Icons.smoke_free_rounded;
+      case 'No Parties':
+        return Icons.do_not_disturb_on_rounded;
+      case 'Pets Allowed':
+        return Icons.pets_rounded;
+      case 'Children Allowed':
+        return Icons.child_care_rounded;
+      default:
+        return Icons.check_circle_outline_rounded;
     }
   }
 
   Widget _buildAmenitiesList() {
     if (_homestay!.amenities.isEmpty) {
-      return const Text('No amenities listed.', style: TextStyle(color: AppColors.textSecondary));
+      return const Text(
+        'No amenities listed.',
+        style: TextStyle(color: AppColors.textSecondary),
+      );
     }
     return Wrap(
-      spacing: 8, runSpacing: 8,
-      children: _homestay!.amenities.map((a) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: AppColors.primary.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.primary.withValues(alpha: 0.12)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(_amenityIcon(a), size: 16, color: AppColors.primary),
-            const SizedBox(width: 6),
-            Text(a, style: const TextStyle(color: AppColors.primaryDark, fontSize: 13, fontWeight: FontWeight.w600)),
-          ],
-        ),
-      )).toList(),
+      spacing: 8,
+      runSpacing: 8,
+      children: _homestay!.amenities
+          .map(
+            (a) => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(_amenityIcon(a), size: 16, color: AppColors.primary),
+                  const SizedBox(width: 6),
+                  Text(
+                    a,
+                    style: const TextStyle(
+                      color: AppColors.primaryDark,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+          .toList(),
     );
   }
 
   Widget _buildHostInfo() {
     if (_hostData == null) {
-      return const Text('Host information unavailable.', style: TextStyle(color: AppColors.textSecondary));
+      return const Text(
+        'Host information unavailable.',
+        style: TextStyle(color: AppColors.textSecondary),
+      );
     }
     final name = _hostData!['name'] ?? _hostData!['fullName'] ?? 'Host';
     final imageUrl = _hostData!['profileImageUrl'] as String?;
@@ -893,28 +1223,61 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: AppSpacing.md),
-        Text('Hosted by', style: AppTextStyles.sectionHeading.copyWith(color: AppColors.primaryDark, fontSize: 18)),
+        Text(
+          'Hosted by',
+          style: AppTextStyles.sectionHeading.copyWith(
+            color: AppColors.primaryDark,
+            fontSize: 18,
+          ),
+        ),
         const SizedBox(height: AppSpacing.lg),
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             CircleAvatar(
               radius: 32,
-              backgroundImage: imageUrl != null && imageUrl.isNotEmpty ? NetworkImage(imageUrl) : null,
+              backgroundImage: imageUrl != null && imageUrl.isNotEmpty
+                  ? NetworkImage(imageUrl)
+                  : null,
               backgroundColor: AppColors.secondary.withValues(alpha: 0.1),
-              child: imageUrl == null || imageUrl.isEmpty ? const Icon(Icons.person, size: 32, color: AppColors.primaryDark) : null,
+              child: imageUrl == null || imageUrl.isEmpty
+                  ? const Icon(
+                      Icons.person,
+                      size: 32,
+                      color: AppColors.primaryDark,
+                    )
+                  : null,
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primaryDark)),
-                  Text('Homestay Host • ${_homestay!.location}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: AppColors.primaryDark,
+                    ),
+                  ),
+                  Text(
+                    'Homestay Host • ${_homestay!.location}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
                   if (languages != null && languages.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 2.0),
-                      child: Text('Speaks: ${languages.join(", ")}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                      child: Text(
+                        'Speaks: ${languages.join(", ")}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
                     ),
                   if (phone != null && phone.isNotEmpty)
                     Padding(
@@ -928,9 +1291,20 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
                         },
                         child: Row(
                           children: [
-                            const Icon(Icons.phone, size: 14, color: AppColors.primaryDark),
+                            const Icon(
+                              Icons.phone,
+                              size: 14,
+                              color: AppColors.primaryDark,
+                            ),
                             const SizedBox(width: 4),
-                            Text(phone, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primaryDark)),
+                            Text(
+                              phone,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primaryDark,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -947,14 +1321,19 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
             foregroundColor: AppColors.primaryDark,
             side: const BorderSide(color: AppColors.primaryDark),
             minimumSize: const Size(double.infinity, 48),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: const [
               Icon(Icons.chat_bubble_outline, size: 18),
               SizedBox(width: 8),
-              Text('Message Host', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text(
+                'Message Host',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ],
           ),
         ),
@@ -965,47 +1344,89 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
   }
 
   Widget _buildInlineCalendar(int nights) {
-    int daysInMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 0).day;
-    int firstWeekday = DateTime(_currentMonth.year, _currentMonth.month, 1).weekday;
-    int prevMonthDays = DateTime(_currentMonth.year, _currentMonth.month, 0).day;
-    
+    int daysInMonth = DateTime(
+      _currentMonth.year,
+      _currentMonth.month + 1,
+      0,
+    ).day;
+    int firstWeekday = DateTime(
+      _currentMonth.year,
+      _currentMonth.month,
+      1,
+    ).weekday;
+    int prevMonthDays = DateTime(
+      _currentMonth.year,
+      _currentMonth.month,
+      0,
+    ).day;
+
     // Adjust weekday to match Monday first (1: Mon, ..., 7: Sun)
     int firstDayOffset = firstWeekday - 1;
 
     List<Widget> dayWidgets = [];
-    
+
     // Previous month filler
     for (int i = 0; i < firstDayOffset; i++) {
-      dayWidgets.add(Center(child: Text('${prevMonthDays - firstDayOffset + i + 1}', style: const TextStyle(color: Color(0xFFE0E0E0), fontSize: 14))));
+      dayWidgets.add(
+        Center(
+          child: Text(
+            '${prevMonthDays - firstDayOffset + i + 1}',
+            style: const TextStyle(color: Color(0xFFE0E0E0), fontSize: 14),
+          ),
+        ),
+      );
     }
 
     // Current month days
     for (int i = 1; i <= daysInMonth; i++) {
       DateTime day = DateTime(_currentMonth.year, _currentMonth.month, i);
       DateState state = _getDateState(day);
-      
-      bool isCheckIn = _checkInDate != null && _checkInDate!.year == day.year && _checkInDate!.month == day.month && _checkInDate!.day == day.day;
-      bool isCheckOut = _checkOutDate != null && _checkOutDate!.year == day.year && _checkOutDate!.month == day.month && _checkOutDate!.day == day.day;
+
+      bool isCheckIn =
+          _checkInDate != null &&
+          _checkInDate!.year == day.year &&
+          _checkInDate!.month == day.month &&
+          _checkInDate!.day == day.day;
+      bool isCheckOut =
+          _checkOutDate != null &&
+          _checkOutDate!.year == day.year &&
+          _checkOutDate!.month == day.month &&
+          _checkOutDate!.day == day.day;
       bool isBetween = false;
       if (_checkInDate != null && _checkOutDate != null) {
-        if (day.isAfter(_checkInDate!) && day.isBefore(_checkOutDate!)) isBetween = true;
+        if (day.isAfter(_checkInDate!) && day.isBefore(_checkOutDate!)) {
+          isBetween = true;
+        }
       }
 
       Widget dayWidget;
-      bool isToday = day.year == DateTime.now().year && day.month == DateTime.now().month && day.day == DateTime.now().day;
+      bool isToday =
+          day.year == DateTime.now().year &&
+          day.month == DateTime.now().month &&
+          day.day == DateTime.now().day;
 
       if (isCheckIn || isCheckOut || isBetween) {
         dayWidget = Container(
           margin: const EdgeInsets.symmetric(vertical: 6),
           decoration: BoxDecoration(
             color: AppColors.primaryDark,
-            borderRadius: isCheckIn && isCheckOut ? BorderRadius.circular(20) 
-                        : isCheckIn ? const BorderRadius.horizontal(left: Radius.circular(20)) 
-                        : isCheckOut ? const BorderRadius.horizontal(right: Radius.circular(20)) 
-                        : BorderRadius.zero,
+            borderRadius: isCheckIn && isCheckOut
+                ? BorderRadius.circular(20)
+                : isCheckIn
+                ? const BorderRadius.horizontal(left: Radius.circular(20))
+                : isCheckOut
+                ? const BorderRadius.horizontal(right: Radius.circular(20))
+                : BorderRadius.zero,
           ),
           alignment: Alignment.center,
-          child: Text('$i', style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+          child: Text(
+            '$i',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         );
       } else {
         Color bgColor = Colors.transparent;
@@ -1043,7 +1464,16 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
             border: border,
             shape: BoxShape.circle,
           ),
-          child: Text('$i', style: TextStyle(color: textColor, fontSize: 14, fontWeight: isToday || state != DateState.past ? FontWeight.w500 : FontWeight.normal)),
+          child: Text(
+            '$i',
+            style: TextStyle(
+              color: textColor,
+              fontSize: 14,
+              fontWeight: isToday || state != DateState.past
+                  ? FontWeight.w500
+                  : FontWeight.normal,
+            ),
+          ),
         );
       }
 
@@ -1051,37 +1481,95 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
         GestureDetector(
           onTap: () {
             if (state == DateState.available) {
-               _onDayTapped(day);
+              _onDayTapped(day);
             }
           },
           child: dayWidget,
-        )
+        ),
       );
     }
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))]),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Column(
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               GestureDetector(
-                onTap: () => setState(() => _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1, 1)),
-                child: const Padding(padding: EdgeInsets.all(8), child: Icon(Icons.chevron_left, size: 20, color: AppColors.primaryDark)),
+                onTap: () => setState(
+                  () => _currentMonth = DateTime(
+                    _currentMonth.year,
+                    _currentMonth.month - 1,
+                    1,
+                  ),
+                ),
+                child: const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Icon(
+                    Icons.chevron_left,
+                    size: 20,
+                    color: AppColors.primaryDark,
+                  ),
+                ),
               ),
-              Text(DateFormat('MMMM yyyy').format(_currentMonth), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primaryDark)),
+              Text(
+                DateFormat('MMMM yyyy').format(_currentMonth),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: AppColors.primaryDark,
+                ),
+              ),
               GestureDetector(
-                onTap: () => setState(() => _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 1)),
-                child: const Padding(padding: EdgeInsets.all(8), child: Icon(Icons.chevron_right, size: 20, color: AppColors.primaryDark)),
+                onTap: () => setState(
+                  () => _currentMonth = DateTime(
+                    _currentMonth.year,
+                    _currentMonth.month + 1,
+                    1,
+                  ),
+                ),
+                child: const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Icon(
+                    Icons.chevron_right,
+                    size: 20,
+                    color: AppColors.primaryDark,
+                  ),
+                ),
               ),
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day) => Expanded(child: Center(child: Text(day, style: const TextStyle(fontSize: 12, color: Color(0xFF9E9E9E), fontWeight: FontWeight.w500))))).toList(),
+            children: ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+                .map(
+                  (day) => Expanded(
+                    child: Center(
+                      child: Text(
+                        day,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF9E9E9E),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
           ),
           const SizedBox(height: AppSpacing.md),
           GridView.count(
@@ -1092,7 +1580,13 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
             children: dayWidgets,
           ),
           if (_availabilityError != null)
-             Padding(padding: const EdgeInsets.only(top: 8), child: Text(_availabilityError!, style: const TextStyle(color: AppColors.error, fontSize: 12))),
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                _availabilityError!,
+                style: const TextStyle(color: AppColors.error, fontSize: 12),
+              ),
+            ),
           const SizedBox(height: AppSpacing.md),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -1106,30 +1600,79 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
           const SizedBox(height: AppSpacing.md),
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: const Color(0xFFFBF9F6), borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFBF9F6),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
             child: Row(
               children: [
-                const Icon(Icons.calendar_today, size: 18, color: AppColors.primaryDark),
+                const Icon(
+                  Icons.calendar_today,
+                  size: 18,
+                  color: AppColors.primaryDark,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('BOOKING DURATION', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
+                      const Text(
+                        'BOOKING DURATION',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
                       const SizedBox(height: 2),
                       if (_checkInDate != null && _checkOutDate != null)
-                        Text('${DateFormat('dd MMM').format(_checkInDate!)} → ${DateFormat('dd MMM').format(_checkOutDate!)} ($nights nights)', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryDark, fontSize: 12))
+                        Text(
+                          '${DateFormat('dd MMM').format(_checkInDate!)} → ${DateFormat('dd MMM').format(_checkOutDate!)} ($nights nights)',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primaryDark,
+                            fontSize: 12,
+                          ),
+                        )
                       else if (_checkInDate != null)
-                        Text('${DateFormat('dd MMM').format(_checkInDate!)} → Select Checkout', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryDark, fontSize: 12))
+                        Text(
+                          '${DateFormat('dd MMM').format(_checkInDate!)} → Select Checkout',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primaryDark,
+                            fontSize: 12,
+                          ),
+                        )
                       else
-                        const Text('Select Dates', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryDark, fontSize: 12)),
+                        const Text(
+                          'Select Dates',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primaryDark,
+                            fontSize: 12,
+                          ),
+                        ),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(color: const Color(0xFFE8F6F3), borderRadius: BorderRadius.circular(8)),
-                  child: const Text('Available', style: TextStyle(color: AppColors.primaryDark, fontSize: 10, fontWeight: FontWeight.bold)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F6F3),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'Available',
+                    style: TextStyle(
+                      color: AppColors.primaryDark,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -1148,11 +1691,20 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
           decoration: BoxDecoration(
             color: isOutline ? Colors.white : color,
             shape: BoxShape.circle,
-            border: isOutline ? Border.all(color: const Color(0xFF9E9E9E), width: 1.5) : null,
+            border: isOutline
+                ? Border.all(color: const Color(0xFF9E9E9E), width: 1.5)
+                : null,
           ),
         ),
         const SizedBox(width: 6),
-        Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF666666), fontWeight: FontWeight.w500)),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            color: Color(0xFF666666),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
       ],
     );
   }
@@ -1168,28 +1720,59 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: const [
-                  Text('ADD-ON VILLAGE EXPERIENCES', style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.primaryDark, fontSize: 14)),
-                  Text('Authentic traditions hosted by the village community', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                  Text(
+                    'ADD-ON VILLAGE EXPERIENCES',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.primaryDark,
+                      fontSize: 14,
+                    ),
+                  ),
+                  Text(
+                    'Authentic traditions hosted by the village community',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
                 ],
               ),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(color: const Color(0xFFFDF7E7), borderRadius: BorderRadius.circular(8)),
-              child: const Text('Recommended', style: TextStyle(color: Color(0xFF9E6541), fontSize: 10, fontWeight: FontWeight.bold)),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFDF7E7),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                'Recommended',
+                style: TextStyle(
+                  color: Color(0xFF9E6541),
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ],
         ),
         const SizedBox(height: AppSpacing.md),
         ..._homestay!.optionalAddOns.map((addon) {
-          final isSelected = _selectedAddOns.any((a) => a['title'] == addon['title']);
+          final isSelected = _selectedAddOns.any(
+            (a) => a['title'] == addon['title'],
+          );
           return GestureDetector(
             onTap: () {
               setState(() {
                 if (isSelected) {
-                  _selectedAddOns.removeWhere((a) => a['title'] == addon['title']);
+                  _selectedAddOns.removeWhere(
+                    (a) => a['title'] == addon['title'],
+                  );
                 } else {
-                  _selectedAddOns.add({'title': addon['title'], 'price': addon['price'], 'quantity': _guestCount});
+                  _selectedAddOns.add({
+                    'title': addon['title'],
+                    'price': addon['price'],
+                    'quantity': _guestCount,
+                  });
                 }
               });
             },
@@ -1199,12 +1782,21 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
               decoration: BoxDecoration(
                 color: isSelected ? const Color(0xFFF5FAF8) : Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: isSelected ? AppColors.primaryDark : AppColors.border, width: isSelected ? 1.5 : 1.0),
+                border: Border.all(
+                  color: isSelected ? AppColors.primaryDark : AppColors.border,
+                  width: isSelected ? 1.5 : 1.0,
+                ),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(isSelected ? Icons.check_box : Icons.check_box_outline_blank, color: AppColors.primaryDark, size: 20),
+                  Icon(
+                    isSelected
+                        ? Icons.check_box
+                        : Icons.check_box_outline_blank,
+                    color: AppColors.primaryDark,
+                    size: 20,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -1213,28 +1805,88 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Expanded(child: Text(addon['title'], style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryDark))),
-                            Text('+Rs. ${addon['price']}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryDark)),
+                            Expanded(
+                              child: Text(
+                                addon['title'],
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primaryDark,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              '+Rs. ${addon['price']}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primaryDark,
+                              ),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 4),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(color: const Color(0xFFFDF7E7), borderRadius: BorderRadius.circular(4)),
-                          child: const Text('Optional', style: TextStyle(color: Color(0xFF9E6541), fontSize: 8, fontWeight: FontWeight.bold)),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFDF7E7),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'Optional',
+                            style: TextStyle(
+                              color: Color(0xFF9E6541),
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                         const SizedBox(height: 6),
-                        const Text('Experience traditional village life with this custom add-on.', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                        const Text(
+                          'Experience traditional village life with this custom add-on.',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
                         const SizedBox(height: 8),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('Rs. ${addon['price']} / person', style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+                            Text(
+                              'Rs. ${addon['price']} / person',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(border: Border.all(color: AppColors.border), borderRadius: BorderRadius.circular(12)),
-                              child: const Row(children: [Text('Details', style: TextStyle(fontSize: 10, color: AppColors.textSecondary)), Icon(Icons.chevron_right, size: 12, color: AppColors.textSecondary)]),
-                            )
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: AppColors.border),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Row(
+                                children: [
+                                  Text(
+                                    'Details',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.chevron_right,
+                                    size: 12,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
                       ],
@@ -1252,39 +1904,93 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
   Widget _buildGuestsSection() {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.border)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Guests', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryDark, fontSize: 16)),
-              Text('Max ${_homestay!.maxGuests} guests allowed in homestay', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+              const Text(
+                'Guests',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryDark,
+                  fontSize: 16,
+                ),
+              ),
+              Text(
+                'Max ${_homestay!.maxGuests} guests allowed in homestay',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textSecondary,
+                ),
+              ),
             ],
           ),
           Row(
             children: [
               GestureDetector(
-                onTap: _guestCount > 1 ? () {
-                  setState(() {
-                    _guestCount--;
-                    for (var a in _selectedAddOns) { a['quantity'] = _guestCount; }
-                  });
-                } : null,
-                child: Container(padding: const EdgeInsets.all(4), decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: AppColors.border)), child: const Icon(Icons.remove, size: 16, color: AppColors.textSecondary)),
+                onTap: _guestCount > 1
+                    ? () {
+                        setState(() {
+                          _guestCount--;
+                          for (var a in _selectedAddOns) {
+                            a['quantity'] = _guestCount;
+                          }
+                        });
+                      }
+                    : null,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: const Icon(
+                    Icons.remove,
+                    size: 16,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ),
               const SizedBox(width: 12),
-              Text('$_guestCount', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primaryDark)),
+              Text(
+                '$_guestCount',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: AppColors.primaryDark,
+                ),
+              ),
               const SizedBox(width: 12),
               GestureDetector(
-                onTap: _guestCount < _homestay!.maxGuests ? () {
-                  setState(() {
-                    _guestCount++;
-                    for (var a in _selectedAddOns) { a['quantity'] = _guestCount; }
-                  });
-                } : null,
-                child: Container(padding: const EdgeInsets.all(4), decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: AppColors.border)), child: const Icon(Icons.add, size: 16, color: AppColors.textSecondary)),
+                onTap: _guestCount < _homestay!.maxGuests
+                    ? () {
+                        setState(() {
+                          _guestCount++;
+                          for (var a in _selectedAddOns) {
+                            a['quantity'] = _guestCount;
+                          }
+                        });
+                      }
+                    : null,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: const Icon(
+                    Icons.add,
+                    size: 16,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ),
             ],
           ),
@@ -1293,34 +1999,84 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
     );
   }
 
-  Widget _buildPaymentSummary(int nights, double accAmt, double addOnAmt, double total) {
+  Widget _buildPaymentSummary(
+    int nights,
+    double accAmt,
+    double addOnAmt,
+    double total,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Homestay stay (Rs. ${_homestay!.pricePerNight} x $nights nights)', style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
-            Text('Rs. $accAmt', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.primaryDark)),
+            Text(
+              'Homestay stay (Rs. ${_homestay!.pricePerNight} x $nights nights)',
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            Text(
+              'Rs. $accAmt',
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primaryDark,
+              ),
+            ),
           ],
         ),
         if (_selectedAddOns.isNotEmpty) const SizedBox(height: 8),
-        ..._selectedAddOns.map((addon) => Padding(
-          padding: const EdgeInsets.only(bottom: 4),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('• ${addon['title']} ($_guestCount guests)', style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
-              Text('+Rs. ${addon['price'] * addon['quantity']}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.primaryDark)),
-            ],
+        ..._selectedAddOns.map(
+          (addon) => Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '• ${addon['title']} ($_guestCount guests)',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                Text(
+                  '+Rs. ${addon['price'] * addon['quantity']}',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primaryDark,
+                  ),
+                ),
+              ],
+            ),
           ),
-        )),
-        const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Divider(color: AppColors.border)),
+        ),
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 12),
+          child: Divider(color: AppColors.border),
+        ),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Total Payable', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryDark, fontSize: 16)),
-            Text('Rs. $total', style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.primaryDark, fontSize: 18)),
+            const Text(
+              'Total Payable',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppColors.primaryDark,
+                fontSize: 16,
+              ),
+            ),
+            Text(
+              'Rs. $total',
+              style: const TextStyle(
+                fontWeight: FontWeight.w900,
+                color: AppColors.primaryDark,
+                fontSize: 18,
+              ),
+            ),
           ],
         ),
       ],
@@ -1328,10 +2084,26 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
   }
 
   Widget _buildBottomBar(int nights, double totalAmount) {
-    bool canBook = _checkInDate != null && _checkOutDate != null && nights > 0 && _availabilityError == null;
+    bool canBook =
+        _checkInDate != null &&
+        _checkOutDate != null &&
+        nights > 0 &&
+        _availabilityError == null;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
-      decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -5))]),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
       child: SafeArea(
         child: Row(
           children: [
@@ -1341,12 +2113,21 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    nights > 0 ? 'Rs. ${NumberFormat('#,##0').format(totalAmount)}' : 'Rs. ${NumberFormat('#,##0').format(_homestay!.pricePerNight)}', 
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.primaryDark)
+                    nights > 0
+                        ? 'Rs. ${NumberFormat('#,##0').format(totalAmount)}'
+                        : 'Rs. ${NumberFormat('#,##0').format(_homestay!.pricePerNight)}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: AppColors.primaryDark,
+                    ),
                   ),
                   Text(
-                    nights > 0 ? 'Total' : 'per night', 
-                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)
+                    nights > 0 ? 'Total' : 'per night',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
@@ -1354,20 +2135,39 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: ElevatedButton(
-                onPressed: canBook && !_isSubmitting ? () {
-                  AuthGuard.requireAuth(
-                    context: context,
-                    onAuthenticated: () => _showConfirmationDialog(totalAmount, nights),
-                  );
-                } : null,
+                onPressed: canBook && !_isSubmitting
+                    ? () {
+                        AuthGuard.requireAuth(
+                          context: context,
+                          onAuthenticated: () =>
+                              _showConfirmationDialog(totalAmount, nights),
+                        );
+                      }
+                    : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryDark,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                child: _isSubmitting 
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text('Request Booking', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 16)),
+                child: _isSubmitting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text(
+                        'Request Booking',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                      ),
               ),
             ),
           ],
@@ -1381,7 +2181,11 @@ class FullScreenGallery extends StatefulWidget {
   final List<String> images;
   final int initialIndex;
 
-  const FullScreenGallery({super.key, required this.images, required this.initialIndex});
+  const FullScreenGallery({
+    super.key,
+    required this.images,
+    required this.initialIndex,
+  });
 
   @override
   State<FullScreenGallery> createState() => _FullScreenGalleryState();
@@ -1414,7 +2218,10 @@ class _FullScreenGalleryState extends State<FullScreenGallery> {
                 maxScale: 4.0,
                 child: Hero(
                   tag: 'gallery_image_$index',
-                  child: Image.network(widget.images[index], fit: BoxFit.contain),
+                  child: Image.network(
+                    widget.images[index],
+                    fit: BoxFit.contain,
+                  ),
                 ),
               );
             },
@@ -1434,7 +2241,11 @@ class _FullScreenGalleryState extends State<FullScreenGallery> {
             child: Center(
               child: Text(
                 '${_currentIndex + 1} / ${widget.images.length}',
-                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),

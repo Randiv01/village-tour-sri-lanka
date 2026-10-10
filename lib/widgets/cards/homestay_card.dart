@@ -67,7 +67,10 @@ class _HomestayCardState extends State<HomestayCard>
 
       bool isFav = false;
       if (uid != null) {
-        final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .get();
         final favorites = List<String>.from(userDoc.data()?['favorites'] ?? []);
         isFav = favorites.contains(widget.homestay.id);
       }
@@ -79,7 +82,8 @@ class _HomestayCardState extends State<HomestayCard>
             .doc(widget.homestay.hostId)
             .get();
         if (hostDoc.exists) {
-          isHostVerified = hostDoc.data()?['isVerified'] == true ||
+          isHostVerified =
+              hostDoc.data()?['isVerified'] == true ||
               hostDoc.data()?['verified'] == true;
         }
       } catch (_) {}
@@ -106,19 +110,20 @@ class _HomestayCardState extends State<HomestayCard>
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
-    final userRef =
-        FirebaseFirestore.instance.collection('users').doc(uid);
+    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
     final newFav = !_isFavorite;
     setState(() => _isFavorite = newFav);
 
     _heartController.forward().then((_) => _heartController.reverse());
 
     if (newFav) {
-      await userRef
-          .update({'favorites': FieldValue.arrayUnion([widget.homestay.id])});
+      await userRef.update({
+        'favorites': FieldValue.arrayUnion([widget.homestay.id]),
+      });
     } else {
-      await userRef
-          .update({'favorites': FieldValue.arrayRemove([widget.homestay.id])});
+      await userRef.update({
+        'favorites': FieldValue.arrayRemove([widget.homestay.id]),
+      });
     }
   }
 
@@ -161,8 +166,9 @@ class _HomestayCardState extends State<HomestayCard>
           children: [
             // ─── Cinematic Cover Image ─────────────────────────────────
             ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(28)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
+              ),
               child: Stack(
                 children: [
                   // Image
@@ -173,7 +179,8 @@ class _HomestayCardState extends State<HomestayCard>
                         ? Image.network(
                             imageUrl,
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => _imagePlaceholder(),
+                            errorBuilder: (context, error, stackTrace) =>
+                                _imagePlaceholder(),
                           )
                         : _imagePlaceholder(),
                   ),
@@ -214,11 +221,7 @@ class _HomestayCardState extends State<HomestayCard>
 
                   // Verified badge
                   if (isVerified)
-                    Positioned(
-                      top: 14,
-                      left: 14,
-                      child: _verifiedBadge(),
-                    ),
+                    Positioned(top: 14, left: 14, child: _verifiedBadge()),
 
                   // Favorite button
                   Positioned(
@@ -235,13 +238,13 @@ class _HomestayCardState extends State<HomestayCard>
                             shape: BoxShape.circle,
                             color: AppColors.surface.withValues(alpha: 0.18),
                             border: Border.all(
-                              color:
-                                  AppColors.surface.withValues(alpha: 0.30),
+                              color: AppColors.surface.withValues(alpha: 0.30),
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.primaryDark
-                                    .withValues(alpha: 0.18),
+                                color: AppColors.primaryDark.withValues(
+                                  alpha: 0.18,
+                                ),
                                 blurRadius: 8,
                               ),
                             ],
@@ -283,8 +286,9 @@ class _HomestayCardState extends State<HomestayCard>
                                     fontSize: 18,
                                     shadows: [
                                       Shadow(
-                                        color: AppColors.primaryDark
-                                            .withValues(alpha: 0.6),
+                                        color: AppColors.primaryDark.withValues(
+                                          alpha: 0.6,
+                                        ),
                                         blurRadius: 6,
                                       ),
                                     ],
@@ -295,17 +299,21 @@ class _HomestayCardState extends State<HomestayCard>
                                 const SizedBox(height: 4),
                                 Row(
                                   children: [
-                                    Icon(Icons.location_on_rounded,
-                                        color: AppColors.surface
-                                            .withValues(alpha: 0.7),
-                                        size: 13),
+                                    Icon(
+                                      Icons.location_on_rounded,
+                                      color: AppColors.surface.withValues(
+                                        alpha: 0.7,
+                                      ),
+                                      size: 13,
+                                    ),
                                     const SizedBox(width: 3),
                                     Expanded(
                                       child: Text(
                                         hs.location,
                                         style: AppTextStyles.caption.copyWith(
-                                          color: AppColors.surface
-                                              .withValues(alpha: 0.70),
+                                          color: AppColors.surface.withValues(
+                                            alpha: 0.70,
+                                          ),
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -335,8 +343,7 @@ class _HomestayCardState extends State<HomestayCard>
                     Wrap(
                       spacing: 6,
                       runSpacing: 6,
-                      children:
-                          features.map((f) => _amenityChip(f)).toList(),
+                      children: features.map((f) => _amenityChip(f)).toList(),
                     ),
                     const SizedBox(height: 14),
                   ],
@@ -385,8 +392,7 @@ class _HomestayCardState extends State<HomestayCard>
       height: 220,
       color: AppColors.primaryDark.withValues(alpha: 0.12),
       child: const Center(
-        child: Icon(Icons.home_rounded,
-            size: 56, color: AppColors.primaryDark),
+        child: Icon(Icons.home_rounded, size: 56, color: AppColors.primaryDark),
       ),
     );
   }
@@ -399,10 +405,7 @@ class _HomestayCardState extends State<HomestayCard>
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.surface.withValues(alpha: 0.6)),
         boxShadow: [
-          BoxShadow(
-            color: Colors.blue.withValues(alpha: 0.15),
-            blurRadius: 6,
-          ),
+          BoxShadow(color: Colors.blue.withValues(alpha: 0.15), blurRadius: 6),
         ],
       ),
       child: Row(
@@ -447,8 +450,9 @@ class _HomestayCardState extends State<HomestayCard>
             Text(
               '($_reviewCount)',
               style: AppTextStyles.caption.copyWith(
-                  color: AppColors.textSecondary,
-                  fontSize: 10),
+                color: AppColors.textSecondary,
+                fontSize: 10,
+              ),
             ),
           ],
         ],
@@ -458,17 +462,28 @@ class _HomestayCardState extends State<HomestayCard>
 
   static IconData _amenityIcon(String amenity) {
     switch (amenity) {
-      case 'Wi-Fi':            return Icons.wifi_rounded;
-      case 'Free Parking':     return Icons.local_parking_rounded;
-      case 'Breakfast':        return Icons.free_breakfast_rounded;
-      case 'Private Bathroom': return Icons.bathtub_outlined;
-      case 'Hot Water':        return Icons.water_drop_outlined;
-      case 'Air Conditioning': return Icons.ac_unit_rounded;
-      case 'Fan':              return Icons.wind_power_rounded;
-      case 'Kitchen':          return Icons.kitchen_rounded;
-      case 'Garden':           return Icons.yard_rounded;
-      case 'TV':               return Icons.tv_rounded;
-      default:                 return Icons.check_circle_outline_rounded;
+      case 'Wi-Fi':
+        return Icons.wifi_rounded;
+      case 'Free Parking':
+        return Icons.local_parking_rounded;
+      case 'Breakfast':
+        return Icons.free_breakfast_rounded;
+      case 'Private Bathroom':
+        return Icons.bathtub_outlined;
+      case 'Hot Water':
+        return Icons.water_drop_outlined;
+      case 'Air Conditioning':
+        return Icons.ac_unit_rounded;
+      case 'Fan':
+        return Icons.wind_power_rounded;
+      case 'Kitchen':
+        return Icons.kitchen_rounded;
+      case 'Garden':
+        return Icons.yard_rounded;
+      case 'TV':
+        return Icons.tv_rounded;
+      default:
+        return Icons.check_circle_outline_rounded;
     }
   }
 
@@ -478,8 +493,7 @@ class _HomestayCardState extends State<HomestayCard>
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.15)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

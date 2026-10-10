@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../../../../theme/app_colors.dart';
@@ -8,30 +7,33 @@ import '../../../../theme/app_spacing.dart';
 import '../../../../theme/app_radius.dart';
 
 class HomeFilterData {
-  final DateTime? checkIn;
-  final DateTime? checkOut;
-  final int adults;
-  final int children;
+  final String category; // 'All', 'Destinations', 'Homestays'
   final bool useLocation;
   final Position? locationPosition;
 
+  // Advanced filters
+  final String sortBy; // 'a-z', 'newest', 'oldest', 'price_asc', 'price_desc'
+  final bool verifiedOnly;
+  final List<String> amenities;
+  final List<String> homestayTypes;
+
   HomeFilterData({
-    this.checkIn,
-    this.checkOut,
-    this.adults = 1,
-    this.children = 0,
+    this.category = 'All',
     this.useLocation = false,
     this.locationPosition,
+    this.sortBy = 'newest',
+    this.verifiedOnly = false,
+    this.amenities = const [],
+    this.homestayTypes = const [],
   });
 
   bool get hasAnyFilter =>
-      checkIn != null ||
-      checkOut != null ||
-      adults > 1 ||
-      children > 0 ||
-      useLocation;
-
-  int get totalGuests => adults + children;
+      useLocation ||
+      category != 'All' ||
+      sortBy != 'newest' ||
+      verifiedOnly ||
+      amenities.isNotEmpty ||
+      homestayTypes.isNotEmpty;
 }
 
 class HomeFilterBottomSheet extends StatefulWidget {
@@ -44,58 +46,50 @@ class HomeFilterBottomSheet extends StatefulWidget {
 }
 
 class _HomeFilterBottomSheetState extends State<HomeFilterBottomSheet> {
-  DateTime? _checkIn;
-  DateTime? _checkOut;
-  int _adults = 1;
-  int _children = 0;
   bool _useLocation = false;
   Position? _position;
+  String _category = 'All';
+
+  String _sortBy = 'newest';
+  bool _verifiedOnly = false;
+  List<String> _amenities = [];
+  List<String> _homestayTypes = [];
 
   bool _isLoadingLocation = false;
+
+  final List<String> _allAmenities = [
+    'Wi-Fi',
+    'Free Parking',
+    'Breakfast',
+    'Private Bathroom',
+    'Hot Water',
+    'Air Conditioning',
+    'Fan',
+    'Kitchen',
+    'Garden',
+    'TV',
+  ];
+
+  final List<String> _allHomestayTypes = [
+    'Villa',
+    'Cabana',
+    'Treehouse',
+    'Shared Room',
+    'Private Room',
+    'Entire Home',
+  ];
 
   @override
   void initState() {
     super.initState();
     if (widget.initialData != null) {
-      _checkIn = widget.initialData!.checkIn;
-      _checkOut = widget.initialData!.checkOut;
-      _adults = widget.initialData!.adults;
-      _children = widget.initialData!.children;
       _useLocation = widget.initialData!.useLocation;
       _position = widget.initialData!.locationPosition;
-    }
-  }
-
-  Future<void> _selectDates() async {
-    final now = DateTime.now();
-    final initialDateRange = _checkIn != null && _checkOut != null
-        ? DateTimeRange(start: _checkIn!, end: _checkOut!)
-        : null;
-
-    final result = await showDateRangePicker(
-      context: context,
-      firstDate: now,
-      lastDate: now.add(const Duration(days: 365)),
-      initialDateRange: initialDateRange,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primary,
-              onPrimary: Colors.white,
-              onSurface: AppColors.textPrimary,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (result != null) {
-      setState(() {
-        _checkIn = result.start;
-        _checkOut = result.end;
-      });
+      _category = widget.initialData!.category;
+      _sortBy = widget.initialData!.sortBy;
+      _verifiedOnly = widget.initialData!.verifiedOnly;
+      _amenities = List.from(widget.initialData!.amenities);
+      _homestayTypes = List.from(widget.initialData!.homestayTypes);
     }
   }
 
@@ -136,7 +130,11 @@ class _HomeFilterBottomSheetState extends State<HomeFilterBottomSheet> {
     }
 
     try {
-      final position = await Geolocator.getCurrentPosition(locationSettings: const LocationSettings(accuracy: LocationAccuracy.best));
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.best,
+        ),
+      );
       if (mounted) {
         setState(() {
           _useLocation = true;
@@ -145,7 +143,7 @@ class _HomeFilterBottomSheetState extends State<HomeFilterBottomSheet> {
         });
       }
     } catch (e) {
-      _showLocationError('Failed to get location.');
+      _showLocationError('Failed to get location');
     }
   }
 
@@ -153,12 +151,11 @@ class _HomeFilterBottomSheetState extends State<HomeFilterBottomSheet> {
     if (!mounted) return;
     setState(() {
       _isLoadingLocation = false;
-      _useLocation = false;
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red.shade800,
+        backgroundColor: AppColors.error,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -166,273 +163,387 @@ class _HomeFilterBottomSheetState extends State<HomeFilterBottomSheet> {
 
   void _clearFilters() {
     setState(() {
-      _checkIn = null;
-      _checkOut = null;
-      _adults = 1;
-      _children = 0;
       _useLocation = false;
       _position = null;
+      _category = 'All';
+      _sortBy = 'newest';
+      _verifiedOnly = false;
+      _amenities.clear();
+      _homestayTypes.clear();
     });
   }
 
   void _applyFilters() {
     Navigator.of(context).pop(
       HomeFilterData(
-        checkIn: _checkIn,
-        checkOut: _checkOut,
-        adults: _adults,
-        children: _children,
         useLocation: _useLocation,
         locationPosition: _position,
+        category: _category,
+        sortBy: _sortBy,
+        verifiedOnly: _verifiedOnly,
+        amenities: _amenities,
+        homestayTypes: _homestayTypes,
       ),
     );
   }
 
   bool get _hasAnyFilter =>
-      _checkIn != null ||
-      _checkOut != null ||
-      _adults > 1 ||
-      _children > 0 ||
-      _useLocation;
+      _useLocation ||
+      _category != 'All' ||
+      _sortBy != 'newest' ||
+      _verifiedOnly ||
+      _amenities.isNotEmpty ||
+      _homestayTypes.isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: const BoxDecoration(
         color: AppColors.background,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
       child: SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Filters', style: AppTextStyles.sectionHeading),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
-                    minWidth: 44,
-                    minHeight: 44,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.lg),
-
-            // Dates Section
-            Text('Dates', style: AppTextStyles.labelLarge),
-            const SizedBox(height: AppSpacing.sm),
-            Material(
-              color: AppColors.surface,
-              borderRadius: AppRadius.cardRadius,
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                onTap: _selectDates,
-                child: Container(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: AppColors.border.withValues(alpha: 0.5),
-                    ),
-                    borderRadius: AppRadius.cardRadius,
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Check-in',
-                              style: AppTextStyles.caption.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _checkIn != null
-                                  ? DateFormat('dd MMM').format(_checkIn!)
-                                  : 'Add date',
-                              style: AppTextStyles.bodyMedium,
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(width: 1, height: 30, color: AppColors.border),
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Check-out',
-                              style: AppTextStyles.caption.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _checkOut != null
-                                  ? DateFormat('dd MMM').format(_checkOut!)
-                                  : 'Add date',
-                              style: AppTextStyles.bodyMedium,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+            // Handle
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const SizedBox(height: AppSpacing.lg),
 
-            // Guests Section
-            Text('Guests', style: AppTextStyles.labelLarge),
-            const SizedBox(height: AppSpacing.sm),
-            _buildGuestRow(
-              'Adults',
-              _adults,
-              () {
-                if (_adults > 1) setState(() => _adults--);
-              },
-              () {
-                setState(() => _adults++);
-              },
-              min: 1,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            _buildGuestRow(
-              'Children',
-              _children,
-              () {
-                if (_children > 0) setState(() => _children--);
-              },
-              () {
-                setState(() => _children++);
-              },
-              min: 0,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-
-            // Location Section
-            Text('Location', style: AppTextStyles.labelLarge),
-            const SizedBox(height: AppSpacing.sm),
-            Material(
-              color: _useLocation
-                  ? AppColors.primary.withValues(alpha: 0.1)
-                  : AppColors.surface,
-              borderRadius: AppRadius.cardRadius,
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                onTap: _handleLocationTap,
-                child: Container(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: _useLocation
-                          ? AppColors.primary
-                          : AppColors.border.withValues(alpha: 0.5),
-                    ),
-                    borderRadius: AppRadius.cardRadius,
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.xl,
+                AppSpacing.sm,
+                AppSpacing.xl,
+                AppSpacing.md,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Filters', style: AppTextStyles.sectionHeading),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                    color: AppColors.textPrimary,
                   ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.my_location,
-                        color: _useLocation
-                            ? AppColors.primary
-                            : AppColors.textSecondary,
+                ],
+              ),
+            ),
+
+            // Scrollable Content
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.xl,
+                  0,
+                  AppSpacing.xl,
+                  AppSpacing.xl,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Category Selection
+                    Text('Category', style: AppTextStyles.labelLarge),
+                    const SizedBox(height: AppSpacing.sm),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _buildChoiceChip('All', _category == 'All'),
+                          const SizedBox(width: AppSpacing.sm),
+                          _buildChoiceChip(
+                            'Destinations',
+                            _category == 'Destinations',
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          _buildChoiceChip(
+                            'Homestays',
+                            _category == 'Homestays',
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: Text(
-                          _isLoadingLocation
-                              ? 'Locating...'
-                              : 'Use my location',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: _useLocation
-                                ? AppColors.primary
-                                : AppColors.textPrimary,
-                            fontWeight: _useLocation
-                                ? FontWeight.bold
-                                : FontWeight.normal,
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // Sort By
+                    Text('Sort By', style: AppTextStyles.labelLarge),
+                    const SizedBox(height: AppSpacing.sm),
+                    Wrap(
+                      spacing: AppSpacing.sm,
+                      runSpacing: AppSpacing.sm,
+                      children: [
+                        _buildSortChip('Newest', 'newest'),
+                        _buildSortChip('Oldest', 'oldest'),
+                        _buildSortChip('A-Z', 'a-z'),
+                        if (_category == 'All' || _category == 'Homestays') ...[
+                          _buildSortChip('Price: Low to High', 'price_asc'),
+                          _buildSortChip('Price: High to Low', 'price_desc'),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // Only for Homestays or All
+                    if (_category == 'All' || _category == 'Homestays') ...[
+                      // Verified Hosts
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: AppColors.border.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        child: SwitchListTile(
+                          title: Text(
+                            'Only Verified Hosts',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          subtitle: Text(
+                            'Show stays with trusted, verified hosts',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          value: _verifiedOnly,
+                          activeTrackColor: AppColors.primary,
+                          onChanged: (val) {
+                            setState(() {
+                              _verifiedOnly = val;
+                            });
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+
+                      // Homestay Types
+                      Text('Property Type', style: AppTextStyles.labelLarge),
+                      const SizedBox(height: AppSpacing.sm),
+                      Wrap(
+                        spacing: AppSpacing.sm,
+                        runSpacing: AppSpacing.sm,
+                        children: _allHomestayTypes.map((type) {
+                          final isSelected = _homestayTypes.contains(type);
+                          return FilterChip(
+                            label: Text(type),
+                            selected: isSelected,
+                            onSelected: (selected) {
+                              setState(() {
+                                if (selected) {
+                                  _homestayTypes.add(type);
+                                } else {
+                                  _homestayTypes.remove(type);
+                                }
+                              });
+                            },
+                            backgroundColor: AppColors.surface,
+                            selectedColor: AppColors.primary.withValues(
+                              alpha: 0.15,
+                            ),
+                            labelStyle: AppTextStyles.bodyMedium.copyWith(
+                              color: isSelected
+                                  ? AppColors.primaryDark
+                                  : AppColors.textPrimary,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                              side: BorderSide(
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : AppColors.border,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+
+                      // Amenities
+                      Text('Amenities', style: AppTextStyles.labelLarge),
+                      const SizedBox(height: AppSpacing.sm),
+                      Wrap(
+                        spacing: AppSpacing.sm,
+                        runSpacing: AppSpacing.sm,
+                        children: _allAmenities.map((amenity) {
+                          final isSelected = _amenities.contains(amenity);
+                          return FilterChip(
+                            label: Text(amenity),
+                            selected: isSelected,
+                            onSelected: (selected) {
+                              setState(() {
+                                if (selected) {
+                                  _amenities.add(amenity);
+                                } else {
+                                  _amenities.remove(amenity);
+                                }
+                              });
+                            },
+                            backgroundColor: AppColors.surface,
+                            selectedColor: AppColors.primary.withValues(
+                              alpha: 0.15,
+                            ),
+                            labelStyle: AppTextStyles.bodyMedium.copyWith(
+                              color: isSelected
+                                  ? AppColors.primaryDark
+                                  : AppColors.textPrimary,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                              side: BorderSide(
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : AppColors.border,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                    ],
+
+                    // Location Section
+                    Text('Location', style: AppTextStyles.labelLarge),
+                    const SizedBox(height: AppSpacing.sm),
+                    Material(
+                      color: _useLocation
+                          ? AppColors.primary.withValues(alpha: 0.1)
+                          : AppColors.surface,
+                      borderRadius: AppRadius.cardRadius,
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        onTap: _handleLocationTap,
+                        child: Container(
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: _useLocation
+                                  ? AppColors.primary
+                                  : AppColors.border.withValues(alpha: 0.5),
+                            ),
+                            borderRadius: AppRadius.cardRadius,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.my_location,
+                                color: _useLocation
+                                    ? AppColors.primary
+                                    : AppColors.textSecondary,
+                              ),
+                              const SizedBox(width: AppSpacing.md),
+                              Expanded(
+                                child: Text(
+                                  _isLoadingLocation
+                                      ? 'Locating...'
+                                      : 'Use my location',
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color: _useLocation
+                                        ? AppColors.primary
+                                        : AppColors.textPrimary,
+                                    fontWeight: _useLocation
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
+                                ),
+                              ),
+                              if (_isLoadingLocation)
+                                const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                       ),
-                      if (_isLoadingLocation)
-                        const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
-            const SizedBox(height: AppSpacing.xxl),
 
-            // Actions
-            Row(
-              children: [
-                TextButton(
-                  onPressed: _hasAnyFilter ? _clearFilters : null,
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.lg,
-                      vertical: AppSpacing.md,
-                    ),
-                    minimumSize: const Size(0, 44),
+            // Actions Footer
+            Container(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.xl,
+                AppSpacing.md,
+                AppSpacing.xl,
+                AppSpacing.xl,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    offset: const Offset(0, -4),
+                    blurRadius: 16,
                   ),
-                  child: Text(
-                    'Clear',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: _hasAnyFilter
-                          ? AppColors.textSecondary
-                          : AppColors.textSecondary.withValues(alpha: 0.4),
-                      fontWeight: FontWeight.bold,
+                ],
+              ),
+              child: Row(
+                children: [
+                  TextButton(
+                    onPressed: _hasAnyFilter ? _clearFilters : null,
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg,
+                        vertical: AppSpacing.md,
+                      ),
+                      minimumSize: const Size(0, 44),
                     ),
-                  ),
-                ),
-                const Spacer(),
-                ElevatedButton(
-                  onPressed: _hasAnyFilter ? _applyFilters : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    disabledBackgroundColor: AppColors.primary.withValues(
-                      alpha: 0.5,
-                    ),
-                    foregroundColor: AppColors.surface,
-                    disabledForegroundColor: AppColors.surface.withValues(
-                      alpha: 0.8,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.xl,
-                      vertical: AppSpacing.md,
-                    ),
-                    minimumSize: const Size(0, 44),
-                  ),
-                  child: Text(
-                    'Apply Filters',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: _hasAnyFilter
-                          ? AppColors.surface
-                          : AppColors.surface.withValues(alpha: 0.8),
-                      fontWeight: FontWeight.bold,
+                    child: Text(
+                      'Clear All',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: _hasAnyFilter
+                            ? AppColors.textSecondary
+                            : AppColors.textSecondary.withValues(alpha: 0.4),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                  const Spacer(),
+                  ElevatedButton(
+                    onPressed: _applyFilters,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.surface,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.xl,
+                        vertical: AppSpacing.md,
+                      ),
+                      minimumSize: const Size(0, 44),
+                    ),
+                    child: Text(
+                      'Apply Filters',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.surface,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -440,55 +551,67 @@ class _HomeFilterBottomSheetState extends State<HomeFilterBottomSheet> {
     );
   }
 
-  Widget _buildGuestRow(
-    String title,
-    int count,
-    VoidCallback onDecrease,
-    VoidCallback onIncrease, {
-    required int min,
-  }) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(title, style: AppTextStyles.bodyMedium),
-        Row(
-          children: [
-            _buildStepperButton(Icons.remove, onDecrease, count > min),
-            SizedBox(
-              width: 40,
-              child: Text(
-                count.toString(),
-                textAlign: TextAlign.center,
-                style: AppTextStyles.labelLarge,
-              ),
-            ),
-            _buildStepperButton(Icons.add, onIncrease, true),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStepperButton(IconData icon, VoidCallback onTap, bool enabled) {
-    return Material(
-      color: enabled ? AppColors.surface : AppColors.background,
-      shape: CircleBorder(
+  Widget _buildChoiceChip(String label, bool isSelected) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        if (selected) {
+          setState(() {
+            _category = label;
+            // Clear incompatible filters if necessary
+            if (label == 'Destinations') {
+              if (_sortBy == 'price_asc' || _sortBy == 'price_desc') {
+                _sortBy = 'newest';
+              }
+              _verifiedOnly = false;
+              _amenities.clear();
+              _homestayTypes.clear();
+            }
+          });
+        }
+      },
+      backgroundColor: AppColors.surface,
+      selectedColor: AppColors.primary,
+      labelStyle: AppTextStyles.bodyMedium.copyWith(
+        color: isSelected ? AppColors.surface : AppColors.textPrimary,
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+      ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
         side: BorderSide(
-          color: enabled
-              ? AppColors.border
-              : AppColors.border.withValues(alpha: 0.2),
+          color: isSelected ? AppColors.primary : AppColors.border,
         ),
       ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: enabled ? onTap : null,
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Icon(
-            icon,
-            size: 20,
-            color: enabled ? AppColors.textPrimary : AppColors.border,
-          ),
+    );
+  }
+
+  Widget _buildSortChip(String label, String value) {
+    final isSelected = _sortBy == value;
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        if (selected) {
+          setState(() {
+            _sortBy = value;
+          });
+        }
+      },
+      backgroundColor: AppColors.surface,
+      selectedColor: AppColors.secondary.withValues(alpha: 0.2),
+      labelStyle: AppTextStyles.bodyMedium.copyWith(
+        color: isSelected ? AppColors.primaryDark : AppColors.textPrimary,
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: isSelected ? AppColors.secondary : AppColors.border,
         ),
       ),
     );

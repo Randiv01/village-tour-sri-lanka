@@ -7,11 +7,13 @@ import '../../theme/app_spacing.dart';
 class AppBottomNavigation extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
+  final GlobalKey? exploreKey;
 
   const AppBottomNavigation({
     super.key,
     required this.currentIndex,
     required this.onTap,
+    this.exploreKey,
   });
 
   @override
@@ -37,7 +39,12 @@ class AppBottomNavigation extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildNavItem(Icons.home, 'Home', 0),
-              _buildNavItem(Icons.explore_outlined, 'Explore', 1),
+              _buildNavItem(
+                Icons.explore_outlined,
+                'Explore',
+                1,
+                key: exploreKey,
+              ),
               _buildNavItem(Icons.calendar_today_outlined, 'Bookings', 2),
               _buildNavItem(Icons.person_outline, 'Profile', 3),
             ],
@@ -47,10 +54,16 @@ class AppBottomNavigation extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem(IconData icon, String label, int index) {
+  Widget _buildNavItem(
+    IconData icon,
+    String label,
+    int index, {
+    GlobalKey? key,
+  }) {
     final isSelected = currentIndex == index;
     return Expanded(
       child: InkWell(
+        key: key,
         onTap: () => onTap(index),
         borderRadius: BorderRadius.circular(12),
         child: Padding(

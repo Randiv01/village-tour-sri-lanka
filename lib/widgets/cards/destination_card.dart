@@ -120,7 +120,11 @@ class DestinationCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Row(
                         children: [
-                          const Icon(Icons.location_on, size: 12, color: AppColors.secondary),
+                          const Icon(
+                            Icons.location_on,
+                            size: 12,
+                            color: AppColors.secondary,
+                          ),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
@@ -135,7 +139,8 @@ class DestinationCard extends StatelessWidget {
                         ],
                       ),
                     ],
-                    if (shortDescription != null && shortDescription!.isNotEmpty) ...[
+                    if (shortDescription != null &&
+                        shortDescription!.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(
                         shortDescription!,
@@ -155,7 +160,10 @@ class DestinationCard extends StatelessWidget {
                   top: 12,
                   right: 12,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primary,
                       borderRadius: BorderRadius.circular(12),

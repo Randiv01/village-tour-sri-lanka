@@ -54,6 +54,7 @@ class InternationalPhoneField extends StatelessWidget {
             initialCountryCode: 'LK',
             invalidNumberMessage: 'Please enter a valid phone number.',
             onChanged: onChanged,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
             // disableLengthCheck: false is the default, which automatically restricts typing beyond max length!
             flagsButtonPadding: const EdgeInsets.only(left: 12),
             showDropdownIcon: true,
@@ -91,10 +92,7 @@ class InternationalPhoneField extends StatelessWidget {
               ),
               focusedErrorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: AppColors.error,
-                  width: 2,
-                ),
+                borderSide: const BorderSide(color: AppColors.error, width: 2),
               ),
             ),
           ),

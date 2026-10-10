@@ -53,7 +53,9 @@ class PaymentModel {
       'status': status,
       'transactionId': transactionId,
       'description': description,
-      'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : FieldValue.serverTimestamp(),
+      'createdAt': createdAt != null
+          ? Timestamp.fromDate(createdAt!)
+          : FieldValue.serverTimestamp(),
       if (paidAt != null) 'paidAt': Timestamp.fromDate(paidAt!),
     };
   }

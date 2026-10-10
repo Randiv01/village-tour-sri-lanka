@@ -8,6 +8,7 @@ import '../../../../theme/app_spacing.dart';
 import '../../../../models/homestay.dart';
 import '../../../../models/homestay_booking.dart';
 import '../../../../repositories/homestay_booking_repository.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class HomestayBookingSheet extends StatefulWidget {
@@ -21,12 +22,12 @@ class HomestayBookingSheet extends StatefulWidget {
 
 class _HomestayBookingSheetState extends State<HomestayBookingSheet> {
   final _bookingRepo = HomestayBookingRepository();
-  
+
   DateTime? _checkInDate;
   DateTime? _checkOutDate;
   int _guestCount = 1;
   final List<Map<String, dynamic>> _selectedAddOns = [];
-  
+
   bool _isSubmitting = false;
   String? _availabilityError;
 
@@ -68,7 +69,13 @@ class _HomestayBookingSheetState extends State<HomestayBookingSheet> {
                     if (_availabilityError != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
-                        child: Text(_availabilityError!, style: const TextStyle(color: AppColors.error, fontSize: 12)),
+                        child: Text(
+                          _availabilityError!,
+                          style: const TextStyle(
+                            color: AppColors.error,
+                            fontSize: 12,
+                          ),
+                        ),
                       ),
                     const SizedBox(height: AppSpacing.lg),
                     _buildGuestSelection(),
@@ -77,7 +84,13 @@ class _HomestayBookingSheetState extends State<HomestayBookingSheet> {
                       _buildAddOnsSelection(),
                       const SizedBox(height: AppSpacing.lg),
                     ],
-                    if (nights > 0) _buildPriceBreakdown(nights, accommodationAmount, addOnAmount, totalAmount),
+                    if (nights > 0)
+                      _buildPriceBreakdown(
+                        nights,
+                        accommodationAmount,
+                        addOnAmount,
+                        totalAmount,
+                      ),
                   ],
                 ),
               ),
@@ -92,12 +105,23 @@ class _HomestayBookingSheetState extends State<HomestayBookingSheet> {
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.border))),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: AppColors.border)),
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text('Request to Book', style: AppTextStyles.sectionHeading.copyWith(color: AppColors.primaryDark, fontSize: 20)),
-          IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+          Text(
+            'Request to Book',
+            style: AppTextStyles.sectionHeading.copyWith(
+              color: AppColors.primaryDark,
+              fontSize: 20,
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => Navigator.pop(context),
+          ),
         ],
       ),
     );
@@ -109,7 +133,9 @@ class _HomestayBookingSheetState extends State<HomestayBookingSheet> {
         Expanded(
           child: _buildSelector(
             label: 'CHECK-IN',
-            value: _checkInDate != null ? DateFormat('MMM dd, yyyy').format(_checkInDate!) : 'Select Date',
+            value: _checkInDate != null
+                ? DateFormat('MMM dd, yyyy').format(_checkInDate!)
+                : 'Select Date',
             onTap: () => _selectDate(true),
           ),
         ),
@@ -117,7 +143,9 @@ class _HomestayBookingSheetState extends State<HomestayBookingSheet> {
         Expanded(
           child: _buildSelector(
             label: 'CHECK-OUT',
-            value: _checkOutDate != null ? DateFormat('MMM dd, yyyy').format(_checkOutDate!) : 'Select Date',
+            value: _checkOutDate != null
+                ? DateFormat('MMM dd, yyyy').format(_checkOutDate!)
+                : 'Select Date',
             onTap: () => _selectDate(false),
           ),
         ),
@@ -133,7 +161,11 @@ class _HomestayBookingSheetState extends State<HomestayBookingSheet> {
     );
   }
 
-  Widget _buildSelector({required String label, required String value, required VoidCallback onTap}) {
+  Widget _buildSelector({
+    required String label,
+    required String value,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -145,9 +177,22 @@ class _HomestayBookingSheetState extends State<HomestayBookingSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textSecondary,
+              ),
+            ),
             const SizedBox(height: 4),
-            Text(value, style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+            Text(
+              value,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
           ],
         ),
       ),
@@ -158,10 +203,18 @@ class _HomestayBookingSheetState extends State<HomestayBookingSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Optional Add-ons', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryDark)),
+        const Text(
+          'Optional Add-ons',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppColors.primaryDark,
+          ),
+        ),
         const SizedBox(height: 8),
         ...widget.homestay.optionalAddOns.map((addon) {
-          final isSelected = _selectedAddOns.any((a) => a['title'] == addon['title']);
+          final isSelected = _selectedAddOns.any(
+            (a) => a['title'] == addon['title'],
+          );
           return CheckboxListTile(
             title: Text(addon['title']),
             subtitle: Text('Rs. ${addon['price']} per person'),
@@ -172,9 +225,15 @@ class _HomestayBookingSheetState extends State<HomestayBookingSheet> {
             onChanged: (val) {
               setState(() {
                 if (val == true) {
-                  _selectedAddOns.add({'title': addon['title'], 'price': addon['price'], 'quantity': _guestCount});
+                  _selectedAddOns.add({
+                    'title': addon['title'],
+                    'price': addon['price'],
+                    'quantity': _guestCount,
+                  });
                 } else {
-                  _selectedAddOns.removeWhere((a) => a['title'] == addon['title']);
+                  _selectedAddOns.removeWhere(
+                    (a) => a['title'] == addon['title'],
+                  );
                 }
               });
             },
@@ -184,10 +243,18 @@ class _HomestayBookingSheetState extends State<HomestayBookingSheet> {
     );
   }
 
-  Widget _buildPriceBreakdown(int nights, double accAmt, double addOnAmt, double total) {
+  Widget _buildPriceBreakdown(
+    int nights,
+    double accAmt,
+    double addOnAmt,
+    double total,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: const Color(0xFFFBF9F6), borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFBF9F6),
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -202,18 +269,27 @@ class _HomestayBookingSheetState extends State<HomestayBookingSheet> {
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Add-ons'),
-                Text('Rs. $addOnAmt'),
-              ],
+              children: [const Text('Add-ons'), Text('Rs. $addOnAmt')],
             ),
           ],
-          const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Divider()),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: Divider(),
+          ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Total (LKR)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-              Text('Rs. $total', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const Text(
+                'Total (LKR)',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              Text(
+                'Rs. $total',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
             ],
           ),
         ],
@@ -222,24 +298,52 @@ class _HomestayBookingSheetState extends State<HomestayBookingSheet> {
   }
 
   Widget _buildFooter(int nights, double totalAmount) {
-    final isValid = _checkInDate != null && _checkOutDate != null && nights > 0 && _availabilityError == null;
-    
+    final isValid =
+        _checkInDate != null &&
+        _checkOutDate != null &&
+        nights > 0 &&
+        _availabilityError == null;
+
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -5))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
       ),
       child: ElevatedButton(
-        onPressed: isValid && !_isSubmitting ? () => _submitRequest(totalAmount, nights) : null,
+        onPressed: isValid && !_isSubmitting
+            ? () => _submitRequest(totalAmount, nights)
+            : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primaryDark,
           padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
-        child: _isSubmitting 
-            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-            : const Text('Send Request', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 16)),
+        child: _isSubmitting
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              )
+            : const Text(
+                'Send Request',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  fontSize: 16,
+                ),
+              ),
       ),
     );
   }
@@ -247,19 +351,23 @@ class _HomestayBookingSheetState extends State<HomestayBookingSheet> {
   Future<void> _selectDate(bool isCheckIn) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: isCheckIn 
-          ? (_checkInDate ?? DateTime.now().add(const Duration(days: 1))) 
-          : (_checkOutDate ?? (_checkInDate?.add(const Duration(days: 1)) ?? DateTime.now().add(const Duration(days: 2)))),
+      initialDate: isCheckIn
+          ? (_checkInDate ?? DateTime.now().add(const Duration(days: 1)))
+          : (_checkOutDate ??
+                (_checkInDate?.add(const Duration(days: 1)) ??
+                    DateTime.now().add(const Duration(days: 2)))),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
       selectableDayPredicate: (day) {
         // Block unavailable dates
         for (var unavailable in widget.homestay.unavailableDates) {
-          if (day.year == unavailable.year && day.month == unavailable.month && day.day == unavailable.day) {
+          if (day.year == unavailable.year &&
+              day.month == unavailable.month &&
+              day.day == unavailable.day) {
             return false;
           }
         }
-        
+
         // Block weekly recurring unavailable days
         final weekday = DateFormat('EEEE').format(day).toLowerCase();
         if (widget.homestay.availableDays[weekday] == false) {
@@ -275,12 +383,14 @@ class _HomestayBookingSheetState extends State<HomestayBookingSheet> {
         if (isCheckIn) {
           _checkInDate = picked;
           if (_checkOutDate != null && !_checkOutDate!.isAfter(_checkInDate!)) {
-            _checkOutDate = null; // Reset checkout if it's before or equal to new checkin
+            _checkOutDate =
+                null; // Reset checkout if it's before or equal to new checkin
           }
         } else {
           _checkOutDate = picked;
           if (_checkInDate != null && !_checkOutDate!.isAfter(_checkInDate!)) {
-            _checkInDate = null; // Reset checkin if it's after or equal to new checkout
+            _checkInDate =
+                null; // Reset checkin if it's after or equal to new checkout
           }
         }
         _availabilityError = null; // Reset error when dates change
@@ -304,7 +414,10 @@ class _HomestayBookingSheetState extends State<HomestayBookingSheet> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Guests', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  const Text(
+                    'Guests',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
                   const SizedBox(height: AppSpacing.lg),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -314,12 +427,19 @@ class _HomestayBookingSheetState extends State<HomestayBookingSheet> {
                         children: [
                           IconButton(
                             icon: const Icon(Icons.remove_circle_outline),
-                            onPressed: tempGuests > 1 ? () => setStateSB(() => tempGuests--) : null,
+                            onPressed: tempGuests > 1
+                                ? () => setStateSB(() => tempGuests--)
+                                : null,
                           ),
-                          Text('$tempGuests', style: const TextStyle(fontSize: 16)),
+                          Text(
+                            '$tempGuests',
+                            style: const TextStyle(fontSize: 16),
+                          ),
                           IconButton(
                             icon: const Icon(Icons.add_circle_outline),
-                            onPressed: tempGuests < widget.homestay.maxGuests ? () => setStateSB(() => tempGuests++) : null,
+                            onPressed: tempGuests < widget.homestay.maxGuests
+                                ? () => setStateSB(() => tempGuests++)
+                                : null,
                           ),
                         ],
                       ),
@@ -339,14 +459,19 @@ class _HomestayBookingSheetState extends State<HomestayBookingSheet> {
                         });
                         Navigator.pop(context);
                       },
-                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryDark),
-                      child: const Text('Save', style: TextStyle(color: Colors.white)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryDark,
+                      ),
+                      child: const Text(
+                        'Save',
+                        style: TextStyle(color: Colors.white),
+                      ),
                     ),
                   ),
                 ],
               ),
             );
-          }
+          },
         );
       },
     );
@@ -358,11 +483,14 @@ class _HomestayBookingSheetState extends State<HomestayBookingSheet> {
     });
 
     try {
-      final activeBookings = await _bookingRepo.getActiveBookingsForHomestay(widget.homestay.id);
-      
+      final activeBookings = await _bookingRepo.getActiveBookingsForHomestay(
+        widget.homestay.id,
+      );
+
       bool overlap = false;
       for (var b in activeBookings) {
-        if (_checkInDate!.isBefore(b.checkOutDate) && _checkOutDate!.isAfter(b.checkInDate)) {
+        if (_checkInDate!.isBefore(b.checkOutDate) &&
+            _checkOutDate!.isAfter(b.checkInDate)) {
           overlap = true;
           break;
         }
@@ -370,7 +498,8 @@ class _HomestayBookingSheetState extends State<HomestayBookingSheet> {
 
       if (overlap) {
         setState(() {
-          _availabilityError = 'These dates are already booked. Please select different dates.';
+          _availabilityError =
+              'These dates are already booked. Please select different dates.';
         });
       }
     } catch (e) {
@@ -385,7 +514,10 @@ class _HomestayBookingSheetState extends State<HomestayBookingSheet> {
     setState(() => _isSubmitting = true);
 
     try {
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
       if (!userDoc.exists) throw Exception('User profile not found');
       final userData = userDoc.data() as Map<String, dynamic>;
       final userName = userData['name'] ?? 'Traveler';
@@ -416,14 +548,20 @@ class _HomestayBookingSheetState extends State<HomestayBookingSheet> {
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Booking request sent to host!'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('Booking request sent to host!'),
+            backgroundColor: Colors.green,
+          ),
         );
       }
     } catch (e) {
       debugPrint('Error creating booking: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     } finally {

@@ -10,6 +10,8 @@ import '../../screens/traveler/profile/settings_screen.dart';
 import '../../screens/traveler/packages/traveler_tour_packages_screen.dart';
 import '../../screens/traveler/gallery/village_gallery_screen.dart';
 
+import 'package:package_info_plus/package_info_plus.dart';
+
 class AppSideMenu extends StatelessWidget {
   const AppSideMenu({super.key});
 
@@ -103,8 +105,6 @@ class AppSideMenu extends StatelessWidget {
                   vertical: AppSpacing.lg,
                 ),
                 children: [
-
-
                   // Main Menu Section
                   _buildSectionTitle('MAIN MENU', 'EXPERIENCES'),
                   _buildMenuItem(
@@ -116,7 +116,8 @@ class AppSideMenu extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const BuffetLunchExperienceScreen(),
+                          builder: (context) =>
+                              const BuffetLunchExperienceScreen(),
                         ),
                       );
                     },
@@ -144,7 +145,8 @@ class AppSideMenu extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const TravelerTourPackagesScreen(),
+                          builder: (context) =>
+                              const TravelerTourPackagesScreen(),
                         ),
                       );
                     },
@@ -224,12 +226,20 @@ class AppSideMenu extends StatelessWidget {
                       color: AppColors.softSecondarySurface,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(
-                      'v1.0.4',
-                      style: AppTextStyles.caption.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primaryDark,
-                      ),
+                    child: FutureBuilder<PackageInfo>(
+                      future: PackageInfo.fromPlatform(),
+                      builder: (context, snapshot) {
+                        final version = snapshot.hasData
+                            ? 'v${snapshot.data!.version}'
+                            : 'v...';
+                        return Text(
+                          version,
+                          style: AppTextStyles.caption.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primaryDark,
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ],

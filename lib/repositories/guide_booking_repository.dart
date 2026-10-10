@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../models/guide_booking.dart';
 
 class GuideBookingRepository {
@@ -30,9 +31,11 @@ class GuideBookingRepository {
         .map((snapshot) {
           final bookings = snapshot.docs
               .map((doc) => GuideBooking.fromMap(doc.data(), doc.id))
-              .where((b) =>
-                  b.startDate.isAfter(now) &&
-                  (b.status == 'confirmed' || b.status == 'accepted'))
+              .where(
+                (b) =>
+                    b.startDate.isAfter(now) &&
+                    (b.status == 'confirmed' || b.status == 'accepted'),
+              )
               .toList();
           bookings.sort((a, b) => a.startDate.compareTo(b.startDate));
           return bookings;
@@ -48,7 +51,13 @@ class GuideBookingRepository {
     return null;
   }
 
-  Future<void> _createNotification(String guideId, String title, String body, String type, String bookingId) async {
+  Future<void> _createNotification(
+    String guideId,
+    String title,
+    String body,
+    String type,
+    String bookingId,
+  ) async {
     await _firestore.collection('notifications').add({
       'userId': guideId,
       'title': title,
@@ -68,7 +77,7 @@ class GuideBookingRepository {
       'createdAt': FieldValue.serverTimestamp(),
     };
     await docRef.set(data);
-    
+
     await _createNotification(
       booking.guideId,
       'New Booking Request',
@@ -81,7 +90,11 @@ class GuideBookingRepository {
   }
 
   // Check if dates overlap with existing confirmed/pending/accepted bookings
-  Future<bool> checkDateOverlap(String packageId, DateTime startDate, DateTime endDate) async {
+  Future<bool> checkDateOverlap(
+    String packageId,
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
     // Note: Firestore doesn't easily support range queries on multiple fields.
     // So we fetch relevant active bookings and check locally.
     final snapshot = await _firestore
@@ -92,16 +105,25 @@ class GuideBookingRepository {
 
     for (var doc in snapshot.docs) {
       final b = GuideBooking.fromMap(doc.data(), doc.id);
-      
+
       // Start dates are inclusive, end dates are inclusive.
       // Logic: If (newStart <= existingEnd) AND (newEnd >= existingStart) -> OVERLAP
       // Since it's dates without time (or midnight), we use <= and >= for inclusive overlap.
-      final existingStart = DateTime(b.startDate.year, b.startDate.month, b.startDate.day);
-      final existingEnd = DateTime(b.endDate.year, b.endDate.month, b.endDate.day);
+      final existingStart = DateTime(
+        b.startDate.year,
+        b.startDate.month,
+        b.startDate.day,
+      );
+      final existingEnd = DateTime(
+        b.endDate.year,
+        b.endDate.month,
+        b.endDate.day,
+      );
       final newStart = DateTime(startDate.year, startDate.month, startDate.day);
       final newEnd = DateTime(endDate.year, endDate.month, endDate.day);
 
-      if (newStart.compareTo(existingEnd) <= 0 && newEnd.compareTo(existingStart) >= 0) {
+      if (newStart.compareTo(existingEnd) <= 0 &&
+          newEnd.compareTo(existingStart) >= 0) {
         return true; // Overlap found
       }
     }
@@ -110,7 +132,7 @@ class GuideBookingRepository {
 
   // Update booking status
   Future<void> updateBookingStatus(
-    String bookingId, 
+    String bookingId,
     String status, {
     String? paymentStatus,
     String? rejectionReason,
@@ -126,8 +148,12 @@ class GuideBookingRepository {
     if (paymentStatus != null) updates['paymentStatus'] = paymentStatus;
     if (rejectionReason != null) updates['rejectionReason'] = rejectionReason;
     if (transactionId != null) updates['transactionId'] = transactionId;
-    if (acceptedAt != null) updates['acceptedAt'] = Timestamp.fromDate(acceptedAt);
-    if (rejectedAt != null) updates['rejectedAt'] = Timestamp.fromDate(rejectedAt);
+    if (acceptedAt != null) {
+      updates['acceptedAt'] = Timestamp.fromDate(acceptedAt);
+    }
+    if (rejectedAt != null) {
+      updates['rejectedAt'] = Timestamp.fromDate(rejectedAt);
+    }
     if (paidAt != null) updates['paidAt'] = Timestamp.fromDate(paidAt);
 
     await _firestore.collection(_collection).doc(bookingId).update(updates);
@@ -144,7 +170,7 @@ class GuideBookingRepository {
           bookingId,
         );
       } else if (paymentStatus == 'failed') {
-         await _createNotification(
+        await _createNotification(
           booking.guideId,
           'Payment Failed',
           'Payment failed for ${booking.packageTitle} from ${booking.guestName}.',
@@ -152,7 +178,7 @@ class GuideBookingRepository {
           bookingId,
         );
       } else if (status == 'cancelled') {
-         await _createNotification(
+        await _createNotification(
           booking.guideId,
           'Booking Cancelled',
           '${booking.guestName} has cancelled the booking for ${booking.packageTitle}.',
@@ -172,9 +198,11 @@ class GuideBookingRepository {
         .get();
     return snapshot.docs
         .map((doc) => GuideBooking.fromMap(doc.data(), doc.id))
-        .where((b) =>
-            b.startDate.isAfter(now) &&
-            (b.status == 'confirmed' || b.status == 'pending'))
+        .where(
+          (b) =>
+              b.startDate.isAfter(now) &&
+              (b.status == 'confirmed' || b.status == 'pending'),
+        )
         .length;
   }
 }

@@ -21,8 +21,8 @@ class AuthService {
         email: email.trim(),
         password: password,
       );
-      
-      // TEMPORARY FIX: Automatically create/repair the admin's Firestore profile 
+
+      // TEMPORARY FIX: Automatically create/repair the admin's Firestore profile
       // if they log in with the admin email.
       if (email.trim().toLowerCase() == 'admin@villagetour.com') {
         final docRef = _firestore.collection('users').doc(cred.user!.uid);
@@ -43,18 +43,18 @@ class AuthService {
       }
 
       final user = await getUserProfile(cred.user!.uid);
-      
+
       if (user == null) {
         // Fallback for missing profile
         await _auth.signOut();
         throw 'No profile found for this account. Please contact support.';
       }
-      
+
       if (!user.isActive) {
         await _auth.signOut();
         throw 'Your account has been deactivated. Please contact support.';
       }
-      
+
       return user;
     } on FirebaseAuthException catch (e) {
       throw _handleFirebaseAuthError(e);
@@ -125,12 +125,15 @@ class AuthService {
   // Google Sign In
   Future<UserCredential> signInWithGoogle() async {
     try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn(scopes: ['email']).signIn();
+      final GoogleSignInAccount? googleUser = await GoogleSignIn(
+        scopes: ['email'],
+      ).signIn();
       if (googleUser == null) {
         throw 'Sign in with Google was cancelled.';
       }
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
       final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
@@ -249,8 +252,11 @@ class AuthService {
       if (data.containsKey('fullName') && data['fullName'] is String) {
         await _auth.currentUser?.updateDisplayName(data['fullName'] as String);
       }
-      if (data.containsKey('profileImageUrl') && data['profileImageUrl'] is String) {
-        await _auth.currentUser?.updatePhotoURL(data['profileImageUrl'] as String);
+      if (data.containsKey('profileImageUrl') &&
+          data['profileImageUrl'] is String) {
+        await _auth.currentUser?.updatePhotoURL(
+          data['profileImageUrl'] as String,
+        );
       }
     } catch (e) {
       if (e is String) rethrow;
@@ -268,68 +274,91 @@ class AuthService {
     try {
       final user = _auth.currentUser;
       if (user == null) throw 'No user is currently signed in.';
-      
+
       final uid = user.uid;
       final batch = _firestore.batch();
-      
+
       // Delete homestays
-      final homestays = await _firestore.collection('homestays').where('hostId', isEqualTo: uid).get();
+      final homestays = await _firestore
+          .collection('homestays')
+          .where('hostId', isEqualTo: uid)
+          .get();
       for (var doc in homestays.docs) {
         batch.delete(doc.reference);
       }
-      
+
       // Delete tour packages
-      final packages = await _firestore.collection('tour_packages').where('guideId', isEqualTo: uid).get();
+      final packages = await _firestore
+          .collection('tour_packages')
+          .where('guideId', isEqualTo: uid)
+          .get();
       for (var doc in packages.docs) {
         batch.delete(doc.reference);
       }
-      
+
       // Delete homestay bookings (as traveler)
-      final hbTraveler = await _firestore.collection('homestay_bookings').where('travelerId', isEqualTo: uid).get();
+      final hbTraveler = await _firestore
+          .collection('homestay_bookings')
+          .where('travelerId', isEqualTo: uid)
+          .get();
       for (var doc in hbTraveler.docs) {
         batch.delete(doc.reference);
       }
-      
+
       // Delete homestay bookings (as host)
-      final hbHost = await _firestore.collection('homestay_bookings').where('hostId', isEqualTo: uid).get();
+      final hbHost = await _firestore
+          .collection('homestay_bookings')
+          .where('hostId', isEqualTo: uid)
+          .get();
       for (var doc in hbHost.docs) {
         batch.delete(doc.reference);
       }
-      
+
       // Delete guide bookings (as guest)
-      final gbGuest = await _firestore.collection('guide_bookings').where('guestId', isEqualTo: uid).get();
+      final gbGuest = await _firestore
+          .collection('guide_bookings')
+          .where('guestId', isEqualTo: uid)
+          .get();
       for (var doc in gbGuest.docs) {
         batch.delete(doc.reference);
       }
-      
+
       // Delete guide bookings (as guide)
-      final gbGuide = await _firestore.collection('guide_bookings').where('guideId', isEqualTo: uid).get();
+      final gbGuide = await _firestore
+          .collection('guide_bookings')
+          .where('guideId', isEqualTo: uid)
+          .get();
       for (var doc in gbGuide.docs) {
         batch.delete(doc.reference);
       }
-      
+
       // Delete payments
-      final payments = await _firestore.collection('payments').where('userId', isEqualTo: uid).get();
+      final payments = await _firestore
+          .collection('payments')
+          .where('userId', isEqualTo: uid)
+          .get();
       for (var doc in payments.docs) {
         batch.delete(doc.reference);
       }
-      
+
       // Delete reviews
-      final reviews = await _firestore.collection('homestay_reviews').where('travelerId', isEqualTo: uid).get();
+      final reviews = await _firestore
+          .collection('homestay_reviews')
+          .where('travelerId', isEqualTo: uid)
+          .get();
       for (var doc in reviews.docs) {
         batch.delete(doc.reference);
       }
-      
+
       // Delete user profile
       final userRef = _firestore.collection('users').doc(uid);
       batch.delete(userRef);
-      
+
       // Commit all deletions
       await batch.commit();
-      
+
       // Delete Firebase Auth User
       await user.delete();
-      
     } on FirebaseAuthException catch (e) {
       if (e.code == 'requires-recent-login') {
         throw 'For security reasons, please sign out and sign in again before deleting your account.';

@@ -50,7 +50,11 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
                 color: AppColors.error.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.delete_outline, color: AppColors.error, size: 20),
+              child: const Icon(
+                Icons.delete_outline,
+                color: AppColors.error,
+                size: 20,
+              ),
             ),
             const SizedBox(width: AppSpacing.md),
             const Text('Delete Tour Package?'),
@@ -77,7 +81,10 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
 
     setState(() => _isLoading = true);
     try {
-      final hasBookings = await _repo.hasBookings(_package.id, _package.guideId);
+      final hasBookings = await _repo.hasBookings(
+        _package.id,
+        _package.guideId,
+      );
       if (hasBookings) {
         await _repo.updatePackageStatus(_package.id, 'inactive');
         if (mounted) {
@@ -144,13 +151,14 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Scaffold(
         backgroundColor: AppColors.background,
-        body: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+        body: Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
       );
     }
 
@@ -166,12 +174,12 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
 
     final sortedDates = List<DateTime>.from(_package.availabilityDates)..sort();
     final today = DateTime.now();
-    final upcomingDates = sortedDates.where(
-      (d) => !d.isBefore(DateTime(today.year, today.month, today.day)),
-    ).toList();
-    final pastDates = sortedDates.where(
-      (d) => d.isBefore(DateTime(today.year, today.month, today.day)),
-    ).toList();
+    final upcomingDates = sortedDates
+        .where((d) => !d.isBefore(DateTime(today.year, today.month, today.day)))
+        .toList();
+    final pastDates = sortedDates
+        .where((d) => d.isBefore(DateTime(today.year, today.month, today.day)))
+        .toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -205,7 +213,11 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
                     value: 'edit',
                     child: Row(
                       children: [
-                        const Icon(Icons.edit_outlined, size: 18, color: AppColors.primaryDark),
+                        const Icon(
+                          Icons.edit_outlined,
+                          size: 18,
+                          color: AppColors.primaryDark,
+                        ),
                         const SizedBox(width: 8),
                         Text('Edit Package', style: AppTextStyles.bodyMedium),
                       ],
@@ -215,9 +227,16 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
                     value: 'availability',
                     child: Row(
                       children: [
-                        const Icon(Icons.calendar_month_outlined, size: 18, color: AppColors.primaryDark),
+                        const Icon(
+                          Icons.calendar_month_outlined,
+                          size: 18,
+                          color: AppColors.primaryDark,
+                        ),
                         const SizedBox(width: 8),
-                        Text('Manage Availability', style: AppTextStyles.bodyMedium),
+                        Text(
+                          'Manage Availability',
+                          style: AppTextStyles.bodyMedium,
+                        ),
                       ],
                     ),
                   ),
@@ -225,9 +244,18 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
                     value: 'delete',
                     child: Row(
                       children: [
-                        const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
+                        const Icon(
+                          Icons.delete_outline,
+                          size: 18,
+                          color: AppColors.error,
+                        ),
                         const SizedBox(width: 8),
-                        Text('Delete Package', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error)),
+                        Text(
+                          'Delete Package',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.error,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -281,7 +309,9 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
                             right: 16,
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 4),
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.black54,
                                 borderRadius: BorderRadius.circular(12),
@@ -289,9 +319,10 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
                               child: Text(
                                 '${_currentImageIndex + 1} / ${allImages.length}',
                                 style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold),
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ),
@@ -299,7 +330,11 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
                     )
                   : Container(
                       color: AppColors.primaryDark,
-                      child: const Icon(Icons.explore, size: 80, color: Colors.white24),
+                      child: const Icon(
+                        Icons.explore,
+                        size: 80,
+                        color: Colors.white24,
+                      ),
                     ),
             ),
           ),
@@ -318,8 +353,9 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
                       Expanded(
                         child: Text(
                           _package.title,
-                          style: AppTextStyles.screenHeading
-                              .copyWith(color: AppColors.primaryDark),
+                          style: AppTextStyles.screenHeading.copyWith(
+                            color: AppColors.primaryDark,
+                          ),
                         ),
                       ),
                       const SizedBox(width: AppSpacing.md),
@@ -332,17 +368,21 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
                   if (_package.category != null)
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.secondary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                            color: AppColors.secondary.withValues(alpha: 0.3)),
+                          color: AppColors.secondary.withValues(alpha: 0.3),
+                        ),
                       ),
                       child: Text(
                         _package.category!,
-                        style: AppTextStyles.caption
-                            .copyWith(color: AppColors.secondary),
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.secondary,
+                        ),
                       ),
                     ),
                   const SizedBox(height: AppSpacing.md),
@@ -350,8 +390,9 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
                   // Price
                   Text(
                     'Rs. ${NumberFormat('#,##0').format(_package.pricePerGuest)} / guest',
-                    style: AppTextStyles.sectionHeading
-                        .copyWith(color: AppColors.primary),
+                    style: AppTextStyles.sectionHeading.copyWith(
+                      color: AppColors.primary,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.lg),
 
@@ -361,7 +402,8 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
                       color: AppColors.surface,
                       borderRadius: AppRadius.cardRadius,
                       border: Border.all(
-                          color: AppColors.border.withValues(alpha: 0.5)),
+                        color: AppColors.border.withValues(alpha: 0.5),
+                      ),
                     ),
                     padding: const EdgeInsets.all(AppSpacing.md),
                     child: Column(
@@ -421,7 +463,10 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
                   const SizedBox(height: AppSpacing.xl),
 
                   // ── Available Dates ─────────────────────────────────
-                  _sectionLabel(Icons.calendar_month_outlined, 'Available Dates'),
+                  _sectionLabel(
+                    Icons.calendar_month_outlined,
+                    'Available Dates',
+                  ),
                   const SizedBox(height: AppSpacing.md),
                   _buildAvailabilitySection(upcomingDates, pastDates),
                   const SizedBox(height: AppSpacing.xl),
@@ -431,8 +476,10 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
                   const SizedBox(height: AppSpacing.sm),
                   Text(
                     _package.description,
-                    style: AppTextStyles.bodyMedium
-                        .copyWith(color: AppColors.textSecondary, height: 1.5),
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                      height: 1.5,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.xl),
 
@@ -461,12 +508,12 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
                     _sectionLabel(Icons.route_outlined, 'Itinerary'),
                     const SizedBox(height: AppSpacing.sm),
                     ..._package.itinerary.asMap().entries.map(
-                          (entry) => _itineraryItem(
-                            entry.key + 1,
-                            entry.value['title'] ?? '',
-                            entry.value['description'],
-                          ),
-                        ),
+                      (entry) => _itineraryItem(
+                        entry.key + 1,
+                        entry.value['title'] ?? '',
+                        entry.value['description'],
+                      ),
+                    ),
                     const SizedBox(height: AppSpacing.xl),
                   ],
 
@@ -474,25 +521,27 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
                   if (_package.includedItems.isNotEmpty ||
                       _package.excludedItems.isNotEmpty) ...[
                     _sectionLabel(
-                        Icons.checklist_outlined, 'Inclusions & Exclusions'),
+                      Icons.checklist_outlined,
+                      'Inclusions & Exclusions',
+                    ),
                     const SizedBox(height: AppSpacing.sm),
                     if (_package.includedItems.isNotEmpty) ...[
                       Text(
                         'Included',
-                        style: AppTextStyles.labelLarge
-                            .copyWith(color: Colors.green),
+                        style: AppTextStyles.labelLarge.copyWith(
+                          color: Colors.green,
+                        ),
                       ),
                       const SizedBox(height: 4),
-                      ..._package.includedItems.map(
-                        (e) => _checkItem(e, true),
-                      ),
+                      ..._package.includedItems.map((e) => _checkItem(e, true)),
                       const SizedBox(height: AppSpacing.md),
                     ],
                     if (_package.excludedItems.isNotEmpty) ...[
                       Text(
                         'Excluded',
-                        style: AppTextStyles.labelLarge
-                            .copyWith(color: AppColors.error),
+                        style: AppTextStyles.labelLarge.copyWith(
+                          color: AppColors.error,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       ..._package.excludedItems.map(
@@ -505,8 +554,7 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
                   // Meeting Point
                   if (_package.meetingPoint != null &&
                       _package.meetingPoint!.isNotEmpty) ...[
-                    _sectionLabel(
-                        Icons.meeting_room_outlined, 'Meeting Point'),
+                    _sectionLabel(Icons.meeting_room_outlined, 'Meeting Point'),
                     const SizedBox(height: AppSpacing.sm),
                     Text(
                       _package.meetingPoint!,
@@ -517,8 +565,9 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
                       const SizedBox(height: 4),
                       Text(
                         _package.pickupNotes!,
-                        style: AppTextStyles.caption
-                            .copyWith(color: AppColors.textSecondary),
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ],
                     const SizedBox(height: AppSpacing.xl),
@@ -535,7 +584,8 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
                           label: const Text('Edit Package'),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(
-                                vertical: AppSpacing.md),
+                              vertical: AppSpacing.md,
+                            ),
                             side: const BorderSide(color: AppColors.primary),
                             foregroundColor: AppColors.primary,
                             shape: RoundedRectangleBorder(
@@ -548,12 +598,16 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: _manageAvailability,
-                          icon: const Icon(Icons.calendar_month_outlined,
-                              size: 18, color: Colors.white),
+                          icon: const Icon(
+                            Icons.calendar_month_outlined,
+                            size: 18,
+                            color: Colors.white,
+                          ),
                           label: const Text('Manage Dates'),
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(
-                                vertical: AppSpacing.md),
+                              vertical: AppSpacing.md,
+                            ),
                             backgroundColor: AppColors.primaryDark,
                           ),
                         ),
@@ -565,12 +619,16 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       onPressed: _delete,
-                      icon: const Icon(Icons.delete_outline,
-                          size: 18, color: AppColors.error),
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        size: 18,
+                        color: AppColors.error,
+                      ),
                       label: const Text('Delete Package'),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
-                            vertical: AppSpacing.md),
+                          vertical: AppSpacing.md,
+                        ),
                         side: const BorderSide(color: AppColors.error),
                         foregroundColor: AppColors.error,
                         shape: RoundedRectangleBorder(
@@ -612,8 +670,9 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
             const SizedBox(height: AppSpacing.sm),
             Text(
               'No Available Dates',
-              style:
-                  AppTextStyles.labelLarge.copyWith(color: AppColors.textSecondary),
+              style: AppTextStyles.labelLarge.copyWith(
+                color: AppColors.textSecondary,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
@@ -636,8 +695,9 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
       );
     }
 
-    final displayDates =
-        _showAllDates ? upcomingDates : upcomingDates.take(4).toList();
+    final displayDates = _showAllDates
+        ? upcomingDates
+        : upcomingDates.take(4).toList();
     final hasMore = upcomingDates.length > 4 && !_showAllDates;
 
     return Container(
@@ -659,16 +719,25 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
           else ...[
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.sm),
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.sm,
+              ),
               child: Row(
                 children: [
-                  const Icon(Icons.upcoming_outlined,
-                      size: 14, color: AppColors.primary),
+                  const Icon(
+                    Icons.upcoming_outlined,
+                    size: 14,
+                    color: AppColors.primary,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     'Upcoming (${upcomingDates.length})',
-                    style: AppTextStyles.caption
-                        .copyWith(color: AppColors.primary, fontWeight: FontWeight.w600),
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
@@ -687,8 +756,9 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
                 onPressed: () => setState(() => _showAllDates = true),
                 child: Text(
                   'View all ${upcomingDates.length} dates',
-                  style: AppTextStyles.caption
-                      .copyWith(color: AppColors.primary),
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.primary,
+                  ),
                 ),
               )
             else if (upcomingDates.length > 4 && _showAllDates)
@@ -696,8 +766,9 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
                 onPressed: () => setState(() => _showAllDates = false),
                 child: Text(
                   'Show less',
-                  style: AppTextStyles.caption
-                      .copyWith(color: AppColors.primary),
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.primary,
+                  ),
                 ),
               ),
           ],
@@ -705,16 +776,25 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
             const Divider(height: 1),
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.md, AppSpacing.sm, AppSpacing.md, 4),
+                AppSpacing.md,
+                AppSpacing.sm,
+                AppSpacing.md,
+                4,
+              ),
               child: Row(
                 children: [
-                  const Icon(Icons.history, size: 14, color: AppColors.textSecondary),
+                  const Icon(
+                    Icons.history,
+                    size: 14,
+                    color: AppColors.textSecondary,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     'Past (${pastDates.length})',
                     style: AppTextStyles.caption.copyWith(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w600),
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
@@ -737,7 +817,9 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
   Widget _dateTile(DateTime date, {bool isPast = false}) {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md, vertical: 2),
+        horizontal: AppSpacing.md,
+        vertical: 2,
+      ),
       dense: true,
       leading: Container(
         width: 40,
@@ -817,18 +899,26 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Text(
         label,
-        style: AppTextStyles.caption
-            .copyWith(color: color, fontWeight: FontWeight.w600),
+        style: AppTextStyles.caption.copyWith(
+          color: color,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
 
   Widget _quickInfoTile(IconData icon, String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(
+        vertical: 4,
+        horizontal: AppSpacing.sm,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -838,7 +928,9 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
               const SizedBox(width: 4),
               Text(
                 label,
-                style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
             ],
           ),
@@ -855,19 +947,20 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
   }
 
   Widget _sectionLabel(IconData icon, String text) => Padding(
-        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-        child: Row(
-          children: [
-            Icon(icon, size: 18, color: AppColors.primaryDark),
-            const SizedBox(width: AppSpacing.sm),
-            Text(
-              text,
-              style:
-                  AppTextStyles.sectionHeading.copyWith(color: AppColors.primaryDark),
-            ),
-          ],
+    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+    child: Row(
+      children: [
+        Icon(icon, size: 18, color: AppColors.primaryDark),
+        const SizedBox(width: AppSpacing.sm),
+        Text(
+          text,
+          style: AppTextStyles.sectionHeading.copyWith(
+            color: AppColors.primaryDark,
+          ),
         ),
-      );
+      ],
+    ),
+  );
 
   Widget _listItem(String title, String? subtitle) {
     return Padding(
@@ -893,14 +986,16 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
               children: [
                 Text(
                   title,
-                  style: AppTextStyles.bodyMedium
-                      .copyWith(fontWeight: FontWeight.w600),
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 if (subtitle != null && subtitle.isNotEmpty)
                   Text(
                     subtitle,
-                    style: AppTextStyles.caption
-                        .copyWith(color: AppColors.textSecondary),
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                   ),
               ],
             ),
@@ -941,16 +1036,18 @@ class _PackageManagementScreenState extends State<PackageManagementScreen> {
               children: [
                 Text(
                   title,
-                  style: AppTextStyles.bodyMedium
-                      .copyWith(fontWeight: FontWeight.w600),
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 if (description != null && description.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 2),
                     child: Text(
                       description,
-                      style: AppTextStyles.caption
-                          .copyWith(color: AppColors.textSecondary),
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ),
               ],
@@ -997,8 +1094,7 @@ class _AvailabilityManagerSheet extends StatefulWidget {
       _AvailabilityManagerSheetState();
 }
 
-class _AvailabilityManagerSheetState
-    extends State<_AvailabilityManagerSheet> {
+class _AvailabilityManagerSheetState extends State<_AvailabilityManagerSheet> {
   late List<DateTime> _dates;
   bool _saving = false;
 
@@ -1066,9 +1162,7 @@ class _AvailabilityManagerSheetState
     setState(() {
       _dates.removeWhere(
         (d) =>
-            d.year == date.year &&
-            d.month == date.month &&
-            d.day == date.day,
+            d.year == date.year && d.month == date.month && d.day == date.day,
       );
     });
   }
@@ -1131,12 +1225,8 @@ class _AvailabilityManagerSheetState
     final today = DateTime.now();
     final todayMidnight = DateTime(today.year, today.month, today.day);
 
-    final upcoming = _dates
-        .where((d) => !d.isBefore(todayMidnight))
-        .toList();
-    final past = _dates
-        .where((d) => d.isBefore(todayMidnight))
-        .toList();
+    final upcoming = _dates.where((d) => !d.isBefore(todayMidnight)).toList();
+    final past = _dates.where((d) => d.isBefore(todayMidnight)).toList();
 
     return DraggableScrollableSheet(
       initialChildSize: 0.7,
@@ -1163,8 +1253,9 @@ class _AvailabilityManagerSheetState
                 const SizedBox(width: AppSpacing.sm),
                 Text(
                   'Manage Availability',
-                  style: AppTextStyles.sectionHeading
-                      .copyWith(color: AppColors.primaryDark),
+                  style: AppTextStyles.sectionHeading.copyWith(
+                    color: AppColors.primaryDark,
+                  ),
                 ),
                 const Spacer(),
                 IconButton(
@@ -1185,16 +1276,20 @@ class _AvailabilityManagerSheetState
                   width: double.infinity,
                   child: OutlinedButton.icon(
                     onPressed: _pickDate,
-                    icon: const Icon(Icons.calendar_month_outlined,
-                        color: AppColors.primary),
+                    icon: const Icon(
+                      Icons.calendar_month_outlined,
+                      color: AppColors.primary,
+                    ),
                     label: Text(
                       'Add Available Date',
-                      style: AppTextStyles.bodyMedium
-                          .copyWith(color: AppColors.primary),
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.primary,
+                      ),
                     ),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
-                          vertical: AppSpacing.md),
+                        vertical: AppSpacing.md,
+                      ),
                       side: const BorderSide(color: AppColors.primary),
                       shape: RoundedRectangleBorder(
                         borderRadius: AppRadius.inputButtonRadius,
@@ -1208,13 +1303,17 @@ class _AvailabilityManagerSheetState
                 if (upcoming.isNotEmpty) ...[
                   Row(
                     children: [
-                      const Icon(Icons.upcoming_outlined,
-                          size: 14, color: AppColors.primary),
+                      const Icon(
+                        Icons.upcoming_outlined,
+                        size: 14,
+                        color: AppColors.primary,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         'Upcoming Dates (${upcoming.length})',
-                        style: AppTextStyles.labelLarge
-                            .copyWith(color: AppColors.primary),
+                        style: AppTextStyles.labelLarge.copyWith(
+                          color: AppColors.primary,
+                        ),
                       ),
                     ],
                   ),
@@ -1224,7 +1323,8 @@ class _AvailabilityManagerSheetState
                       color: AppColors.surface,
                       borderRadius: AppRadius.cardRadius,
                       border: Border.all(
-                          color: AppColors.border.withValues(alpha: 0.5)),
+                        color: AppColors.border.withValues(alpha: 0.5),
+                      ),
                     ),
                     child: Column(
                       children: upcoming.asMap().entries.map((entry) {
@@ -1234,16 +1334,22 @@ class _AvailabilityManagerSheetState
                           children: [
                             if (index > 0)
                               const Divider(
-                                  height: 1, indent: 12, endIndent: 12),
+                                height: 1,
+                                indent: 12,
+                                endIndent: 12,
+                              ),
                             ListTile(
                               contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.md, vertical: 2),
+                                horizontal: AppSpacing.md,
+                                vertical: 2,
+                              ),
                               leading: Container(
                                 width: 40,
                                 height: 40,
                                 decoration: BoxDecoration(
-                                  color:
-                                      AppColors.primary.withValues(alpha: 0.1),
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.1,
+                                  ),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Column(
@@ -1260,8 +1366,9 @@ class _AvailabilityManagerSheetState
                                     Text(
                                       DateFormat('MMM').format(date),
                                       style: const TextStyle(
-                                          fontSize: 9,
-                                          color: AppColors.primary),
+                                        fontSize: 9,
+                                        color: AppColors.primary,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -1275,12 +1382,16 @@ class _AvailabilityManagerSheetState
                                 child: Container(
                                   padding: const EdgeInsets.all(4),
                                   decoration: BoxDecoration(
-                                    color: AppColors.error
-                                        .withValues(alpha: 0.1),
+                                    color: AppColors.error.withValues(
+                                      alpha: 0.1,
+                                    ),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(Icons.close,
-                                      size: 16, color: AppColors.error),
+                                  child: const Icon(
+                                    Icons.close,
+                                    size: 16,
+                                    color: AppColors.error,
+                                  ),
                                 ),
                               ),
                             ),
@@ -1296,13 +1407,17 @@ class _AvailabilityManagerSheetState
                 if (past.isNotEmpty) ...[
                   Row(
                     children: [
-                      const Icon(Icons.history,
-                          size: 14, color: AppColors.textSecondary),
+                      const Icon(
+                        Icons.history,
+                        size: 14,
+                        color: AppColors.textSecondary,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         'Past Dates (${past.length})',
-                        style: AppTextStyles.labelLarge
-                            .copyWith(color: AppColors.textSecondary),
+                        style: AppTextStyles.labelLarge.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ],
                   ),
@@ -1312,7 +1427,8 @@ class _AvailabilityManagerSheetState
                       color: AppColors.softSecondarySurface,
                       borderRadius: AppRadius.cardRadius,
                       border: Border.all(
-                          color: AppColors.border.withValues(alpha: 0.5)),
+                        color: AppColors.border.withValues(alpha: 0.5),
+                      ),
                     ),
                     child: Column(
                       children: past.asMap().entries.map((entry) {
@@ -1322,16 +1438,22 @@ class _AvailabilityManagerSheetState
                           children: [
                             if (index > 0)
                               const Divider(
-                                  height: 1, indent: 12, endIndent: 12),
+                                height: 1,
+                                indent: 12,
+                                endIndent: 12,
+                              ),
                             ListTile(
                               contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.md, vertical: 2),
+                                horizontal: AppSpacing.md,
+                                vertical: 2,
+                              ),
                               leading: Container(
                                 width: 40,
                                 height: 40,
                                 decoration: BoxDecoration(
-                                  color: AppColors.border
-                                      .withValues(alpha: 0.3),
+                                  color: AppColors.border.withValues(
+                                    alpha: 0.3,
+                                  ),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Column(
@@ -1348,8 +1470,9 @@ class _AvailabilityManagerSheetState
                                     Text(
                                       DateFormat('MMM').format(date),
                                       style: TextStyle(
-                                          fontSize: 9,
-                                          color: AppColors.textSecondary),
+                                        fontSize: 9,
+                                        color: AppColors.textSecondary,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -1366,13 +1489,16 @@ class _AvailabilityManagerSheetState
                                 child: Container(
                                   padding: const EdgeInsets.all(4),
                                   decoration: BoxDecoration(
-                                    color: AppColors.error
-                                        .withValues(alpha: 0.08),
+                                    color: AppColors.error.withValues(
+                                      alpha: 0.08,
+                                    ),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(Icons.close,
-                                      size: 16,
-                                      color: AppColors.textSecondary),
+                                  child: const Icon(
+                                    Icons.close,
+                                    size: 16,
+                                    color: AppColors.textSecondary,
+                                  ),
                                 ),
                               ),
                             ),
@@ -1393,10 +1519,11 @@ class _AvailabilityManagerSheetState
                     ),
                     child: Column(
                       children: [
-                        Icon(Icons.calendar_today_outlined,
-                            size: 36,
-                            color:
-                                AppColors.textSecondary.withValues(alpha: 0.4)),
+                        Icon(
+                          Icons.calendar_today_outlined,
+                          size: 36,
+                          color: AppColors.textSecondary.withValues(alpha: 0.4),
+                        ),
                         const SizedBox(height: AppSpacing.sm),
                         Text(
                           'No dates added yet.',
@@ -1419,16 +1546,14 @@ class _AvailabilityManagerSheetState
               AppSpacing.lg,
               AppSpacing.sm,
               AppSpacing.lg,
-              AppSpacing.lg +
-                  MediaQuery.of(context).viewInsets.bottom,
+              AppSpacing.lg + MediaQuery.of(context).viewInsets.bottom,
             ),
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _saving ? null : _save,
                 style: ElevatedButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                   backgroundColor: AppColors.primaryDark,
                 ),
                 child: _saving
@@ -1436,7 +1561,9 @@ class _AvailabilityManagerSheetState
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2),
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
                       )
                     : const Text('Save Changes'),
               ),

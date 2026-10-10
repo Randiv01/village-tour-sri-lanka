@@ -19,7 +19,10 @@ class SavedItemsScreen extends StatelessWidget {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return [];
 
-    final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
     if (!userDoc.exists) return [];
 
     final favorites = List<String>.from(userDoc.data()?['favorites'] ?? []);
@@ -28,15 +31,20 @@ class SavedItemsScreen extends StatelessWidget {
     // Fetch homestays in batches of 10 due to Firestore 'whereIn' limits
     List<Homestay> homestays = [];
     for (int i = 0; i < favorites.length; i += 10) {
-      final batch = favorites.sublist(i, i + 10 > favorites.length ? favorites.length : i + 10);
+      final batch = favorites.sublist(
+        i,
+        i + 10 > favorites.length ? favorites.length : i + 10,
+      );
       final snapshot = await FirebaseFirestore.instance
           .collection('homestays')
           .where(FieldPath.documentId, whereIn: batch)
           .get();
-      
-      homestays.addAll(snapshot.docs.map((doc) => Homestay.fromMap(doc.data(), doc.id)));
+
+      homestays.addAll(
+        snapshot.docs.map((doc) => Homestay.fromMap(doc.data(), doc.id)),
+      );
     }
-    
+
     return homestays;
   }
 
@@ -44,24 +52,34 @@ class SavedItemsScreen extends StatelessWidget {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return [];
 
-    final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
     if (!userDoc.exists) return [];
 
-    final favorites = List<String>.from(userDoc.data()?['favoriteDestinations'] ?? []);
+    final favorites = List<String>.from(
+      userDoc.data()?['favoriteDestinations'] ?? [],
+    );
     if (favorites.isEmpty) return [];
 
     // Fetch destinations in batches of 10
     List<Destination> destinations = [];
     for (int i = 0; i < favorites.length; i += 10) {
-      final batch = favorites.sublist(i, i + 10 > favorites.length ? favorites.length : i + 10);
+      final batch = favorites.sublist(
+        i,
+        i + 10 > favorites.length ? favorites.length : i + 10,
+      );
       final snapshot = await FirebaseFirestore.instance
           .collection('destinations')
           .where(FieldPath.documentId, whereIn: batch)
           .get();
-      
-      destinations.addAll(snapshot.docs.map((doc) => Destination.fromMap(doc.data(), doc.id)));
+
+      destinations.addAll(
+        snapshot.docs.map((doc) => Destination.fromMap(doc.data(), doc.id)),
+      );
     }
-    
+
     return destinations;
   }
 
@@ -74,7 +92,9 @@ class SavedItemsScreen extends StatelessWidget {
         appBar: AppBar(
           title: Text(
             'Saved Favorites',
-            style: AppTextStyles.screenHeading.copyWith(color: AppColors.primaryDark),
+            style: AppTextStyles.screenHeading.copyWith(
+              color: AppColors.primaryDark,
+            ),
           ),
           backgroundColor: AppColors.background,
           elevation: 0,
@@ -91,10 +111,7 @@ class SavedItemsScreen extends StatelessWidget {
           ),
         ),
         body: TabBarView(
-          children: [
-            _buildHomestaysTab(),
-            _buildDestinationsTab(),
-          ],
+          children: [_buildHomestaysTab(), _buildDestinationsTab()],
         ),
       ),
     );
@@ -105,19 +122,26 @@ class SavedItemsScreen extends StatelessWidget {
       future: _fetchSavedHomestays(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: AppColors.primaryDark));
+          return const Center(
+            child: CircularProgressIndicator(color: AppColors.primaryDark),
+          );
         }
-        
+
         if (snapshot.hasError) {
-          return Center(child: Text('Failed to load saved homestays.', style: AppTextStyles.bodyMedium));
+          return Center(
+            child: Text(
+              'Failed to load saved homestays.',
+              style: AppTextStyles.bodyMedium,
+            ),
+          );
         }
-        
+
         final homestays = snapshot.data ?? [];
-        
+
         if (homestays.isEmpty) {
           return _buildEmptyState('No saved homestays yet.');
         }
-        
+
         return ListView.builder(
           padding: const EdgeInsets.all(AppSpacing.lg),
           itemCount: homestays.length,
@@ -148,19 +172,26 @@ class SavedItemsScreen extends StatelessWidget {
       future: _fetchSavedDestinations(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: AppColors.primaryDark));
+          return const Center(
+            child: CircularProgressIndicator(color: AppColors.primaryDark),
+          );
         }
-        
+
         if (snapshot.hasError) {
-          return Center(child: Text('Failed to load saved destinations.', style: AppTextStyles.bodyMedium));
+          return Center(
+            child: Text(
+              'Failed to load saved destinations.',
+              style: AppTextStyles.bodyMedium,
+            ),
+          );
         }
-        
+
         final destinations = snapshot.data ?? [];
-        
+
         if (destinations.isEmpty) {
           return _buildEmptyState('No saved destinations yet.');
         }
-        
+
         return ListView.builder(
           padding: const EdgeInsets.all(AppSpacing.lg),
           itemCount: destinations.length,
@@ -174,8 +205,8 @@ class SavedItemsScreen extends StatelessWidget {
                   title: dest.name,
                   subtitle: dest.locationName,
                   category: '',
-                  imageUrl: dest.images.isNotEmpty 
-                      ? dest.images.first.url 
+                  imageUrl: dest.images.isNotEmpty
+                      ? dest.images.first.url
                       : (dest.imageUrl ?? ''),
                   margin: EdgeInsets.zero,
                   width: double.infinity,
@@ -183,7 +214,8 @@ class SavedItemsScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => DestinationDetailsScreen(destination: dest),
+                        builder: (_) =>
+                            DestinationDetailsScreen(destination: dest),
                       ),
                     );
                   },
@@ -201,11 +233,20 @@ class SavedItemsScreen extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.favorite_border, size: 64, color: AppColors.textSecondary),
+          const Icon(
+            Icons.favorite_border,
+            size: 64,
+            color: AppColors.textSecondary,
+          ),
           const SizedBox(height: AppSpacing.md),
           Text(message, style: AppTextStyles.bodyLarge),
           const SizedBox(height: AppSpacing.sm),
-          Text('Explore and tap the heart icon to save them here.', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary)),
+          Text(
+            'Explore and tap the heart icon to save them here.',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
         ],
       ),
     );

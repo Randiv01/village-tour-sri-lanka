@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../models/homestay_booking.dart';
 
 class HomestayBookingRepository {
@@ -6,19 +7,22 @@ class HomestayBookingRepository {
 
   // Create a new booking
   Future<String> createBooking(HomestayBooking booking) async {
-    final docRef = await _firestore.collection('homestay_bookings').add(booking.toMap());
-    
+    final docRef = await _firestore
+        .collection('homestay_bookings')
+        .add(booking.toMap());
+
     // Create a notification for the host
     await _firestore.collection('notifications').add({
       'userId': booking.hostId,
       'title': 'New Booking Request',
-      'message': '${booking.travelerName} requested a booking for ${booking.homestayTitle}.',
+      'message':
+          '${booking.travelerName} requested a booking for ${booking.homestayTitle}.',
       'type': 'booking',
       'read': false,
       'createdAt': FieldValue.serverTimestamp(),
       'relatedId': docRef.id,
     });
-    
+
     return docRef.id;
   }
 
@@ -39,8 +43,10 @@ class HomestayBookingRepository {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) => HomestayBooking.fromMap(doc.data(), doc.id)).toList();
-    });
+          return snapshot.docs
+              .map((doc) => HomestayBooking.fromMap(doc.data(), doc.id))
+              .toList();
+        });
   }
 
   // Get all bookings for a host
@@ -51,19 +57,25 @@ class HomestayBookingRepository {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) => HomestayBooking.fromMap(doc.data(), doc.id)).toList();
-    });
+          return snapshot.docs
+              .map((doc) => HomestayBooking.fromMap(doc.data(), doc.id))
+              .toList();
+        });
   }
-  
+
   // Get confirmed/pending/accepted bookings for a homestay to check availability
-  Future<List<HomestayBooking>> getActiveBookingsForHomestay(String homestayId) async {
+  Future<List<HomestayBooking>> getActiveBookingsForHomestay(
+    String homestayId,
+  ) async {
     final snapshot = await _firestore
         .collection('homestay_bookings')
         .where('homestayId', isEqualTo: homestayId)
         .where('bookingStatus', whereIn: ['pending', 'accepted', 'confirmed'])
         .get();
-        
-    return snapshot.docs.map((doc) => HomestayBooking.fromMap(doc.data(), doc.id)).toList();
+
+    return snapshot.docs
+        .map((doc) => HomestayBooking.fromMap(doc.data(), doc.id))
+        .toList();
   }
 
   // Update booking status
@@ -85,19 +97,30 @@ class HomestayBookingRepository {
     if (transactionId != null) updates['transactionId'] = transactionId;
     if (paidAt != null) updates['paidAt'] = Timestamp.fromDate(paidAt);
 
-    if (status == 'accepted') updates['acceptedAt'] = FieldValue.serverTimestamp();
-    if (status == 'rejected') updates['rejectedAt'] = FieldValue.serverTimestamp();
+    if (status == 'accepted') {
+      updates['acceptedAt'] = FieldValue.serverTimestamp();
+    }
+    if (status == 'rejected') {
+      updates['rejectedAt'] = FieldValue.serverTimestamp();
+    }
 
     await _firestore.collection('homestay_bookings').doc(id).update(updates);
-    
+
     // Notify traveler
     final booking = await getBookingById(id);
     if (booking != null) {
       String msg = '';
-      if (status == 'accepted') msg = 'Your booking request for ${booking.homestayTitle} was accepted! Payment required.';
-      if (status == 'rejected') msg = 'Your booking request for ${booking.homestayTitle} was rejected.';
-      if (status == 'confirmed') msg = 'Your payment was successful and booking is confirmed.';
-      
+      if (status == 'accepted') {
+        msg =
+            'Your booking request for ${booking.homestayTitle} was accepted! Payment required.';
+      }
+      if (status == 'rejected') {
+        msg = 'Your booking request for ${booking.homestayTitle} was rejected.';
+      }
+      if (status == 'confirmed') {
+        msg = 'Your payment was successful and booking is confirmed.';
+      }
+
       if (msg.isNotEmpty) {
         await _firestore.collection('notifications').add({
           'userId': booking.travelerId,

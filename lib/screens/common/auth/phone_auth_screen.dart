@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../theme/app_spacing.dart';
@@ -10,11 +11,7 @@ class PhoneAuthScreen extends StatefulWidget {
   final bool isSignUp;
   final String? defaultRole;
 
-  const PhoneAuthScreen({
-    super.key,
-    this.isSignUp = false,
-    this.defaultRole,
-  });
+  const PhoneAuthScreen({super.key, this.isSignUp = false, this.defaultRole});
 
   @override
   State<PhoneAuthScreen> createState() => _PhoneAuthScreenState();
@@ -22,6 +19,7 @@ class PhoneAuthScreen extends StatefulWidget {
 
 class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
   final _authService = AuthService();
+  final _formKey = GlobalKey<FormState>();
   final _phoneController = TextEditingController();
   String _completePhoneNumber = '';
   bool _isLoading = false;
@@ -40,6 +38,7 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
   }
 
   Future<void> _sendOtp() async {
+    if (!_formKey.currentState!.validate()) return;
     if (_completePhoneNumber.isEmpty || _completePhoneNumber.length < 9) {
       _showError('Please enter a valid phone number.');
       return;
@@ -137,15 +136,20 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
               const SizedBox(height: AppSpacing.md),
               Text(
                 'Enter your phone number to receive a verification code.',
-                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppSpacing.xxl),
-              InternationalPhoneField(
-                controller: _phoneController,
-                onChanged: (phone) {
-                  _completePhoneNumber = phone.completeNumber;
-                },
+              Form(
+                key: _formKey,
+                child: InternationalPhoneField(
+                  controller: _phoneController,
+                  onChanged: (phone) {
+                    _completePhoneNumber = phone.completeNumber;
+                  },
+                ),
               ),
               const Spacer(),
               ElevatedButton(
@@ -163,13 +167,12 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
                         width: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
                         ),
                       )
-                    : const Text(
-                        'Send OTP >',
-                        style: TextStyle(fontSize: 16),
-                      ),
+                    : const Text('Send OTP >', style: TextStyle(fontSize: 16)),
               ),
               const SizedBox(height: AppSpacing.xl),
             ],

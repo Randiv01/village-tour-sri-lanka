@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_text_styles.dart';
 import '../../../theme/app_spacing.dart';
@@ -57,7 +58,7 @@ class ManageUsersScreen extends StatelessWidget {
 
 class UsersListTab extends StatefulWidget {
   final String role;
-  
+
   const UsersListTab({super.key, required this.role});
 
   @override
@@ -71,8 +72,9 @@ class _UsersListTabState extends State<UsersListTab> {
 
   @override
   Widget build(BuildContext context) {
-    String displayRole = widget.role.substring(0, 1).toUpperCase() + widget.role.substring(1);
-    
+    String displayRole =
+        widget.role.substring(0, 1).toUpperCase() + widget.role.substring(1);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
@@ -80,266 +82,338 @@ class _UsersListTabState extends State<UsersListTab> {
           _buildTopControls(displayRole),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-              .collection('users')
-              .where('role', isEqualTo: widget.role)
-              .snapshots(),
-          builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+              stream: FirebaseFirestore.instance
+                  .collection('users')
+                  .where('role', isEqualTo: widget.role)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
 
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return Center(child: Text('No ${displayRole}s found.'));
-          }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return Center(child: Text('No ${displayRole}s found.'));
+                }
 
-            var users = snapshot.data!.docs
-                .map((doc) => UserModel.fromMap(
-                      doc.data() as Map<String, dynamic>,
-                      doc.id,
-                    ))
-                .toList();
+                var users = snapshot.data!.docs
+                    .map(
+                      (doc) => UserModel.fromMap(
+                        doc.data() as Map<String, dynamic>,
+                        doc.id,
+                      ),
+                    )
+                    .toList();
 
-            // 1. Search filter
-            if (_searchQuery.trim().isNotEmpty) {
-              final query = _searchQuery.trim().toLowerCase();
-              users = users.where((u) {
-                return u.fullName.toLowerCase().contains(query) ||
-                    u.email.toLowerCase().contains(query) ||
-                    u.phoneNumber.toLowerCase().contains(query);
-              }).toList();
-            }
+                // 1. Search filter
+                if (_searchQuery.trim().isNotEmpty) {
+                  final query = _searchQuery.trim().toLowerCase();
+                  users = users.where((u) {
+                    return u.fullName.toLowerCase().contains(query) ||
+                        u.email.toLowerCase().contains(query) ||
+                        u.phoneNumber.toLowerCase().contains(query);
+                  }).toList();
+                }
 
-            // 2. Status filter
-            if (_statusFilter == 'Active') {
-              users = users.where((u) => u.isActive).toList();
-            } else if (_statusFilter == 'Inactive') {
-              users = users.where((u) => !u.isActive).toList();
-            }
+                // 2. Status filter
+                if (_statusFilter == 'Active') {
+                  users = users.where((u) => u.isActive).toList();
+                } else if (_statusFilter == 'Inactive') {
+                  users = users.where((u) => !u.isActive).toList();
+                }
 
-            // 3. Sorting
-            if (_sortBy == 'Name A-Z') {
-              users.sort((a, b) => a.fullName.toLowerCase().compareTo(b.fullName.toLowerCase()));
-            } else if (_sortBy == 'Name Z-A') {
-              users.sort((a, b) => b.fullName.toLowerCase().compareTo(a.fullName.toLowerCase()));
-            } else if (_sortBy == 'Newest' || _sortBy == 'Oldest') {
-              users.sort((a, b) {
-                final dateA = a.createdAt ?? DateTime.now();
-                final dateB = b.createdAt ?? DateTime.now();
-                return _sortBy == 'Newest' ? dateB.compareTo(dateA) : dateA.compareTo(dateB);
-              });
-            }
+                // 3. Sorting
+                if (_sortBy == 'Name A-Z') {
+                  users.sort(
+                    (a, b) => a.fullName.toLowerCase().compareTo(
+                      b.fullName.toLowerCase(),
+                    ),
+                  );
+                } else if (_sortBy == 'Name Z-A') {
+                  users.sort(
+                    (a, b) => b.fullName.toLowerCase().compareTo(
+                      a.fullName.toLowerCase(),
+                    ),
+                  );
+                } else if (_sortBy == 'Newest' || _sortBy == 'Oldest') {
+                  users.sort((a, b) {
+                    final dateA = a.createdAt ?? DateTime.now();
+                    final dateB = b.createdAt ?? DateTime.now();
+                    return _sortBy == 'Newest'
+                        ? dateB.compareTo(dateA)
+                        : dateA.compareTo(dateB);
+                  });
+                }
 
-            if (users.isEmpty) {
-              return Center(child: Text('No ${displayRole}s match your filters.'));
-            }
+                if (users.isEmpty) {
+                  return Center(
+                    child: Text('No ${displayRole}s match your filters.'),
+                  );
+                }
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
-                  child: Text(
-                    '${users.length} ${displayRole.toLowerCase()}${users.length == 1 ? '' : 's'}',
-                    style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
-                  ),
-                ),
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    itemCount: users.length,
-                    itemBuilder: (context, index) {
-                      final admin = users[index];
-                      return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                color: AppColors.surface,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(color: AppColors.border.withValues(alpha: 0.5)),
-                ),
-                elevation: 0,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Avatar placeholder
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          width: 80,
-                          height: 80,
-                          color: admin.isActive 
-                              ? AppColors.primary.withValues(alpha: 0.1)
-                              : Colors.red.withValues(alpha: 0.1),
-                          child: Icon(
-                              _getRoleIcon(widget.role),
-                              size: 32,
-                              color: admin.isActive ? AppColors.primary : Colors.red,
-                            ),
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.xs,
+                      ),
+                      child: Text(
+                        '${users.length} ${displayRole.toLowerCase()}${users.length == 1 ? '' : 's'}',
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.textSecondary,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      // Info
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              admin.fullName,
-                              style: AppTextStyles.labelLarge.copyWith(
-                                color: AppColors.primaryDark,
-                                fontSize: 16,
+                    ),
+                    Expanded(
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        itemCount: users.length,
+                        itemBuilder: (context, index) {
+                          final admin = users[index];
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            color: AppColors.surface,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: BorderSide(
+                                color: AppColors.border.withValues(alpha: 0.5),
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.email_outlined,
-                                  size: 14,
-                                  color: AppColors.textSecondary,
-                                ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    admin.email,
-                                    style: AppTextStyles.caption,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (admin.phoneNumber.isNotEmpty) ...[
-                              const SizedBox(height: 4),
-                              Row(
+                            elevation: 0,
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Icon(
-                                    Icons.phone_outlined,
-                                    size: 14,
-                                    color: AppColors.textSecondary,
+                                  // Avatar placeholder
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Container(
+                                      width: 80,
+                                      height: 80,
+                                      color: admin.isActive
+                                          ? AppColors.primary.withValues(
+                                              alpha: 0.1,
+                                            )
+                                          : Colors.red.withValues(alpha: 0.1),
+                                      child: Icon(
+                                        _getRoleIcon(widget.role),
+                                        size: 32,
+                                        color: admin.isActive
+                                            ? AppColors.primary
+                                            : Colors.red,
+                                      ),
+                                    ),
                                   ),
-                                  const SizedBox(width: 4),
+                                  const SizedBox(width: 12),
+                                  // Info
                                   Expanded(
-                                    child: Text(
-                                      admin.phoneNumber,
-                                      style: AppTextStyles.caption,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          admin.fullName,
+                                          style: AppTextStyles.labelLarge
+                                              .copyWith(
+                                                color: AppColors.primaryDark,
+                                                fontSize: 16,
+                                              ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.email_outlined,
+                                              size: 14,
+                                              color: AppColors.textSecondary,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Expanded(
+                                              child: Text(
+                                                admin.email,
+                                                style: AppTextStyles.caption,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        if (admin.phoneNumber.isNotEmpty) ...[
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              const Icon(
+                                                Icons.phone_outlined,
+                                                size: 14,
+                                                color: AppColors.textSecondary,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Expanded(
+                                                child: Text(
+                                                  admin.phoneNumber,
+                                                  style: AppTextStyles.caption,
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                        const SizedBox(height: 8),
+                                        Wrap(
+                                          spacing: 8,
+                                          runSpacing: 4,
+                                          children: [
+                                            _buildBadge(
+                                              admin.isActive
+                                                  ? 'Active'
+                                                  : 'Inactive',
+                                              admin.isActive
+                                                  ? Icons.check
+                                                  : Icons.close,
+                                              admin.isActive
+                                                  ? Colors.green
+                                                  : AppColors.error,
+                                            ),
+                                            _buildBadge(
+                                              displayRole,
+                                              _getRoleIcon(widget.role),
+                                              AppColors.primary,
+                                            ),
+                                            if (admin.isVerified)
+                                              _buildBadge(
+                                                'Verified',
+                                                Icons.verified,
+                                                AppColors.primary,
+                                              ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            const SizedBox(), // Placeholder for left side
+                                            Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.end,
+                                              children: [
+                                                IconButton(
+                                                  icon: const Icon(
+                                                    Icons.edit,
+                                                    color: AppColors.primary,
+                                                  ),
+                                                  onPressed: () =>
+                                                      _showUserDialog(
+                                                        context,
+                                                        admin,
+                                                      ),
+                                                  tooltip: 'Edit',
+                                                  constraints:
+                                                      const BoxConstraints(),
+                                                  padding: const EdgeInsets.all(
+                                                    8,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 4),
+                                                if (widget.role == 'host' ||
+                                                    widget.role == 'guide')
+                                                  IconButton(
+                                                    icon: Icon(
+                                                      admin.isVerified
+                                                          ? Icons.verified
+                                                          : Icons
+                                                                .verified_outlined,
+                                                      color: admin.isVerified
+                                                          ? AppColors.primary
+                                                          : AppColors
+                                                                .textSecondary,
+                                                    ),
+                                                    onPressed: () =>
+                                                        _toggleUserVerification(
+                                                          admin,
+                                                        ),
+                                                    tooltip: admin.isVerified
+                                                        ? 'Unverify'
+                                                        : 'Verify',
+                                                    constraints:
+                                                        const BoxConstraints(),
+                                                    padding:
+                                                        const EdgeInsets.all(8),
+                                                  ),
+                                                if (widget.role == 'host' ||
+                                                    widget.role == 'guide')
+                                                  const SizedBox(width: 4),
+                                                IconButton(
+                                                  icon: Icon(
+                                                    admin.isActive
+                                                        ? Icons
+                                                              .visibility_off_outlined
+                                                        : Icons
+                                                              .visibility_outlined,
+                                                    color: admin.isActive
+                                                        ? AppColors
+                                                              .textSecondary
+                                                        : Colors.green,
+                                                  ),
+                                                  onPressed: () =>
+                                                      _toggleUserStatus(admin),
+                                                  tooltip: admin.isActive
+                                                      ? 'Deactivate'
+                                                      : 'Activate',
+                                                  constraints:
+                                                      const BoxConstraints(),
+                                                  padding: const EdgeInsets.all(
+                                                    8,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 4),
+                                                IconButton(
+                                                  icon: const Icon(
+                                                    Icons.delete_outline,
+                                                    color: AppColors.error,
+                                                  ),
+                                                  onPressed: () => _deleteUser(
+                                                    context,
+                                                    admin,
+                                                  ),
+                                                  tooltip: 'Delete',
+                                                  constraints:
+                                                      const BoxConstraints(),
+                                                  padding: const EdgeInsets.all(
+                                                    8,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
                               ),
-                            ],
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 4,
-                              children: [
-                                _buildBadge(
-                                  admin.isActive ? 'Active' : 'Inactive',
-                                  admin.isActive ? Icons.check : Icons.close,
-                                  admin.isActive ? Colors.green : AppColors.error,
-                                ),
-                                _buildBadge(
-                                  displayRole,
-                                  _getRoleIcon(widget.role),
-                                  AppColors.primary,
-                                ),
-                                if (admin.isVerified)
-                                  _buildBadge(
-                                    'Verified',
-                                    Icons.verified,
-                                    AppColors.primary,
-                                  ),
-                              ],
                             ),
-                            const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const SizedBox(), // Placeholder for left side
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(
-                                        Icons.edit,
-                                        color: AppColors.primary,
-                                      ),
-                                      onPressed: () => _showUserDialog(context, admin),
-                                      tooltip: 'Edit',
-                                      constraints: const BoxConstraints(),
-                                      padding: const EdgeInsets.all(8),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    if (widget.role == 'host' || widget.role == 'guide')
-                                      IconButton(
-                                        icon: Icon(
-                                          admin.isVerified
-                                              ? Icons.verified
-                                              : Icons.verified_outlined,
-                                          color: admin.isVerified
-                                              ? AppColors.primary
-                                              : AppColors.textSecondary,
-                                        ),
-                                        onPressed: () => _toggleUserVerification(admin),
-                                        tooltip: admin.isVerified ? 'Unverify' : 'Verify',
-                                        constraints: const BoxConstraints(),
-                                        padding: const EdgeInsets.all(8),
-                                      ),
-                                    if (widget.role == 'host' || widget.role == 'guide')
-                                      const SizedBox(width: 4),
-                                    IconButton(
-                                      icon: Icon(
-                                        admin.isActive
-                                            ? Icons.visibility_off_outlined
-                                            : Icons.visibility_outlined,
-                                        color: admin.isActive
-                                            ? AppColors.textSecondary
-                                            : Colors.green,
-                                      ),
-                                      onPressed: () => _toggleUserStatus(admin),
-                                      tooltip: admin.isActive ? 'Deactivate' : 'Activate',
-                                      constraints: const BoxConstraints(),
-                                      padding: const EdgeInsets.all(8),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    IconButton(
-                                      icon: const Icon(
-                                        Icons.delete_outline,
-                                        color: AppColors.error,
-                                      ),
-                                      onPressed: () => _deleteUser(context, admin),
-                                      tooltip: 'Delete',
-                                      constraints: const BoxConstraints(),
-                                      padding: const EdgeInsets.all(8),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+                          );
+                        },
                       ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-                ),
-              ],
-            );
-        },
-      ),
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -355,7 +429,10 @@ class _UsersListTabState extends State<UsersListTab> {
             child: TextField(
               decoration: InputDecoration(
                 hintText: 'Search ${displayRole}s...',
-                prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary),
+                prefixIcon: const Icon(
+                  Icons.search,
+                  color: AppColors.textSecondary,
+                ),
                 contentPadding: const EdgeInsets.symmetric(vertical: 0),
                 filled: true,
                 fillColor: AppColors.surface,
@@ -425,8 +502,10 @@ class _UsersListTabState extends State<UsersListTab> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
-            final bool hasChanges = tempStatus != _statusFilter || tempSort != _sortBy;
-            final bool hasFilters = tempStatus != 'All' || tempSort != 'Name A-Z';
+            final bool hasChanges =
+                tempStatus != _statusFilter || tempSort != _sortBy;
+            final bool hasFilters =
+                tempStatus != 'All' || tempSort != 'Name A-Z';
 
             return Padding(
               padding: const EdgeInsets.all(AppSpacing.lg),
@@ -437,7 +516,10 @@ class _UsersListTabState extends State<UsersListTab> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Filters & Sort', style: AppTextStyles.sectionHeading),
+                      Text(
+                        'Filters & Sort',
+                        style: AppTextStyles.sectionHeading,
+                      ),
                       IconButton(
                         icon: const Icon(Icons.close),
                         onPressed: () => Navigator.of(context).pop(),
@@ -474,13 +556,17 @@ class _UsersListTabState extends State<UsersListTab> {
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             side: BorderSide(
-                              color: hasFilters ? AppColors.primary : Colors.grey.shade400,
+                              color: hasFilters
+                                  ? AppColors.primary
+                                  : Colors.grey.shade400,
                             ),
                           ),
                           child: Text(
                             'Clear',
                             style: TextStyle(
-                              color: hasFilters ? AppColors.primary : Colors.grey.shade400,
+                              color: hasFilters
+                                  ? AppColors.primary
+                                  : Colors.grey.shade400,
                             ),
                           ),
                         ),
@@ -501,7 +587,10 @@ class _UsersListTabState extends State<UsersListTab> {
                             backgroundColor: AppColors.primary,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
-                          child: const Text('Apply', style: TextStyle(color: Colors.white)),
+                          child: const Text(
+                            'Apply',
+                            style: TextStyle(color: Colors.white),
+                          ),
                         ),
                       ),
                     ],
@@ -517,7 +606,11 @@ class _UsersListTabState extends State<UsersListTab> {
   }
 
   Widget _buildSheetDropdown(
-      String label, List<String> options, String value, Function(String) onChanged) {
+    String label,
+    List<String> options,
+    String value,
+    Function(String) onChanged,
+  ) {
     return Row(
       children: [
         SizedBox(
@@ -528,7 +621,9 @@ class _UsersListTabState extends State<UsersListTab> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
-              border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+              border: Border.all(
+                color: AppColors.border.withValues(alpha: 0.5),
+              ),
               borderRadius: BorderRadius.circular(8),
             ),
             child: DropdownButtonHideUnderline(
@@ -599,10 +694,9 @@ class _UsersListTabState extends State<UsersListTab> {
 
   Future<void> _toggleUserStatus(UserModel user) async {
     try {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .update({'isActive': !user.isActive});
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).update(
+        {'isActive': !user.isActive},
+      );
     } catch (e) {
       debugPrint('Error toggling ${widget.role} status: $e');
     }
@@ -610,23 +704,25 @@ class _UsersListTabState extends State<UsersListTab> {
 
   Future<void> _toggleUserVerification(UserModel user) async {
     try {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .update({'isVerified': !user.isVerified});
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).update(
+        {'isVerified': !user.isVerified},
+      );
     } catch (e) {
       debugPrint('Error toggling ${widget.role} verification: $e');
     }
   }
 
   Future<void> _deleteUser(BuildContext context, UserModel user) async {
-    String displayRole = widget.role.substring(0, 1).toUpperCase() + widget.role.substring(1);
-    
+    String displayRole =
+        widget.role.substring(0, 1).toUpperCase() + widget.role.substring(1);
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Delete $displayRole?'),
-        content: Text('Are you sure you want to delete ${user.fullName}? This action cannot be undone.'),
+        content: Text(
+          'Are you sure you want to delete ${user.fullName}? This action cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -643,7 +739,10 @@ class _UsersListTabState extends State<UsersListTab> {
 
     if (confirm == true) {
       try {
-        await FirebaseFirestore.instance.collection('users').doc(user.uid).delete();
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .delete();
       } catch (e) {
         debugPrint('Error deleting ${widget.role}: $e');
       }

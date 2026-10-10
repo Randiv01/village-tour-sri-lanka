@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 import '../../common/auth/sign_in_screen.dart';
 
 import '../../../theme/app_colors.dart';
@@ -15,18 +16,21 @@ import '../chat/traveler_chat_screen.dart';
 import '../../../repositories/tour_package_repository.dart';
 import '../../common/auth/auth_guard.dart';
 import 'traveler_tour_booking_screen.dart';
+
 class TravelerPackageDetailsScreen extends StatefulWidget {
   final String packageId;
   const TravelerPackageDetailsScreen({super.key, required this.packageId});
 
   @override
-  State<TravelerPackageDetailsScreen> createState() => _TravelerPackageDetailsScreenState();
+  State<TravelerPackageDetailsScreen> createState() =>
+      _TravelerPackageDetailsScreenState();
 }
 
-class _TravelerPackageDetailsScreenState extends State<TravelerPackageDetailsScreen> {
+class _TravelerPackageDetailsScreenState
+    extends State<TravelerPackageDetailsScreen> {
   final TourPackageRepository _repo = TourPackageRepository();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  
+
   TourPackage? _package;
   Map<String, dynamic>? _guideInfo;
   bool _isLoading = true;
@@ -34,10 +38,13 @@ class _TravelerPackageDetailsScreenState extends State<TravelerPackageDetailsScr
 
   String _capitalizeWords(String input) {
     if (input.isEmpty) return input;
-    return input.split(' ').map((word) {
-      if (word.isEmpty) return word;
-      return word[0].toUpperCase() + word.substring(1).toLowerCase();
-    }).join(' ');
+    return input
+        .split(' ')
+        .map((word) {
+          if (word.isEmpty) return word;
+          return word[0].toUpperCase() + word.substring(1).toLowerCase();
+        })
+        .join(' ');
   }
 
   @override
@@ -51,9 +58,12 @@ class _TravelerPackageDetailsScreenState extends State<TravelerPackageDetailsScr
       final pkg = await _repo.getPackage(widget.packageId);
       if (pkg != null) {
         if (mounted) setState(() => _package = pkg);
-        
+
         try {
-          final guideDoc = await _firestore.collection('users').doc(pkg.guideId).get();
+          final guideDoc = await _firestore
+              .collection('users')
+              .doc(pkg.guideId)
+              .get();
           if (mounted && guideDoc.exists && guideDoc.data() != null) {
             setState(() {
               _guideInfo = guideDoc.data();
@@ -67,7 +77,7 @@ class _TravelerPackageDetailsScreenState extends State<TravelerPackageDetailsScr
             });
           }
         }
-        
+
         if (mounted) setState(() => _isLoading = false);
       } else {
         if (mounted) setState(() => _isLoading = false);
@@ -84,10 +94,14 @@ class _TravelerPackageDetailsScreenState extends State<TravelerPackageDetailsScr
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: Text(
             'Login Required',
-            style: AppTextStyles.screenHeading.copyWith(color: AppColors.primaryDark),
+            style: AppTextStyles.screenHeading.copyWith(
+              color: AppColors.primaryDark,
+            ),
           ),
           content: Text(
             'You need to be logged in to send a message to the guide. Would you like to log in now?',
@@ -96,12 +110,19 @@ class _TravelerPackageDetailsScreenState extends State<TravelerPackageDetailsScr
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: AppTextStyles.buttonText.copyWith(color: AppColors.textSecondary)),
+              child: Text(
+                'Cancel',
+                style: AppTextStyles.buttonText.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
               onPressed: () {
                 Navigator.pop(context);
@@ -110,7 +131,10 @@ class _TravelerPackageDetailsScreenState extends State<TravelerPackageDetailsScr
                   MaterialPageRoute(builder: (_) => const SignInScreen()),
                 );
               },
-              child: const Text('Log In', style: TextStyle(color: Colors.white)),
+              child: const Text(
+                'Log In',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         ),
@@ -119,14 +143,18 @@ class _TravelerPackageDetailsScreenState extends State<TravelerPackageDetailsScr
     }
 
     if (_package == null || _guideInfo == null) return;
-    
+
     final guideId = _package!.guideId;
     final packageId = _package!.id;
     final packageTitle = _package!.title;
-    final packagePrice = 'Rs. ${_package!.pricePerGuest.toStringAsFixed(0)}/day';
+    final packagePrice =
+        'Rs. ${_package!.pricePerGuest.toStringAsFixed(0)}/day';
     final guideName = _guideInfo!['fullName'] ?? 'Guide';
-    final guideImage = _guideInfo!['profileImage'] ?? _guideInfo!['profileImageUrl'] ?? '';
-    final guideLanguages = _guideInfo!['languages'] != null ? (_guideInfo!['languages'] as List).join(' & ') : 'Sinhala & English';
+    final guideImage =
+        _guideInfo!['profileImage'] ?? _guideInfo!['profileImageUrl'] ?? '';
+    final guideLanguages = _guideInfo!['languages'] != null
+        ? (_guideInfo!['languages'] as List).join(' & ')
+        : 'Sinhala & English';
 
     Navigator.push(
       context,
@@ -146,7 +174,7 @@ class _TravelerPackageDetailsScreenState extends State<TravelerPackageDetailsScr
 
   void _handleBookTour() {
     if (_package == null) return;
-    
+
     AuthGuard.requireAuth(
       context: context,
       onAuthenticated: () {
@@ -160,22 +188,29 @@ class _TravelerPackageDetailsScreenState extends State<TravelerPackageDetailsScr
     );
   }
 
-  void _openFullScreenGallery(BuildContext context, List<String> images, int initialIndex) {
+  void _openFullScreenGallery(
+    BuildContext context,
+    List<String> images,
+    int initialIndex,
+  ) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => FullScreenGalleryScreen(
-          images: images,
-          initialIndex: initialIndex,
-        ),
+        builder: (context) =>
+            FullScreenGalleryScreen(images: images, initialIndex: initialIndex),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) return const Scaffold(backgroundColor: AppColors.background, body: Center(child: CircularProgressIndicator()));
-    
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     if (_package == null || !_package!.isActive) {
       return Scaffold(
         backgroundColor: AppColors.background,
@@ -188,11 +223,21 @@ class _TravelerPackageDetailsScreenState extends State<TravelerPackageDetailsScr
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.event_busy, size: 64, color: AppColors.textSecondary),
+              const Icon(
+                Icons.event_busy,
+                size: 64,
+                color: AppColors.textSecondary,
+              ),
               const SizedBox(height: AppSpacing.md),
-              Text('Currently unavailable', style: AppTextStyles.sectionHeading),
+              Text(
+                'Currently unavailable',
+                style: AppTextStyles.sectionHeading,
+              ),
               const SizedBox(height: AppSpacing.sm),
-              Text('This tour package is no longer available.', style: AppTextStyles.bodyMedium),
+              Text(
+                'This tour package is no longer available.',
+                style: AppTextStyles.bodyMedium,
+              ),
             ],
           ),
         ),
@@ -200,7 +245,8 @@ class _TravelerPackageDetailsScreenState extends State<TravelerPackageDetailsScr
     }
 
     List<String> allImages = [];
-    if (_package!.coverImageUrl != null && _package!.coverImageUrl!.isNotEmpty) {
+    if (_package!.coverImageUrl != null &&
+        _package!.coverImageUrl!.isNotEmpty) {
       allImages.add(_package!.coverImageUrl!);
     }
     for (var img in _package!.galleryImages) {
@@ -218,14 +264,18 @@ class _TravelerPackageDetailsScreenState extends State<TravelerPackageDetailsScr
         centerTitle: true,
         title: Text(
           'Tour Packages',
-          style: AppTextStyles.screenHeading.copyWith(color: AppColors.primaryDark, fontSize: 20),
+          style: AppTextStyles.screenHeading.copyWith(
+            color: AppColors.primaryDark,
+            fontSize: 20,
+          ),
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.share, color: AppColors.primaryDark),
             onPressed: () {
               if (_package != null) {
-                final shareText = 'Check out this village tour: ${_package!.title} in ${_package!.location}!\n\nDuration: ${_package!.durationDays} Days\nPrice: Rs. ${NumberFormat('#,##0').format(_package!.pricePerGuest)} per guest.\n\nDownload Village Tour Sri Lanka app to book this and many other authentic experiences.';
+                final shareText =
+                    'Check out this village tour: ${_package!.title} in ${_package!.location}!\n\nDuration: ${_package!.durationDays} Days\nPrice: Rs. ${NumberFormat('#,##0').format(_package!.pricePerGuest)} per guest.\n\nDownload Village Tour Sri Lanka app to book this and many other authentic experiences.';
                 // ignore: deprecated_member_use
                 Share.share(shareText);
               }
@@ -255,7 +305,11 @@ class _TravelerPackageDetailsScreenState extends State<TravelerPackageDetailsScr
                             },
                             itemBuilder: (context, index) {
                               return GestureDetector(
-                                onTap: () => _openFullScreenGallery(context, allImages, index),
+                                onTap: () => _openFullScreenGallery(
+                                  context,
+                                  allImages,
+                                  index,
+                                ),
                                 child: Image.network(
                                   allImages[index],
                                   fit: BoxFit.cover,
@@ -269,14 +323,20 @@ class _TravelerPackageDetailsScreenState extends State<TravelerPackageDetailsScr
                               bottom: 16,
                               right: 16,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.black54,
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                                 child: Text(
                                   '${_currentImageIndex + 1} / ${allImages.length}',
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ),
@@ -288,9 +348,13 @@ class _TravelerPackageDetailsScreenState extends State<TravelerPackageDetailsScr
                       height: 250,
                       color: AppColors.primaryDark.withValues(alpha: 0.1),
                       width: double.infinity,
-                      child: const Icon(Icons.image, size: 64, color: AppColors.primaryDark),
+                      child: const Icon(
+                        Icons.image,
+                        size: 64,
+                        color: AppColors.primaryDark,
+                      ),
                     ),
-                  
+
                   Padding(
                     padding: const EdgeInsets.all(AppSpacing.lg),
                     child: Column(
@@ -299,56 +363,113 @@ class _TravelerPackageDetailsScreenState extends State<TravelerPackageDetailsScr
                         // Title & Category
                         Text(
                           _package!.title,
-                          style: AppTextStyles.screenHeading.copyWith(color: AppColors.primaryDark, fontSize: 24),
+                          style: AppTextStyles.screenHeading.copyWith(
+                            color: AppColors.primaryDark,
+                            fontSize: 24,
+                          ),
                         ),
-                        if (_package!.category != null && _package!.category!.isNotEmpty)
+                        if (_package!.category != null &&
+                            _package!.category!.isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.only(top: 4.0),
                             child: Text(
                               _package!.category!,
-                              style: AppTextStyles.labelLarge.copyWith(color: AppColors.secondary, fontWeight: FontWeight.bold),
+                              style: AppTextStyles.labelLarge.copyWith(
+                                color: AppColors.secondary,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         const SizedBox(height: AppSpacing.sm),
-                        
+
                         // Location
                         Row(
                           children: [
-                            const Icon(Icons.location_on, size: 18, color: AppColors.textSecondary),
+                            const Icon(
+                              Icons.location_on,
+                              size: 18,
+                              color: AppColors.textSecondary,
+                            ),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
                                 _package!.location,
-                                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary, fontSize: 16),
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 16,
+                                ),
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: AppSpacing.xl),
-                        
+
                         // Key Details Row
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            _buildInfoColumn(Icons.timer, 'Duration', '${_package!.durationDays} Days, ${_package!.nights} Nights'),
-                            _buildInfoColumn(Icons.group, 'Max Guests', 'Up to ${_package!.maxGuests}'),
-                            _buildInfoColumn(Icons.payments, 'Price', 'Rs. ${NumberFormat('#,##0').format(_package!.pricePerGuest)}', isPrimary: true),
+                            _buildInfoColumn(
+                              Icons.timer,
+                              'Duration',
+                              '${_package!.durationDays} Days, ${_package!.nights} Nights',
+                            ),
+                            _buildInfoColumn(
+                              Icons.group,
+                              'Max Guests',
+                              'Up to ${_package!.maxGuests}',
+                            ),
+                            _buildInfoColumn(
+                              Icons.payments,
+                              'Price',
+                              'Rs. ${NumberFormat('#,##0').format(_package!.pricePerGuest)}',
+                              isPrimary: true,
+                            ),
                           ],
                         ),
                         const Divider(height: 48, color: AppColors.border),
-                        
+
                         // Guide Section
                         _buildSectionTitle('Guided by'),
                         Row(
                           children: [
                             CircleAvatar(
                               radius: 32,
-                              backgroundColor: AppColors.primary.withValues(alpha: 0.2),
-                              backgroundImage: _guideInfo != null && _guideInfo!['profileImage'] != null && _guideInfo!['profileImage'].toString().isNotEmpty
+                              backgroundColor: AppColors.primary.withValues(
+                                alpha: 0.2,
+                              ),
+                              backgroundImage:
+                                  _guideInfo != null &&
+                                      _guideInfo!['profileImage'] != null &&
+                                      _guideInfo!['profileImage']
+                                          .toString()
+                                          .isNotEmpty
                                   ? NetworkImage(_guideInfo!['profileImage'])
-                                  : (_guideInfo != null && _guideInfo!['profileImageUrl'] != null && _guideInfo!['profileImageUrl'].toString().isNotEmpty ? NetworkImage(_guideInfo!['profileImageUrl']) : null),
-                              child: _guideInfo == null || ((_guideInfo!['profileImage'] == null || _guideInfo!['profileImage'].toString().isEmpty) && (_guideInfo!['profileImageUrl'] == null || _guideInfo!['profileImageUrl'].toString().isEmpty))
-                                  ? const Icon(Icons.person, size: 32, color: AppColors.primaryDark)
+                                  : (_guideInfo != null &&
+                                            _guideInfo!['profileImageUrl'] !=
+                                                null &&
+                                            _guideInfo!['profileImageUrl']
+                                                .toString()
+                                                .isNotEmpty
+                                        ? NetworkImage(
+                                            _guideInfo!['profileImageUrl'],
+                                          )
+                                        : null),
+                              child:
+                                  _guideInfo == null ||
+                                      ((_guideInfo!['profileImage'] == null ||
+                                              _guideInfo!['profileImage']
+                                                  .toString()
+                                                  .isEmpty) &&
+                                          (_guideInfo!['profileImageUrl'] ==
+                                                  null ||
+                                              _guideInfo!['profileImageUrl']
+                                                  .toString()
+                                                  .isEmpty))
+                                  ? const Icon(
+                                      Icons.person,
+                                      size: 32,
+                                      color: AppColors.primaryDark,
+                                    )
                                   : null,
                             ),
                             const SizedBox(width: AppSpacing.md),
@@ -357,38 +478,61 @@ class _TravelerPackageDetailsScreenState extends State<TravelerPackageDetailsScr
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    _guideInfo?['fullName'] != null ? _capitalizeWords(_guideInfo!['fullName']) : 'Tour Guide',
-                                    style: AppTextStyles.labelLarge.copyWith(fontSize: 18),
+                                    _guideInfo?['fullName'] != null
+                                        ? _capitalizeWords(
+                                            _guideInfo!['fullName'],
+                                          )
+                                        : 'Tour Guide',
+                                    style: AppTextStyles.labelLarge.copyWith(
+                                      fontSize: 18,
+                                    ),
                                   ),
                                   Text(
                                     'Tour Guide • ${_guideInfo?['location'] ?? _package!.location}',
-                                    style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+                                    style: AppTextStyles.bodyMedium.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
                                   ),
                                   if (_guideInfo?['languages'] != null)
                                     Padding(
                                       padding: const EdgeInsets.only(top: 4.0),
                                       child: Text(
                                         'Speaks: ${(_guideInfo!['languages'] as List).join(", ")}',
-                                        style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                                        style: AppTextStyles.caption.copyWith(
+                                          color: AppColors.textSecondary,
+                                        ),
                                       ),
                                     ),
-                                  if (_guideInfo?['phoneNumber'] != null && _guideInfo!['phoneNumber'].toString().isNotEmpty)
+                                  if (_guideInfo?['phoneNumber'] != null &&
+                                      _guideInfo!['phoneNumber']
+                                          .toString()
+                                          .isNotEmpty)
                                     Padding(
                                       padding: const EdgeInsets.only(top: 4.0),
                                       child: GestureDetector(
                                         onTap: () async {
-                                          final Uri url = Uri.parse('tel:${_guideInfo!['phoneNumber']}');
+                                          final Uri url = Uri.parse(
+                                            'tel:${_guideInfo!['phoneNumber']}',
+                                          );
                                           if (await canLaunchUrl(url)) {
                                             await launchUrl(url);
                                           }
                                         },
                                         child: Row(
                                           children: [
-                                            const Icon(Icons.phone, size: 14, color: AppColors.primary),
+                                            const Icon(
+                                              Icons.phone,
+                                              size: 14,
+                                              color: AppColors.primary,
+                                            ),
                                             const SizedBox(width: 4),
                                             Text(
                                               _guideInfo!['phoneNumber'],
-                                              style: AppTextStyles.caption.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold),
+                                              style: AppTextStyles.caption
+                                                  .copyWith(
+                                                    color: AppColors.primary,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
                                             ),
                                           ],
                                         ),
@@ -408,14 +552,16 @@ class _TravelerPackageDetailsScreenState extends State<TravelerPackageDetailsScr
                             label: const Text('Message Guide'),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppColors.primaryDark,
-                              side: const BorderSide(color: AppColors.primaryDark),
+                              side: const BorderSide(
+                                color: AppColors.primaryDark,
+                              ),
                               padding: const EdgeInsets.symmetric(vertical: 12),
                             ),
                           ),
                         ),
-                        
+
                         const Divider(height: 48, color: AppColors.border),
-                        
+
                         // Description
                         _buildSectionTitle('About This Tour'),
                         Text(
@@ -423,84 +569,141 @@ class _TravelerPackageDetailsScreenState extends State<TravelerPackageDetailsScr
                           style: AppTextStyles.bodyMedium.copyWith(height: 1.5),
                         ),
                         const SizedBox(height: AppSpacing.xl),
-                        
+
                         // Places to Visit
                         if (_package!.placesToVisit.isNotEmpty) ...[
                           _buildSectionTitle('Places to Visit'),
-                          ..._package!.placesToVisit.map((e) => _buildListItem(e['title'] ?? '', e['description'])),
+                          ..._package!.placesToVisit.map(
+                            (e) => _buildListItem(
+                              e['title'] ?? '',
+                              e['description'],
+                            ),
+                          ),
                           const SizedBox(height: AppSpacing.xl),
                         ],
-                        
+
                         // Activities
                         if (_package!.activities.isNotEmpty) ...[
                           _buildSectionTitle('Activities & Experiences'),
-                          ..._package!.activities.map((e) => _buildListItem(e['title'] ?? '', e['description'])),
+                          ..._package!.activities.map(
+                            (e) => _buildListItem(
+                              e['title'] ?? '',
+                              e['description'],
+                            ),
+                          ),
                           const SizedBox(height: AppSpacing.xl),
                         ],
-                        
+
                         // Itinerary
                         if (_package!.itinerary.isNotEmpty) ...[
                           _buildSectionTitle('Itinerary'),
-                          ..._package!.itinerary.map((e) => _buildListItem(e['title'] ?? '', e['description'], icon: Icons.schedule)),
+                          ..._package!.itinerary.map(
+                            (e) => _buildListItem(
+                              e['title'] ?? '',
+                              e['description'],
+                              icon: Icons.schedule,
+                            ),
+                          ),
                           const SizedBox(height: AppSpacing.xl),
                         ],
-                        
+
                         // Included/Excluded
-                        if (_package!.includedItems.isNotEmpty || _package!.excludedItems.isNotEmpty) ...[
+                        if (_package!.includedItems.isNotEmpty ||
+                            _package!.excludedItems.isNotEmpty) ...[
                           _buildSectionTitle('What\'s Included'),
                           if (_package!.includedItems.isNotEmpty) ...[
-                            ..._package!.includedItems.map((e) => _buildCheckItem(e, true)),
+                            ..._package!.includedItems.map(
+                              (e) => _buildCheckItem(e, true),
+                            ),
                           ],
                           if (_package!.excludedItems.isNotEmpty) ...[
                             const SizedBox(height: AppSpacing.md),
-                            Text('What\'s Not Included', style: AppTextStyles.labelLarge),
+                            Text(
+                              'What\'s Not Included',
+                              style: AppTextStyles.labelLarge,
+                            ),
                             const SizedBox(height: AppSpacing.sm),
-                            ..._package!.excludedItems.map((e) => _buildCheckItem(e, false)),
+                            ..._package!.excludedItems.map(
+                              (e) => _buildCheckItem(e, false),
+                            ),
                           ],
                           const SizedBox(height: AppSpacing.xl),
                         ],
-                        
+
                         // Meeting / Pickup
-                        if ((_package!.meetingPoint != null && _package!.meetingPoint!.isNotEmpty) ||
-                            (_package!.pickupNotes != null && _package!.pickupNotes!.isNotEmpty)) ...[
+                        if ((_package!.meetingPoint != null &&
+                                _package!.meetingPoint!.isNotEmpty) ||
+                            (_package!.pickupNotes != null &&
+                                _package!.pickupNotes!.isNotEmpty)) ...[
                           _buildSectionTitle('Meeting & Pickup'),
-                          if (_package!.meetingPoint != null && _package!.meetingPoint!.isNotEmpty) ...[
+                          if (_package!.meetingPoint != null &&
+                              _package!.meetingPoint!.isNotEmpty) ...[
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Icon(Icons.place, size: 20, color: AppColors.primaryDark),
+                                const Icon(
+                                  Icons.place,
+                                  size: 20,
+                                  color: AppColors.primaryDark,
+                                ),
                                 const SizedBox(width: 8),
-                                Expanded(child: Text(_package!.meetingPoint!, style: AppTextStyles.bodyMedium)),
+                                Expanded(
+                                  child: Text(
+                                    _package!.meetingPoint!,
+                                    style: AppTextStyles.bodyMedium,
+                                  ),
+                                ),
                               ],
                             ),
                             const SizedBox(height: AppSpacing.sm),
                           ],
-                          if (_package!.pickupNotes != null && _package!.pickupNotes!.isNotEmpty) ...[
+                          if (_package!.pickupNotes != null &&
+                              _package!.pickupNotes!.isNotEmpty) ...[
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Icon(Icons.info_outline, size: 20, color: AppColors.textSecondary),
+                                const Icon(
+                                  Icons.info_outline,
+                                  size: 20,
+                                  color: AppColors.textSecondary,
+                                ),
                                 const SizedBox(width: 8),
-                                Expanded(child: Text(_package!.pickupNotes!, style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary))),
+                                Expanded(
+                                  child: Text(
+                                    _package!.pickupNotes!,
+                                    style: AppTextStyles.caption.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
                           ],
                           const SizedBox(height: AppSpacing.xl),
                         ],
-                        
+
                         // Vehicle
                         if (_package!.vehicleType.isNotEmpty) ...[
                           _buildSectionTitle('Transport'),
                           Row(
                             children: [
-                              const Icon(Icons.directions_car, size: 20, color: AppColors.primaryDark),
+                              const Icon(
+                                Icons.directions_car,
+                                size: 20,
+                                color: AppColors.primaryDark,
+                              ),
                               const SizedBox(width: 8),
-                              Expanded(child: Text(_package!.vehicleType, style: AppTextStyles.bodyMedium)),
+                              Expanded(
+                                child: Text(
+                                  _package!.vehicleType,
+                                  style: AppTextStyles.bodyMedium,
+                                ),
+                              ),
                             ],
                           ),
                           const SizedBox(height: AppSpacing.xl),
                         ],
-                        
+
                         const SizedBox(height: AppSpacing.xxxl),
                       ],
                     ),
@@ -509,7 +712,7 @@ class _TravelerPackageDetailsScreenState extends State<TravelerPackageDetailsScr
               ),
             ),
           ),
-          
+
           // Bottom Action Bar
           Container(
             padding: const EdgeInsets.all(AppSpacing.md),
@@ -532,9 +735,17 @@ class _TravelerPackageDetailsScreenState extends State<TravelerPackageDetailsScr
                     children: [
                       Text(
                         'Rs. ${NumberFormat('#,##0').format(_package!.pricePerGuest)}',
-                        style: AppTextStyles.screenHeading.copyWith(color: AppColors.primaryDark, fontSize: 18),
+                        style: AppTextStyles.screenHeading.copyWith(
+                          color: AppColors.primaryDark,
+                          fontSize: 18,
+                        ),
                       ),
-                      Text('per guest', style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary)),
+                      Text(
+                        'per guest',
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -546,9 +757,17 @@ class _TravelerPackageDetailsScreenState extends State<TravelerPackageDetailsScr
                       backgroundColor: AppColors.primaryDark,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
-                    child: const Text('Book This Tour', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      'Book This Tour',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -559,15 +778,33 @@ class _TravelerPackageDetailsScreenState extends State<TravelerPackageDetailsScr
     );
   }
 
-  Widget _buildInfoColumn(IconData icon, String label, String value, {bool isPrimary = false}) {
+  Widget _buildInfoColumn(
+    IconData icon,
+    String label,
+    String value, {
+    bool isPrimary = false,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 24, color: isPrimary ? AppColors.primary : AppColors.textSecondary),
+        Icon(
+          icon,
+          size: 24,
+          color: isPrimary ? AppColors.primary : AppColors.textSecondary,
+        ),
         const SizedBox(height: 4),
-        Text(label, style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary)),
+        Text(
+          label,
+          style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+        ),
         const SizedBox(height: 2),
-        Text(value, style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold, color: isPrimary ? AppColors.primaryDark : null)),
+        Text(
+          value,
+          style: AppTextStyles.bodyMedium.copyWith(
+            fontWeight: FontWeight.bold,
+            color: isPrimary ? AppColors.primaryDark : null,
+          ),
+        ),
       ],
     );
   }
@@ -575,11 +812,20 @@ class _TravelerPackageDetailsScreenState extends State<TravelerPackageDetailsScr
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: Text(title, style: AppTextStyles.sectionHeading.copyWith(color: AppColors.primaryDark)),
+      child: Text(
+        title,
+        style: AppTextStyles.sectionHeading.copyWith(
+          color: AppColors.primaryDark,
+        ),
+      ),
     );
   }
 
-  Widget _buildListItem(String title, String? subtitle, {IconData icon = Icons.circle}) {
+  Widget _buildListItem(
+    String title,
+    String? subtitle, {
+    IconData icon = Icons.circle,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Row(
@@ -587,18 +833,32 @@ class _TravelerPackageDetailsScreenState extends State<TravelerPackageDetailsScr
         children: [
           Padding(
             padding: EdgeInsets.only(top: icon == Icons.circle ? 6 : 2),
-            child: Icon(icon, size: icon == Icons.circle ? 8 : 18, color: AppColors.primary),
+            child: Icon(
+              icon,
+              size: icon == Icons.circle ? 8 : 18,
+              color: AppColors.primary,
+            ),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
+                Text(
+                  title,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 if (subtitle != null && subtitle.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 2.0),
-                    child: Text(subtitle, style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary)),
+                    child: Text(
+                      subtitle,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
                   ),
               ],
             ),
@@ -614,7 +874,11 @@ class _TravelerPackageDetailsScreenState extends State<TravelerPackageDetailsScr
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(isIncluded ? Icons.check_circle : Icons.cancel, size: 20, color: isIncluded ? Colors.green : Colors.red),
+          Icon(
+            isIncluded ? Icons.check_circle : Icons.cancel,
+            size: 20,
+            color: isIncluded ? Colors.green : Colors.red,
+          ),
           const SizedBox(width: 8),
           Expanded(child: Text(text, style: AppTextStyles.bodyMedium)),
         ],
@@ -634,7 +898,8 @@ class FullScreenGalleryScreen extends StatefulWidget {
   });
 
   @override
-  State<FullScreenGalleryScreen> createState() => _FullScreenGalleryScreenState();
+  State<FullScreenGalleryScreen> createState() =>
+      _FullScreenGalleryScreenState();
 }
 
 class _FullScreenGalleryScreenState extends State<FullScreenGalleryScreen> {
@@ -679,10 +944,7 @@ class _FullScreenGalleryScreenState extends State<FullScreenGalleryScreen> {
           return InteractiveViewer(
             minScale: 1.0,
             maxScale: 4.0,
-            child: Image.network(
-              widget.images[index],
-              fit: BoxFit.contain,
-            ),
+            child: Image.network(widget.images[index], fit: BoxFit.contain),
           );
         },
       ),

@@ -15,9 +15,8 @@ class OnboardingScreen3 extends StatelessWidget {
     await prefs.setBool('onboarding_completed', true);
 
     if (context.mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const AuthGate()),
-      );
+      Navigator.of(context)
+          .pushReplacement(MaterialPageRoute(builder: (_) => const AuthGate()));
     }
   }
 

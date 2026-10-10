@@ -56,7 +56,9 @@ class _ManageHomestaysScreenState extends State<ManageHomestaysScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Homestay?'),
-        content: const Text('Are you sure you want to delete this homestay? This action cannot be undone.'),
+        content: const Text(
+          'Are you sure you want to delete this homestay? This action cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -101,9 +103,7 @@ class _ManageHomestaysScreenState extends State<ManageHomestaysScreen> {
               ),
             ),
             _buildTopBar(),
-            Expanded(
-              child: _buildHomestaysList(),
-            ),
+            Expanded(child: _buildHomestaysList()),
           ],
         ),
       ),
@@ -200,7 +200,10 @@ class _ManageHomestaysScreenState extends State<ManageHomestaysScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
-            final bool hasFilters = tempStatus != 'All' || tempGuests != 'All' || tempSort != 'Newest';
+            final bool hasFilters =
+                tempStatus != 'All' ||
+                tempGuests != 'All' ||
+                tempSort != 'Newest';
 
             return Padding(
               padding: const EdgeInsets.all(AppSpacing.lg),
@@ -211,7 +214,10 @@ class _ManageHomestaysScreenState extends State<ManageHomestaysScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Filters & Sort', style: AppTextStyles.sectionHeading),
+                      Text(
+                        'Filters & Sort',
+                        style: AppTextStyles.sectionHeading,
+                      ),
                       IconButton(
                         icon: const Icon(Icons.close),
                         onPressed: () => Navigator.of(context).pop(),
@@ -256,13 +262,17 @@ class _ManageHomestaysScreenState extends State<ManageHomestaysScreen> {
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             side: BorderSide(
-                              color: hasFilters ? AppColors.primary : Colors.grey.shade400,
+                              color: hasFilters
+                                  ? AppColors.primary
+                                  : Colors.grey.shade400,
                             ),
                           ),
                           child: Text(
                             'Clear',
                             style: TextStyle(
-                              color: hasFilters ? AppColors.primary : Colors.grey.shade400,
+                              color: hasFilters
+                                  ? AppColors.primary
+                                  : Colors.grey.shade400,
                             ),
                           ),
                         ),
@@ -363,16 +373,25 @@ class _ManageHomestaysScreenState extends State<ManageHomestaysScreen> {
           final location = item.location.toLowerCase();
           final status = item.status;
 
-          if (_searchQuery.isNotEmpty && !title.contains(_searchQuery) && !location.contains(_searchQuery)) {
+          if (_searchQuery.isNotEmpty &&
+              !title.contains(_searchQuery) &&
+              !location.contains(_searchQuery)) {
             return false;
           }
           if (_statusFilter != 'All' && status != _statusFilter) {
             return false;
           }
           if (_guestsFilter != 'All') {
-            if (_guestsFilter == '1-2 Guests' && item.maxGuests > 2) return false;
-            if (_guestsFilter == '3-4 Guests' && (item.maxGuests < 3 || item.maxGuests > 4)) return false;
-            if (_guestsFilter == '5+ Guests' && item.maxGuests < 5) return false;
+            if (_guestsFilter == '1-2 Guests' && item.maxGuests > 2) {
+              return false;
+            }
+            if (_guestsFilter == '3-4 Guests' &&
+                (item.maxGuests < 3 || item.maxGuests > 4)) {
+              return false;
+            }
+            if (_guestsFilter == '5+ Guests' && item.maxGuests < 5) {
+              return false;
+            }
           }
           return true;
         }).toList();
@@ -381,7 +400,7 @@ class _ManageHomestaysScreenState extends State<ManageHomestaysScreen> {
         homestays.sort((a, b) {
           final priceA = a.pricePerNight;
           final priceB = b.pricePerNight;
-          
+
           final timeA = a.createdAt;
           final timeB = b.createdAt;
 
@@ -430,7 +449,9 @@ class _ManageHomestaysScreenState extends State<ManageHomestaysScreen> {
           const SizedBox(height: 8),
           Text(
             'Add your first homestay to start earning.',
-            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
           ),
           const SizedBox(height: 24),
           ElevatedButton(
@@ -512,7 +533,11 @@ class _ManageHomestaysScreenState extends State<ManageHomestaysScreen> {
                     ? Image.network(
                         coverImage,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, color: AppColors.textSecondary),
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(
+                              Icons.broken_image,
+                              color: AppColors.textSecondary,
+                            ),
                       )
                     : const Icon(Icons.image, color: AppColors.textSecondary),
               ),
@@ -568,7 +593,11 @@ class _ManageHomestaysScreenState extends State<ManageHomestaysScreen> {
                         isActive ? Icons.check : Icons.close,
                         isActive ? Colors.green : AppColors.error,
                       ),
-                      _buildBadge('Rs. ${homestay.pricePerNight}/night', Icons.payments, AppColors.primary),
+                      _buildBadge(
+                        'Rs. ${homestay.pricePerNight}/night',
+                        Icons.payments,
+                        AppColors.primary,
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -584,7 +613,9 @@ class _ManageHomestaysScreenState extends State<ManageHomestaysScreen> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            homestay.images.length == 1 ? '1 image' : '${homestay.images.length} images',
+                            homestay.images.length == 1
+                                ? '1 image'
+                                : '${homestay.images.length} images',
                             style: AppTextStyles.caption,
                           ),
                         ],
@@ -612,7 +643,8 @@ class _ManageHomestaysScreenState extends State<ManageHomestaysScreen> {
                                   ? AppColors.textSecondary
                                   : Colors.green,
                             ),
-                            onPressed: () => _toggleStatus(homestay.id, isActive),
+                            onPressed: () =>
+                                _toggleStatus(homestay.id, isActive),
                             tooltip: isActive ? 'Deactivate' : 'Activate',
                             constraints: const BoxConstraints(),
                             padding: const EdgeInsets.all(8),

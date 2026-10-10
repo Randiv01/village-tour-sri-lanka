@@ -13,7 +13,8 @@ class HostBookingDetailsScreen extends StatefulWidget {
   const HostBookingDetailsScreen({super.key, required this.booking});
 
   @override
-  State<HostBookingDetailsScreen> createState() => _HostBookingDetailsScreenState();
+  State<HostBookingDetailsScreen> createState() =>
+      _HostBookingDetailsScreenState();
 }
 
 class _HostBookingDetailsScreenState extends State<HostBookingDetailsScreen> {
@@ -27,12 +28,20 @@ class _HostBookingDetailsScreenState extends State<HostBookingDetailsScreen> {
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Booking accepted. Awaiting payment.'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('Booking accepted. Awaiting payment.'),
+            backgroundColor: Colors.green,
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
@@ -48,7 +57,10 @@ class _HostBookingDetailsScreenState extends State<HostBookingDetailsScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Please provide a reason for rejecting this booking request (Required):', style: TextStyle(fontSize: 12)),
+            const Text(
+              'Please provide a reason for rejecting this booking request (Required):',
+              style: TextStyle(fontSize: 12),
+            ),
             const SizedBox(height: 8),
             TextField(
               controller: reasonController,
@@ -61,11 +73,16 @@ class _HostBookingDetailsScreenState extends State<HostBookingDetailsScreen> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             onPressed: () {
               if (reasonController.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Reason is required')));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Reason is required')),
+                );
                 return;
               }
               Navigator.pop(context, true);
@@ -81,19 +98,27 @@ class _HostBookingDetailsScreenState extends State<HostBookingDetailsScreen> {
       setState(() => _isProcessing = true);
       try {
         await _bookingRepo.updateBookingStatus(
-          widget.booking.id, 
+          widget.booking.id,
           'rejected',
           rejectionReason: reasonController.text.trim(),
         );
         if (mounted) {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Booking rejected.'), backgroundColor: Colors.orange),
+            const SnackBar(
+              content: Text('Booking rejected.'),
+              backgroundColor: Colors.orange,
+            ),
           );
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: $e'),
+              backgroundColor: AppColors.error,
+            ),
+          );
         }
       } finally {
         if (mounted) setState(() => _isProcessing = false);
@@ -114,7 +139,10 @@ class _HostBookingDetailsScreenState extends State<HostBookingDetailsScreen> {
         centerTitle: true,
         title: Text(
           'Booking Request',
-          style: AppTextStyles.sectionHeading.copyWith(color: AppColors.primaryDark, fontSize: 18),
+          style: AppTextStyles.sectionHeading.copyWith(
+            color: AppColors.primaryDark,
+            fontSize: 18,
+          ),
         ),
       ),
       body: SingleChildScrollView(
@@ -124,10 +152,16 @@ class _HostBookingDetailsScreenState extends State<HostBookingDetailsScreen> {
           children: [
             _buildStatusCard(b),
             const SizedBox(height: AppSpacing.lg),
-            
+
             _buildSectionContainer(
               title: 'Homestay',
-              child: Text(b.homestayTitle, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              child: Text(
+                b.homestayTitle,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
             ),
             const SizedBox(height: AppSpacing.lg),
 
@@ -150,7 +184,10 @@ class _HostBookingDetailsScreenState extends State<HostBookingDetailsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildDetailRow('Check-in', dateFormat.format(b.checkInDate)),
-                  _buildDetailRow('Check-out', dateFormat.format(b.checkOutDate)),
+                  _buildDetailRow(
+                    'Check-out',
+                    dateFormat.format(b.checkOutDate),
+                  ),
                   _buildDetailRow('Duration', '${b.numberOfNights} Night(s)'),
                 ],
               ),
@@ -163,7 +200,10 @@ class _HostBookingDetailsScreenState extends State<HostBookingDetailsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: b.selectedAddOns.map((addon) {
-                    return _buildDetailRow(addon['title'], 'Rs. ${addon['price']} x ${addon['quantity']}');
+                    return _buildDetailRow(
+                      addon['title'],
+                      'Rs. ${addon['price']} x ${addon['quantity']}',
+                    );
                   }).toList(),
                 ),
               ),
@@ -175,30 +215,53 @@ class _HostBookingDetailsScreenState extends State<HostBookingDetailsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildDetailRow('Accommodation', 'Rs. ${b.accommodationAmount}'),
-                  if (b.addOnAmount > 0) _buildDetailRow('Add-ons', 'Rs. ${b.addOnAmount}'),
+                  _buildDetailRow(
+                    'Accommodation',
+                    'Rs. ${b.accommodationAmount}',
+                  ),
+                  if (b.addOnAmount > 0)
+                    _buildDetailRow('Add-ons', 'Rs. ${b.addOnAmount}'),
                   const Divider(),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Total Amount', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      Text('Rs. ${b.totalAmount}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primaryDark)),
+                      const Text(
+                        'Total Amount',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      Text(
+                        'Rs. ${b.totalAmount}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  _buildDetailRow('Payment Status', b.paymentStatus.toUpperCase()),
+                  _buildDetailRow(
+                    'Payment Status',
+                    b.paymentStatus.toUpperCase(),
+                  ),
                 ],
               ),
             ),
-            
+
             if (b.bookingStatus == 'rejected' && b.rejectionReason != null) ...[
               const SizedBox(height: AppSpacing.lg),
               _buildSectionContainer(
                 title: 'Rejection Reason',
-                child: Text(b.rejectionReason!, style: const TextStyle(color: AppColors.error)),
+                child: Text(
+                  b.rejectionReason!,
+                  style: const TextStyle(color: AppColors.error),
+                ),
               ),
             ],
-            
+
             const SizedBox(height: 100),
           ],
         ),
@@ -210,7 +273,7 @@ class _HostBookingDetailsScreenState extends State<HostBookingDetailsScreen> {
   Widget _buildStatusCard(HomestayBooking b) {
     Color color = AppColors.border;
     String message = '';
-    
+
     if (b.bookingStatus == 'pending') {
       color = Colors.orange;
       message = 'This is a new request. Please accept or reject.';
@@ -236,13 +299,21 @@ class _HostBookingDetailsScreenState extends State<HostBookingDetailsScreen> {
         children: [
           Icon(Icons.info_outline, color: color),
           const SizedBox(width: 12),
-          Expanded(child: Text(message, style: TextStyle(color: color, fontWeight: FontWeight.bold))),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(color: color, fontWeight: FontWeight.bold),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildSectionContainer({required String title, required Widget child}) {
+  Widget _buildSectionContainer({
+    required String title,
+    required Widget child,
+  }) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -254,7 +325,14 @@ class _HostBookingDetailsScreenState extends State<HostBookingDetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textSecondary,
+            ),
+          ),
           const SizedBox(height: 12),
           child,
         ],
@@ -268,8 +346,24 @@ class _HostBookingDetailsScreenState extends State<HostBookingDetailsScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(flex: 2, child: Text(label, style: const TextStyle(color: AppColors.textSecondary))),
-          Expanded(flex: 3, child: Text(value, style: const TextStyle(fontWeight: FontWeight.w500, color: AppColors.textPrimary), textAlign: TextAlign.right)),
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: const TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
+              textAlign: TextAlign.right,
+            ),
+          ),
         ],
       ),
     );
@@ -280,7 +374,13 @@ class _HostBookingDetailsScreenState extends State<HostBookingDetailsScreen> {
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -5))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
       ),
       child: SafeArea(
         child: Row(
@@ -291,9 +391,17 @@ class _HostBookingDetailsScreenState extends State<HostBookingDetailsScreen> {
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   side: const BorderSide(color: AppColors.error),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                child: const Text('Reject', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold)),
+                child: const Text(
+                  'Reject',
+                  style: TextStyle(
+                    color: AppColors.error,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
             const SizedBox(width: AppSpacing.md),
@@ -303,11 +411,26 @@ class _HostBookingDetailsScreenState extends State<HostBookingDetailsScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryDark,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 child: _isProcessing
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Text('Accept', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text(
+                        'Accept',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
             ),
           ],

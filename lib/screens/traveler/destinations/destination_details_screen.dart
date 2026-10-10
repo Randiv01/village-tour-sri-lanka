@@ -35,7 +35,7 @@ class _DestinationDetailsScreenState extends State<DestinationDetailsScreen> {
   bool _isLoading = false;
   bool _notFound = false;
   bool _notActive = false;
-  
+
   bool _isFavorite = false;
   Position? _currentPosition;
   final MapController _mapController = MapController();
@@ -76,9 +76,14 @@ class _DestinationDetailsScreenState extends State<DestinationDetailsScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       try {
-        final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
         if (userDoc.exists) {
-          final favs = List<String>.from(userDoc.data()?['favoriteDestinations'] ?? []);
+          final favs = List<String>.from(
+            userDoc.data()?['favoriteDestinations'] ?? [],
+          );
           isFav = favs.contains(_currentDestination.id);
         }
       } catch (_) {}
@@ -100,7 +105,11 @@ class _DestinationDetailsScreenState extends State<DestinationDetailsScreen> {
     }
     if (permission == LocationPermission.deniedForever) return;
     try {
-      final position = await Geolocator.getCurrentPosition(locationSettings: const LocationSettings(accuracy: LocationAccuracy.best));
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.best,
+        ),
+      );
       if (mounted) {
         setState(() {
           _currentPosition = position;
@@ -114,17 +123,29 @@ class _DestinationDetailsScreenState extends State<DestinationDetailsScreen> {
   Future<void> _toggleFavorite() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please sign in to favorite.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please sign in to favorite.')),
+      );
       return;
     }
     final newFav = !_isFavorite;
     setState(() => _isFavorite = newFav);
     try {
-      final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+      final userRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid);
       if (newFav) {
-        await userRef.update({'favoriteDestinations': FieldValue.arrayUnion([_currentDestination.id])});
+        await userRef.update({
+          'favoriteDestinations': FieldValue.arrayUnion([
+            _currentDestination.id,
+          ]),
+        });
       } else {
-        await userRef.update({'favoriteDestinations': FieldValue.arrayRemove([_currentDestination.id])});
+        await userRef.update({
+          'favoriteDestinations': FieldValue.arrayRemove([
+            _currentDestination.id,
+          ]),
+        });
       }
     } catch (e) {
       setState(() => _isFavorite = !newFav);
@@ -133,12 +154,16 @@ class _DestinationDetailsScreenState extends State<DestinationDetailsScreen> {
 
   void _shareDestination() {
     // ignore: deprecated_member_use
-    Share.share('Village Tour Sri Lanka\n\nDestination:\n${_currentDestination.name}\n\nLocation:\n${_currentDestination.locationName}\n\nExplore this destination on Village Tour Sri Lanka.');
+    Share.share(
+      'Village Tour Sri Lanka\n\nDestination:\n${_currentDestination.name}\n\nLocation:\n${_currentDestination.locationName}\n\nExplore this destination on Village Tour Sri Lanka.',
+    );
   }
 
   Future<void> _openInGoogleMaps() async {
     final query = Uri.encodeComponent(_currentDestination.name);
-    final url = Uri.parse('https://www.google.com/maps/search/?api=1&query=$query');
+    final url = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=$query',
+    );
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
     } else {
@@ -214,11 +239,17 @@ class _DestinationDetailsScreenState extends State<DestinationDetailsScreen> {
           centerTitle: true,
           title: Text(
             'Destination Details',
-            style: AppTextStyles.screenHeading.copyWith(color: AppColors.primaryDark, fontSize: 20),
+            style: AppTextStyles.screenHeading.copyWith(
+              color: AppColors.primaryDark,
+              fontSize: 20,
+            ),
           ),
           actions: [
             IconButton(
-              icon: Icon(_isFavorite ? Icons.favorite : Icons.favorite_border, color: _isFavorite ? Colors.red : AppColors.primaryDark),
+              icon: Icon(
+                _isFavorite ? Icons.favorite : Icons.favorite_border,
+                color: _isFavorite ? Colors.red : AppColors.primaryDark,
+              ),
               onPressed: _toggleFavorite,
             ),
             IconButton(
@@ -235,7 +266,9 @@ class _DestinationDetailsScreenState extends State<DestinationDetailsScreen> {
               children: [
                 _buildImageCarousel(images),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -244,7 +277,9 @@ class _DestinationDetailsScreenState extends State<DestinationDetailsScreen> {
                       if (_isLoading)
                         const Padding(
                           padding: EdgeInsets.only(bottom: AppSpacing.sm),
-                          child: LinearProgressIndicator(color: AppColors.primaryDark),
+                          child: LinearProgressIndicator(
+                            color: AppColors.primaryDark,
+                          ),
                         ),
 
                       Text(
@@ -317,10 +352,12 @@ class _DestinationDetailsScreenState extends State<DestinationDetailsScreen> {
         height: 280,
         color: AppColors.primaryDark.withValues(alpha: 0.1),
         width: double.infinity,
-        child: const Center(child: Icon(Icons.terrain, size: 64, color: AppColors.textSecondary)),
+        child: const Center(
+          child: Icon(Icons.terrain, size: 64, color: AppColors.textSecondary),
+        ),
       );
     }
-    
+
     return SizedBox(
       height: 280,
       child: Stack(
@@ -400,12 +437,22 @@ class _DestinationDetailsScreenState extends State<DestinationDetailsScreen> {
               bottom: 16,
               right: 16,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.45),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4)],
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.2),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 4,
+                    ),
+                  ],
                 ),
                 child: Text(
                   '${_currentImageIndex + 1} / ${images.length}',
@@ -432,7 +479,9 @@ class _DestinationDetailsScreenState extends State<DestinationDetailsScreen> {
                     width: _currentImageIndex == index ? 20 : 6,
                     height: 6,
                     decoration: BoxDecoration(
-                      color: _currentImageIndex == index ? Colors.white : Colors.white.withValues(alpha: 0.5),
+                      color: _currentImageIndex == index
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(3),
                     ),
                   ),
@@ -450,8 +499,11 @@ class _DestinationDetailsScreenState extends State<DestinationDetailsScreen> {
       return const SizedBox.shrink();
     }
 
-    final destLocation = LatLng(_currentDestination.latitude!, _currentDestination.longitude!);
-    LatLng? currentLoc = _currentPosition != null 
+    final destLocation = LatLng(
+      _currentDestination.latitude!,
+      _currentDestination.longitude!,
+    );
+    LatLng? currentLoc = _currentPosition != null
         ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
         : null;
 
@@ -509,7 +561,8 @@ class _DestinationDetailsScreenState extends State<DestinationDetailsScreen> {
                   ),
                   children: [
                     TileLayer(
-                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      urlTemplate:
+                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                       userAgentPackageName: 'com.villagetoursrilanka.app',
                       tileProvider: CachedTileProvider(),
                     ),
@@ -545,7 +598,12 @@ class _DestinationDetailsScreenState extends State<DestinationDetailsScreen> {
                               decoration: const BoxDecoration(
                                 color: Colors.blue,
                                 shape: BoxShape.circle,
-                                boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black26,
+                                    blurRadius: 4,
+                                  ),
+                                ],
                               ),
                               child: const Icon(
                                 Icons.person,
@@ -567,7 +625,10 @@ class _DestinationDetailsScreenState extends State<DestinationDetailsScreen> {
                         heroTag: 'googleMapsBtn',
                         backgroundColor: Colors.white,
                         onPressed: _openInGoogleMaps,
-                        child: const Icon(Icons.map, color: AppColors.primaryDark),
+                        child: const Icon(
+                          Icons.map,
+                          color: AppColors.primaryDark,
+                        ),
                       ),
                       const SizedBox(width: 8),
                       FloatingActionButton.small(
@@ -584,30 +645,43 @@ class _DestinationDetailsScreenState extends State<DestinationDetailsScreen> {
                             ),
                           );
                         },
-                        child: const Icon(Icons.fullscreen, color: AppColors.primaryDark),
+                        child: const Icon(
+                          Icons.fullscreen,
+                          color: AppColors.primaryDark,
+                        ),
                       ),
                     ],
                   ),
                 ),
                 if (currentLoc == null)
-                   Positioned(
+                  Positioned(
                     top: 12,
                     left: 12,
                     right: 12,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.9),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Row(
                         children: [
-                          Icon(Icons.info_outline, size: 16, color: AppColors.secondary),
+                          Icon(
+                            Icons.info_outline,
+                            size: 16,
+                            color: AppColors.secondary,
+                          ),
                           SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               'Enable location services to see directions',
-                              style: TextStyle(fontSize: 12, color: AppColors.textPrimary),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textPrimary,
+                              ),
                             ),
                           ),
                         ],
