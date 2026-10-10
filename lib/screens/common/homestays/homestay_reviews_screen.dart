@@ -204,7 +204,9 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
       _existingPhotoUrls = List<String>.from(data['images'] ?? []);
       _selectedPhotos = [];
     });
-    _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+    }
   }
 
   @override
