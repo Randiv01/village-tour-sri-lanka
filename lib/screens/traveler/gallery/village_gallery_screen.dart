@@ -14,6 +14,46 @@ class VillageGalleryScreen extends StatefulWidget {
 
 class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
   final GalleryRepository _galleryRepository = GalleryRepository();
+  int _selectedFilterIndex = 0;
+  final List<String> _filters = [
+    'All',
+    'Surroundings & Views',
+    'Homestay Spaces',
+    'Activities',
+    'Food'
+  ];
+
+  final List<String> _tags = [
+    'Location',
+    'Homestay',
+    'Past Tourists',
+    'Crafts',
+    'Farm'
+  ];
+  
+  final PageController _pageController = PageController();
+  int _currentHeroIndex = 0;
+
+  String _getTagForIndex(int index) {
+    return _tags[index % _tags.length];
+  }
+  
+  Color _getColorForTag(String tag) {
+    switch (tag) {
+      case 'Location':
+        return Colors.black.withValues(alpha: 0.6);
+      case 'Homestay':
+        return Colors.teal.shade700.withValues(alpha: 0.8);
+      case 'Past Tourists':
+        return Colors.orange.shade800.withValues(alpha: 0.8);
+      case 'Crafts':
+        return Colors.brown.shade800.withValues(alpha: 0.8);
+      case 'Farm':
+        return Colors.green.shade800.withValues(alpha: 0.8);
+      default:
+        return Colors.black.withValues(alpha: 0.6);
+    }
+  }
 
   void _openFullScreen(GalleryImage image) {
     Navigator.push(
@@ -25,123 +65,490 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
   }
 
   @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Village Gallery'),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-      ),
       backgroundColor: AppColors.background,
-      body: StreamBuilder<List<GalleryImage>>(
-        stream: _galleryRepository.getPublishedImagesStream(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
+      body: SafeArea(
+        child: StreamBuilder<List<GalleryImage>>(
+          stream: _galleryRepository.getPublishedImagesStream(),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return Center(child: Text('Error: ${snapshot.error}'));
+            }
 
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          final images = snapshot.data ?? [];
+            final images = snapshot.data ?? [];
 
-          if (images.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.photo_library_outlined,
-                    size: 64,
+            if (images.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.photo_library_outlined,
+                      size: 64,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
+                      'No images in the gallery yet.',
+                      style: AppTextStyles.bodyLarge.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: _buildHeader(images.length),
+                ),
+                SliverToBoxAdapter(
+                  child: _buildFilters(images.length),
+                ),
+                SliverToBoxAdapter(
+                  child: _buildHeroCarousel(images),
+                ),
+                SliverToBoxAdapter(
+                  child: _buildSectionTitle(),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                  sliver: SliverGrid(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: AppSpacing.md,
+                      mainAxisSpacing: AppSpacing.md,
+                      childAspectRatio: 0.82,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        return _buildGridItem(images[index], index);
+                      },
+                      childCount: images.length,
+                    ),
+                  ),
+                ),
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: AppSpacing.xxl),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(int count) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.md),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _buildIconButton(
+            icon: Icons.arrow_back_ios_new,
+            onTap: () => Navigator.pop(context),
+          ),
+          Expanded(
+            child: Column(
+              children: [
+                Text(
+                  'Gallery & Experiences',
+                  style: AppTextStyles.sectionHeading.copyWith(
+                    color: AppColors.primaryDark,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  '$count authentic photos & stories',
+                  style: AppTextStyles.caption.copyWith(
                     color: AppColors.textSecondary,
                   ),
-                  const SizedBox(height: AppSpacing.md),
+                ),
+              ],
+            ),
+          ),
+          _buildIconButton(
+            icon: Icons.share_outlined,
+            onTap: () {},
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIconButton({required IconData icon, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+        ),
+        child: Icon(icon, size: 20, color: AppColors.primaryDark),
+      ),
+    );
+  }
+
+  Widget _buildFilters(int count) {
+    return SizedBox(
+      height: 44,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+        itemCount: _filters.length,
+        itemBuilder: (context, index) {
+          final isSelected = index == _selectedFilterIndex;
+          String label = _filters[index];
+          if (index == 0) label = 'All ($count)';
+          
+          return Padding(
+            padding: const EdgeInsets.only(right: AppSpacing.sm),
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedFilterIndex = index;
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.primaryDark : Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: isSelected ? AppColors.primaryDark : Colors.grey.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Text(
+                  label,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: isSelected ? Colors.white : AppColors.primaryDark,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildHeroCarousel(List<GalleryImage> images) {
+    if (images.isEmpty) return const SizedBox.shrink();
+    
+    return Container(
+      height: 280,
+      margin: const EdgeInsets.all(AppSpacing.md),
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: PageView.builder(
+              controller: _pageController,
+              onPageChanged: (index) {
+                setState(() {
+                  _currentHeroIndex = index;
+                });
+              },
+              itemCount: images.length,
+              itemBuilder: (context, index) {
+                return GestureDetector(
+                  onTap: () => _openFullScreen(images[index]),
+                  child: Image.network(
+                    images[index].imageUrl,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    errorBuilder: (context, error, stackTrace) =>
+                        Container(color: Colors.grey[300]),
+                  ),
+                );
+              },
+            ),
+          ),
+          
+          // Top Left Tag
+          Positioned(
+            top: 16,
+            left: 16,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                      color: Colors.redAccent,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
                   Text(
-                    'No images in the gallery yet.',
-                    style: AppTextStyles.bodyLarge.copyWith(
-                      color: AppColors.textSecondary,
+                    'Location & Surroundings',
+                    style: AppTextStyles.caption.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
               ),
-            );
-          }
-
-          return GridView.builder(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: AppSpacing.md,
-              mainAxisSpacing: AppSpacing.md,
-              childAspectRatio: 0.8,
             ),
-            itemCount: images.length,
-            itemBuilder: (context, index) {
-              final image = images[index];
-              return GestureDetector(
-                onTap: () => _openFullScreen(image),
+          ),
+          
+          // Top Right Expand
+          Positioned(
+            top: 16,
+            right: 16,
+            child: GestureDetector(
+              onTap: () => _openFullScreen(images[_currentHeroIndex]),
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.6),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.fullscreen, color: Colors.white, size: 20),
+              ),
+            ),
+          ),
+          
+          // Navigation Arrows
+          Positioned(
+            left: 16,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: GestureDetector(
+                onTap: () {
+                  if (_currentHeroIndex > 0) {
+                    _pageController.previousPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  }
+                },
                 child: Container(
+                  width: 36,
+                  height: 36,
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.border),
+                    color: Colors.white.withValues(alpha: 0.9),
+                    shape: BoxShape.circle,
                   ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(
-                        child: Image.network(
-                          image.imageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Container(
-                            color: Colors.grey[300],
-                            child: const Icon(Icons.broken_image,
-                                color: Colors.grey),
-                          ),
-                        ),
+                  child: const Icon(Icons.chevron_left, color: Colors.black, size: 24),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            right: 16,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: GestureDetector(
+                onTap: () {
+                  if (_currentHeroIndex < images.length - 1) {
+                    _pageController.nextPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  }
+                },
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.chevron_right, color: Colors.black, size: 24),
+                ),
+              ),
+            ),
+          ),
+          
+          // Bottom Tags
+          Positioned(
+            bottom: 16,
+            left: 16,
+            right: 16,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.7),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${_currentHeroIndex + 1} / ${images.length} • ${images[_currentHeroIndex].title.isNotEmpty ? images[_currentHeroIndex].title : 'Gallery Image'}',
+                      style: AppTextStyles.caption.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
                       ),
-                      if (image.title.isNotEmpty ||
-                          image.description.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.all(AppSpacing.sm),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (image.title.isNotEmpty)
-                                Text(
-                                  image.title,
-                                  style: AppTextStyles.bodyMedium.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              if (image.title.isNotEmpty &&
-                                  image.description.isNotEmpty)
-                                const SizedBox(height: 2),
-                              if (image.description.isNotEmpty)
-                                Text(
-                                  image.description,
-                                  style: AppTextStyles.caption.copyWith(
-                                    color: AppColors.textSecondary,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                            ],
-                          ),
-                        ),
-                    ],
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ),
-              );
-            },
-          );
-        },
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade800,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    'COVER',
+                    style: AppTextStyles.caption.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.sm),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'EXPLORE BY EXPERIENCE & LOCATION',
+            style: AppTextStyles.caption.copyWith(
+              color: Colors.black54,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
+            ),
+          ),
+          Text(
+            'Tap to inspect',
+            style: AppTextStyles.caption.copyWith(
+              color: Colors.orange.shade800,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGridItem(GalleryImage image, int index) {
+    final String tag = _getTagForIndex(index);
+    final Color tagColor = _getColorForTag(tag);
+    
+    return GestureDetector(
+      onTap: () => _openFullScreen(image),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.network(
+                    image.imageUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) =>
+                        Container(color: Colors.grey[200]),
+                  ),
+                  Positioned(
+                    top: 12,
+                    left: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: tagColor,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        tag,
+                        style: AppTextStyles.caption.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    image.title.isNotEmpty ? image.title : 'Gallery Moment',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    image.description.isNotEmpty ? image.description : 'Explore the beauty',
+                    style: AppTextStyles.caption.copyWith(
+                      color: Colors.black54,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -220,3 +627,4 @@ class FullScreenImageViewer extends StatelessWidget {
     );
   }
 }
+

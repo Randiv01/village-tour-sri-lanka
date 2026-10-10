@@ -39,6 +39,11 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // Gallery
+    match /gallery/{document} {
+      allow read, write: if true;
+    }
+
     // Homestays (Added from console)
     match /homestays/{document} {
       // Anyone can view homestays
