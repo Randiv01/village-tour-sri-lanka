@@ -6,6 +6,7 @@ import 'admin_dashboard_screen.dart';
 import 'destinations/manage_destinations_screen.dart';
 import 'homestays/admin_manage_homestays_screen.dart';
 import 'users/manage_users_screen.dart';
+import 'bookings/admin_manage_bookings_screen.dart';
 import 'gallery/admin_manage_gallery_screen.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
@@ -27,7 +28,7 @@ class _AdminShellState extends State<AdminShell> {
     const ManageDestinationsScreen(),
     // Placeholders for future modules
     const AdminManageHomestaysScreen(),
-    const Center(child: Text('Bookings (Coming Soon)')),
+    const AdminManageBookingsScreen(),
     const ManageUsersScreen(),
     const AdminManageGalleryScreen(),
   ];
@@ -99,28 +100,40 @@ class _AdminShellState extends State<AdminShell> {
         children: [
           DrawerHeader(
             decoration: const BoxDecoration(color: AppColors.primaryDark),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
+            child: Stack(
               children: [
-                Image.asset(
-                  'assets/images/app_logo.png',
-                  height: 48,
-                  fit: BoxFit.contain,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Image.asset(
+                      'assets/images/app_logo.png',
+                      height: 48,
+                      fit: BoxFit.contain,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Village Tour Sri Lanka',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'Admin Portal',
+                      style: AppTextStyles.sectionHeading.copyWith(
+                        color: Colors.white,
+                        fontSize: 20,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  'Village Tour Sri Lanka',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  'Admin Portal',
-                  style: AppTextStyles.sectionHeading.copyWith(
-                    color: Colors.white,
-                    fontSize: 20,
+                Positioned(
+                  top: -8,
+                  right: -8,
+                  child: IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.pop(context),
                   ),
                 ),
               ],
