@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../models/destination.dart';
 import '../../../../repositories/destination_repository.dart';
@@ -260,25 +261,61 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: AppSpacing.md),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: () {
-                Navigator.pop(context); // Close bottom sheet
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => DestinationDetailsScreen(destination: dest),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.surface,
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                );
-              },
-              child: const Text('View Destination'),
-            ),
+                  onPressed: () async {
+                    if (dest.latitude != null && dest.longitude != null) {
+                      final url = 'https://www.google.com/maps/dir/?api=1&destination=${dest.latitude},${dest.longitude}';
+                      if (await canLaunchUrl(Uri.parse(url))) {
+                        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                      } else {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Could not open map directions.')),
+                          );
+                        }
+                      }
+                    } else {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Destination location is unknown.')),
+                        );
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.directions, size: 18),
+                  label: const Text('Directions', style: TextStyle(fontSize: 13)),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context); // Close bottom sheet
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DestinationDetailsScreen(destination: dest),
+                      ),
+                    );
+                  },
+                  child: const Text('View Destination', style: TextStyle(fontSize: 13)),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -378,27 +415,63 @@ class _OfflineMapScreenState extends State<OfflineMapScreen> {
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: AppSpacing.md),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.purple,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: () {
-                Navigator.pop(context); // Close bottom sheet
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => HomestayDetailsScreen(
-                      homestayId: homestay['id'],
-                    ),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.surface,
+                    foregroundColor: Colors.purple,
+                    side: const BorderSide(color: Colors.purple),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                );
-              },
-              child: const Text('View Homestay', style: TextStyle(fontWeight: FontWeight.bold)),
-            ),
+                  onPressed: () async {
+                    if (homestay['latitude'] != null && homestay['longitude'] != null) {
+                      final url = 'https://www.google.com/maps/dir/?api=1&destination=${homestay['latitude']},${homestay['longitude']}';
+                      if (await canLaunchUrl(Uri.parse(url))) {
+                        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                      } else {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Could not open map directions.')),
+                          );
+                        }
+                      }
+                    } else {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Homestay location is unknown.')),
+                        );
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.directions, size: 18),
+                  label: const Text('Directions', style: TextStyle(fontSize: 13)),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.purple,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context); // Close bottom sheet
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => HomestayDetailsScreen(
+                          homestayId: homestay['id'],
+                        ),
+                      ),
+                    );
+                  },
+                  child: const Text('View Homestay', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                ),
+              ),
+            ],
           ),
         ],
       ),

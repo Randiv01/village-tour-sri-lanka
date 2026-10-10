@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -1051,10 +1052,16 @@ class _CreateEditPackageScreenState extends State<CreateEditPackageScreen> {
     TextInputType keyboardType = TextInputType.text,
     bool required = false,
   }) {
+    List<TextInputFormatter>? formatters;
+    if (keyboardType == TextInputType.number) {
+      formatters = [FilteringTextInputFormatter.digitsOnly];
+    }
+    
     return TextFormField(
       controller: ctrl,
       maxLines: maxLines,
       keyboardType: keyboardType,
+      inputFormatters: formatters,
       style: AppTextStyles.bodyMedium,
       decoration: InputDecoration(labelText: label, hintText: hint),
       validator: required
