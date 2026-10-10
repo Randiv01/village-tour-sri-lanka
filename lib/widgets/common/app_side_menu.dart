@@ -9,6 +9,8 @@ import '../../screens/traveler/experiences/cookery_experience_screen.dart';
 import '../../screens/traveler/profile/settings_screen.dart';
 import '../../screens/traveler/packages/traveler_tour_packages_screen.dart';
 import '../../screens/traveler/gallery/village_gallery_screen.dart';
+import '../../screens/common/contact/contact_us_screen.dart';
+import '../../screens/common/about/about_us_screen.dart';
 
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -174,11 +176,29 @@ class AppSideMenu extends StatelessWidget {
                     Icons.phone_outlined,
                     'Contact Us',
                     '+94 71 422 6176 (WhatsApp)',
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ContactUsScreen(),
+                        ),
+                      );
+                    },
                   ),
                   _buildMenuItem(
                     Icons.info_outline,
                     'About Us',
                     'Preserving rural heritage & ecology',
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AboutUsScreen(),
+                        ),
+                      );
+                    },
                   ),
 
                   const SizedBox(height: AppSpacing.xl),

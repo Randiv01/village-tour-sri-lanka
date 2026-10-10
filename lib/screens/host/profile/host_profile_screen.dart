@@ -10,40 +10,19 @@ import '../../../../theme/app_radius.dart';
 import '../../../../models/user_model.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../services/cloudinary_service.dart';
-import '../../host/promotions/my_promotions_screen.dart';
-import 'edit_profile_screen.dart';
-import 'settings_screen.dart';
-import 'saved_homestays_screen.dart';
+import '../../traveler/profile/edit_profile_screen.dart';
 
-class TravelerProfileScreen extends StatelessWidget {
-  final VoidCallback? onBackTap;
-
-  const TravelerProfileScreen({super.key, this.onBackTap});
+class HostProfileScreen extends StatelessWidget {
+  const HostProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
 
     if (currentUser == null) {
-      return Scaffold(
+      return const Scaffold(
         backgroundColor: AppColors.background,
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.account_circle_outlined,
-                size: 64,
-                color: AppColors.textSecondary,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                'Please sign in to view your profile',
-                style: AppTextStyles.bodyLarge,
-              ),
-            ],
-          ),
-        ),
+        body: Center(child: Text('Please sign in to view your profile')),
       );
     }
 
@@ -65,7 +44,7 @@ class TravelerProfileScreen extends StatelessWidget {
           backgroundColor: AppColors.background,
           appBar: AppBar(
             title: Text(
-              'User Profile',
+              'Host Profile',
               style: AppTextStyles.screenHeading.copyWith(
                 color: AppColors.primaryDark,
               ),
@@ -73,54 +52,6 @@ class TravelerProfileScreen extends StatelessWidget {
             backgroundColor: AppColors.background,
             elevation: 0,
             centerTitle: true,
-            leading: onBackTap != null
-                ? Padding(
-                    padding: const EdgeInsets.only(left: AppSpacing.sm),
-                    child: IconButton(
-                      icon: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: const Icon(
-                          Icons.arrow_back_ios_new,
-                          size: 16,
-                          color: AppColors.primaryDark,
-                        ),
-                      ),
-                      onPressed: onBackTap,
-                    ),
-                  )
-                : null,
-            actions: [
-              if (userModel != null)
-                Padding(
-                  padding: const EdgeInsets.only(right: AppSpacing.sm),
-                  child: IconButton(
-                    icon: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: const Icon(
-                        Icons.settings_outlined,
-                        size: 18,
-                        color: AppColors.primaryDark,
-                      ),
-                    ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const SettingsScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-            ],
           ),
           body: _buildBody(context, snapshot, userModel, currentUser),
         );
@@ -134,49 +65,11 @@ class TravelerProfileScreen extends StatelessWidget {
     UserModel? userModel,
     User currentUser,
   ) {
-    if (snapshot.hasError) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 48, color: AppColors.error),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              'Unable to load your profile.',
-              style: AppTextStyles.bodyLarge,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            ElevatedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.refresh),
-              label: const Text('Try Again'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryDark,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
     if (snapshot.connectionState == ConnectionState.waiting) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(color: AppColors.primary),
-            SizedBox(height: AppSpacing.md),
-            Text(
-              'Loading profile...',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-          ],
-        ),
-      );
+      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
     }
-
-    if (userModel == null) {
-      return const Center(child: Text('Profile not found.'));
+    if (snapshot.hasError || userModel == null) {
+      return const Center(child: Text('Unable to load your profile.'));
     }
 
     return SingleChildScrollView(
@@ -184,9 +77,11 @@ class TravelerProfileScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _IdentityCard(userModel: userModel, firebaseAuthUser: currentUser),
+          _HostIdentityCard(userModel: userModel, firebaseAuthUser: currentUser),
           const SizedBox(height: AppSpacing.xxl),
-          _buildAccountPreferencesSection(context, userModel, currentUser),
+          _buildEarningsSection(),
+          const SizedBox(height: AppSpacing.xl),
+          _buildSupportSection(context, userModel, currentUser),
           const SizedBox(height: AppSpacing.xxl),
           _buildSignOutSection(context),
           const SizedBox(height: AppSpacing.xxl),
@@ -195,7 +90,77 @@ class TravelerProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAccountPreferencesSection(
+  Widget _buildEarningsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Earnings & Payouts',
+          style: AppTextStyles.sectionHeading.copyWith(
+            color: AppColors.primaryDark,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          decoration: BoxDecoration(
+            color: AppColors.primaryDark,
+            borderRadius: AppRadius.cardRadius,
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x20000000),
+                blurRadius: 10,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Available Balance',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: Colors.white70,
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Rs. 45,000.00',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.handshake_outlined, color: Colors.white, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Cash Hand-Delivery Enabled. Your earnings will be delivered to your location.',
+                        style: AppTextStyles.caption.copyWith(color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSupportSection(
     BuildContext context,
     UserModel user,
     User firebaseAuthUser,
@@ -206,8 +171,6 @@ class TravelerProfileScreen extends StatelessWidget {
     final String phone = user.phoneNumber.isNotEmpty
         ? user.phoneNumber
         : 'Not added';
-    final int favCount =
-        user.favorites.length + user.favoriteDestinations.length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -239,46 +202,6 @@ class TravelerProfileScreen extends StatelessWidget {
                     ),
                   );
                 },
-              ),
-              const Divider(height: 1, color: AppColors.border),
-              _buildPreferenceRow(
-                Icons.show_chart,
-                'Promoter & Referral Analytics',
-                'Track clicks, rewards & Rs. 4,500 available credit',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const MyPromotionsScreen(),
-                    ),
-                  );
-                },
-              ),
-              const Divider(height: 1, color: AppColors.border),
-              _buildPreferenceRow(
-                Icons.favorite_border,
-                'Saved Favorites',
-                '$favCount wishlist items saved',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const SavedItemsScreen()),
-                  );
-                },
-              ),
-              const Divider(height: 1, color: AppColors.border),
-              _buildPreferenceRow(
-                Icons.map_outlined,
-                'Downloaded Offline Guides',
-                'Galewela, Knuckles & Sigiriya trails (Active)',
-                onTap: () {},
-              ),
-              const Divider(height: 1, color: AppColors.border),
-              _buildPreferenceRow(
-                Icons.credit_card,
-                'Payment & Bank Accounts',
-                'Commercial Bank •••• 4821',
-                onTap: () {},
               ),
             ],
           ),
@@ -402,20 +325,20 @@ class TravelerProfileScreen extends StatelessWidget {
   }
 }
 
-class _IdentityCard extends StatefulWidget {
+class _HostIdentityCard extends StatefulWidget {
   final UserModel userModel;
   final User firebaseAuthUser;
 
-  const _IdentityCard({
+  const _HostIdentityCard({
     required this.userModel,
     required this.firebaseAuthUser,
   });
 
   @override
-  State<_IdentityCard> createState() => _IdentityCardState();
+  State<_HostIdentityCard> createState() => _HostIdentityCardState();
 }
 
-class _IdentityCardState extends State<_IdentityCard> {
+class _HostIdentityCardState extends State<_HostIdentityCard> {
   bool _isLoadingImage = false;
 
   Future<void> _updateImage(XFile image) async {
@@ -538,7 +461,7 @@ class _IdentityCardState extends State<_IdentityCard> {
   Widget build(BuildContext context) {
     final String name = widget.userModel.fullName.isNotEmpty
         ? widget.userModel.fullName
-        : (widget.firebaseAuthUser.displayName ?? 'Traveler');
+        : (widget.firebaseAuthUser.displayName ?? 'Host');
 
     final String imageUrl =
         (widget.userModel.profileImageUrl != null &&
@@ -549,11 +472,6 @@ class _IdentityCardState extends State<_IdentityCard> {
     final String location = widget.userModel.location.isNotEmpty
         ? widget.userModel.location
         : 'Not added';
-
-    String roleDisplay = 'Traveler';
-    if (widget.userModel.role == 'host') roleDisplay = 'Homestay Host';
-    if (widget.userModel.role == 'guide') roleDisplay = 'Tour Guide';
-    if (widget.userModel.role == 'admin') roleDisplay = 'Administrator';
 
     return Container(
       width: double.infinity,
@@ -663,16 +581,17 @@ class _IdentityCardState extends State<_IdentityCard> {
                               ),
                               const SizedBox(width: 8),
                               const Icon(
-                                Icons.person_outline,
+                                Icons.verified_user_outlined,
                                 size: 14,
                                 color: AppColors.secondary,
                               ),
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
-                                  roleDisplay,
+                                  'Homestay Host',
                                   style: AppTextStyles.bodyMedium.copyWith(
                                     color: AppColors.textSecondary,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),

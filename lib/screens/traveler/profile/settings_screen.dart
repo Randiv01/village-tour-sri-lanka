@@ -11,6 +11,7 @@ import '../../../../models/user_model.dart';
 import '../../../../services/auth_service.dart';
 import '../main/traveler_main_screen.dart';
 import 'edit_profile_screen.dart';
+import '../../common/contact/contact_us_screen.dart';
 
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -663,21 +664,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 }
 
 // Dummy screens for navigation
-class ContactUsScreen extends StatelessWidget {
-  const ContactUsScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Contact Us'),
-        backgroundColor: AppColors.background,
-        foregroundColor: AppColors.primaryDark,
-      ),
-      body: const Center(child: Text('Contact Us Form and Info')),
-    );
-  }
-}
 
 class VillagePolicyScreen extends StatelessWidget {
   const VillagePolicyScreen({super.key});

@@ -10,7 +10,6 @@ import '../../../../theme/app_spacing.dart';
 import 'widgets/analytics_stat_card.dart';
 import 'widgets/host_homestay_card.dart';
 import 'widgets/upcoming_booking_tile.dart';
-import '../promotions/my_promotions_screen.dart';
 import '../homestays/add_homestay_screen.dart';
 import '../homestays/update_homestay_screen.dart';
 import '../../common/homestays/homestay_details_screen.dart';
@@ -20,7 +19,9 @@ import '../bookings/host_bookings_screen.dart';
 import '../notifications/host_notifications_screen.dart';
 
 class HostHomeScreen extends StatelessWidget {
-  const HostHomeScreen({super.key});
+  final VoidCallback? onGoToBookings;
+
+  const HostHomeScreen({super.key, this.onGoToBookings});
 
   @override
   Widget build(BuildContext context) {
@@ -38,8 +39,6 @@ class HostHomeScreen extends StatelessWidget {
             _buildMyHomestaysSection(),
             const SizedBox(height: AppSpacing.xxl),
             _buildUpcomingBookingsSection(context),
-            const SizedBox(height: AppSpacing.xxl),
-            _buildPromotionsSection(context),
             const SizedBox(height: AppSpacing.xxl),
           ],
         ),
@@ -562,7 +561,7 @@ class HostHomeScreen extends StatelessWidget {
                     ],
                   ),
                   InkWell(
-                    onTap: () {},
+                    onTap: onGoToBookings ?? () {},
                     child: Row(
                       children: [
                         Text(
@@ -738,116 +737,5 @@ class HostHomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPromotionsSection(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                'My Promotions',
-                style: AppTextStyles.sectionHeading.copyWith(
-                  color: AppColors.primaryDark,
-                ),
-              ),
-              InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const MyPromotionsScreen(),
-                    ),
-                  );
-                },
-                child: Row(
-                  children: [
-                    Text(
-                      'View All ',
-                      style: AppTextStyles.caption.copyWith(
-                        color: AppColors.secondary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Icon(
-                      Icons.chevron_right,
-                      size: 16,
-                      color: AppColors.secondary,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          InkWell(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const MyPromotionsScreen(),
-                ),
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFAF1E3), // Warm yellow-orange tint
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.border, width: 0.5),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.secondary.withValues(
-                        alpha: 0.5,
-                      ), // match image
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.analytics_outlined,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'My Promotion Analytics',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primaryDark,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Track your promotion performance',
-                          style: AppTextStyles.caption.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Icon(
-                    Icons.chevron_right,
-                    color: AppColors.textSecondary,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 }
