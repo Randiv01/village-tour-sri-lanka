@@ -466,6 +466,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     if (!value.contains('@')) {
                                       return 'Please enter a valid email address.';
                                     }
+                                    if (_selectedRole != 'admin' && !value.toLowerCase().endsWith('@gmail.com')) {
+                                      return 'Only @gmail.com addresses are allowed.';
+                                    }
                                     return null;
                                   },
                                 ),

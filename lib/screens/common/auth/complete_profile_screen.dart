@@ -169,7 +169,10 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                               if (value != null && value.isNotEmpty && !value.contains('@')) {
                                 return 'Please enter a valid email address.';
                               }
-                              return null; // Email can be optional if from phone auth, but let's just make it required or optional based on need. The instructions don't strictly require email for phone auth, but it's good to have.
+                              if (value != null && value.isNotEmpty && _selectedRole != 'admin' && !value.toLowerCase().endsWith('@gmail.com')) {
+                                return 'Only @gmail.com addresses are allowed.';
+                              }
+                              return null;
                             },
                           ),
                           AuthTextField(

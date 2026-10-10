@@ -24,6 +24,8 @@ import '../experiences/buffet_lunch_experience_screen.dart';
 import '../experiences/cookery_experience_screen.dart';
 import '../../common/homestays/homestay_details_screen.dart';
 import '../../../../models/homestay.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class TravelerHomeScreen extends StatefulWidget {
   final VoidCallback? onProfileTap;
@@ -40,6 +42,15 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
   late AnimationController _blinkController;
   late Stream<List<Destination>> _popularDestinationsStream;
 
+  // Walkthrough Keys
+  final GlobalKey _searchKey = GlobalKey();
+  final GlobalKey _profileKey = GlobalKey();
+  final GlobalKey _destinationsKey = GlobalKey();
+  final GlobalKey _experienceKey = GlobalKey();
+
+  late TutorialCoachMark tutorialCoachMark;
+  List<TargetFocus> targets = [];
+
   @override
   void initState() {
     super.initState();
@@ -49,6 +60,157 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
       vsync: this,
       duration: const Duration(milliseconds: 800),
     )..repeat(reverse: true);
+
+    _initTargets();
+    _checkFirstTimeUser();
+  }
+
+  void _checkFirstTimeUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasSeenTutorial = prefs.getBool('has_seen_home_tutorial') ?? false;
+    if (!hasSeenTutorial) {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _showTutorial();
+      });
+      await prefs.setBool('has_seen_home_tutorial', true);
+    }
+  }
+
+  void _showTutorial() {
+    tutorialCoachMark = TutorialCoachMark(
+      targets: targets,
+      colorShadow: AppColors.primaryDark,
+      textSkip: "SKIP",
+      paddingFocus: 10,
+      opacityShadow: 0.8,
+      onFinish: () {},
+      onClickTarget: (target) {},
+      onSkip: () {
+        return true;
+      },
+    )..show(context: context);
+  }
+
+  void _initTargets() {
+    targets.add(
+      TargetFocus(
+        identify: "search_bar",
+        keyTarget: _searchKey,
+        alignSkip: Alignment.topRight,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Discover the Best Places",
+                    style: AppTextStyles.sectionHeading.copyWith(color: Colors.white, fontSize: 24),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    "Search for destinations, homestays, or experiences here. You can also apply filters!",
+                    style: AppTextStyles.bodyLarge.copyWith(color: Colors.white70),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+
+    targets.add(
+      TargetFocus(
+        identify: "profile",
+        keyTarget: _profileKey,
+        alignSkip: Alignment.bottomLeft,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Your Profile",
+                    style: AppTextStyles.sectionHeading.copyWith(color: Colors.white, fontSize: 24),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    "Manage your account, bookings, and preferences from here.",
+                    style: AppTextStyles.bodyLarge.copyWith(color: Colors.white70),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+
+    targets.add(
+      TargetFocus(
+        identify: "popular_destinations",
+        keyTarget: _destinationsKey,
+        alignSkip: Alignment.topRight,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Popular Destinations",
+                    style: AppTextStyles.sectionHeading.copyWith(color: Colors.white, fontSize: 24),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    "Explore the most loved places in Sri Lanka. Swipe to see more!",
+                    style: AppTextStyles.bodyLarge.copyWith(color: Colors.white70),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+
+    targets.add(
+      TargetFocus(
+        identify: "village_experience",
+        keyTarget: _experienceKey,
+        alignSkip: Alignment.topRight,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            builder: (context, controller) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Authentic Village Experiences",
+                    style: AppTextStyles.sectionHeading.copyWith(color: Colors.white, fontSize: 24),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    "Book unique local experiences like buffet lunches or cookery classes.",
+                    style: AppTextStyles.bodyLarge.copyWith(color: Colors.white70),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -225,6 +387,7 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
 
   Widget _buildProfileIcon(BuildContext context) {
     return GestureDetector(
+      key: _profileKey,
       onTap: () {
         AuthGuard.requireAuth(
           context: context,
@@ -292,9 +455,12 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
   }
 
   Widget _buildSearchBar() {
-    return AppSearchBar(
-      placeholder: 'Search destinations, homestays...',
-      onFilterTap: _openFilterSheet,
+    return Container(
+      key: _searchKey,
+      child: AppSearchBar(
+        placeholder: 'Search destinations, homestays...',
+        onFilterTap: _openFilterSheet,
+      ),
     );
   }
 
@@ -446,8 +612,10 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
   }
 
   Widget _buildPopularDestinations() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      key: _destinationsKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SectionHeader(
           title: 'Popular Destinations',
@@ -647,11 +815,13 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
           },
         ),
       ],
+      ),
     );
   }
 
   Widget _buildVillageExperienceBanner() {
     return Padding(
+      key: _experienceKey,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.lg),
