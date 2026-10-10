@@ -230,6 +230,63 @@ class _GuideProfileScreenState extends State<GuideProfileScreen> {
     await _authService.signOut();
   }
 
+  Future<void> _deleteAccount() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.cardRadius),
+        title: Text('Delete Account', style: AppTextStyles.labelLarge.copyWith(fontSize: 18, color: AppColors.error)),
+        content: Text(
+          'Are you sure you want to completely delete your account? This will permanently delete your profile, bookings, packages, and personal details. This action cannot be undone.',
+          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel', style: AppTextStyles.buttonText.copyWith(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      try {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+        );
+        
+        await _authService.deleteAccount();
+        
+        if (mounted) {
+          Navigator.pop(context); // pop loading
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Account deleted successfully')),
+          );
+          // Redirection will be handled by the root auth stream listener
+        }
+      } catch (e) {
+        if (mounted) {
+          Navigator.pop(context); // pop loading
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.toString()), backgroundColor: AppColors.error),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -542,6 +599,29 @@ class _GuideProfileScreenState extends State<GuideProfileScreen> {
                     ),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: AppColors.error, width: 1.5),
+                      shape: RoundedRectangleBorder(borderRadius: AppRadius.inputButtonRadius),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+
+                // Delete Account Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton.icon(
+                    onPressed: _deleteAccount,
+                    icon: const Icon(Icons.delete_forever, color: Colors.white, size: 20),
+                    label: const Text(
+                      'Delete Account',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.error,
                       shape: RoundedRectangleBorder(borderRadius: AppRadius.inputButtonRadius),
                     ),
                   ),

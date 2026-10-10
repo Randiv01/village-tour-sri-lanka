@@ -263,6 +263,84 @@ class AuthService {
     await _auth.signOut();
   }
 
+  // Delete Account
+  Future<void> deleteAccount() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) throw 'No user is currently signed in.';
+      
+      final uid = user.uid;
+      final batch = _firestore.batch();
+      
+      // Delete homestays
+      final homestays = await _firestore.collection('homestays').where('hostId', isEqualTo: uid).get();
+      for (var doc in homestays.docs) {
+        batch.delete(doc.reference);
+      }
+      
+      // Delete tour packages
+      final packages = await _firestore.collection('tour_packages').where('guideId', isEqualTo: uid).get();
+      for (var doc in packages.docs) {
+        batch.delete(doc.reference);
+      }
+      
+      // Delete homestay bookings (as traveler)
+      final hbTraveler = await _firestore.collection('homestay_bookings').where('travelerId', isEqualTo: uid).get();
+      for (var doc in hbTraveler.docs) {
+        batch.delete(doc.reference);
+      }
+      
+      // Delete homestay bookings (as host)
+      final hbHost = await _firestore.collection('homestay_bookings').where('hostId', isEqualTo: uid).get();
+      for (var doc in hbHost.docs) {
+        batch.delete(doc.reference);
+      }
+      
+      // Delete guide bookings (as guest)
+      final gbGuest = await _firestore.collection('guide_bookings').where('guestId', isEqualTo: uid).get();
+      for (var doc in gbGuest.docs) {
+        batch.delete(doc.reference);
+      }
+      
+      // Delete guide bookings (as guide)
+      final gbGuide = await _firestore.collection('guide_bookings').where('guideId', isEqualTo: uid).get();
+      for (var doc in gbGuide.docs) {
+        batch.delete(doc.reference);
+      }
+      
+      // Delete payments
+      final payments = await _firestore.collection('payments').where('userId', isEqualTo: uid).get();
+      for (var doc in payments.docs) {
+        batch.delete(doc.reference);
+      }
+      
+      // Delete reviews
+      final reviews = await _firestore.collection('homestay_reviews').where('travelerId', isEqualTo: uid).get();
+      for (var doc in reviews.docs) {
+        batch.delete(doc.reference);
+      }
+      
+      // Delete user profile
+      final userRef = _firestore.collection('users').doc(uid);
+      batch.delete(userRef);
+      
+      // Commit all deletions
+      await batch.commit();
+      
+      // Delete Firebase Auth User
+      await user.delete();
+      
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        throw 'For security reasons, please sign out and sign in again before deleting your account.';
+      }
+      throw _handleFirebaseAuthError(e);
+    } catch (e) {
+      if (e is String) rethrow;
+      throw 'Failed to delete account. Please try again.';
+    }
+  }
+
   String _handleFirebaseAuthError(FirebaseAuthException e) {
     switch (e.code) {
       case 'invalid-credential':

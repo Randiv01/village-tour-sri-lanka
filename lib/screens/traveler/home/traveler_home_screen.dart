@@ -20,6 +20,8 @@ import '../destinations/explore_destinations_screen.dart';
 import '../destinations/destination_details_screen.dart';
 import '../../common/auth/auth_guard.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../experiences/buffet_lunch_experience_screen.dart';
+import '../experiences/cookery_experience_screen.dart';
 import '../../common/homestays/homestay_details_screen.dart';
 import '../../../../models/homestay.dart';
 
@@ -689,7 +691,7 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              'Living Crafts & River Safaris',
+              'Village Culinary Delights',
               style: AppTextStyles.sectionHeading.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -698,33 +700,63 @@ class _TravelerHomeScreenState extends State<TravelerHomeScreen>
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Experience traditional blacksmithing, woodcarving, bullock cart rides across lotus lakes, and ancestral clay pot cooking lunch.',
+              'Indulge in authentic Sri Lankan buffet feasts and master the art of clay-pot curries with our village mothers.',
               style: AppTextStyles.bodyMedium.copyWith(
                 color: Colors.white70,
                 height: 1.4,
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
-            ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.secondary,
-                foregroundColor: AppColors.primaryDark,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const BuffetLunchExperienceScreen()),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.secondary,
+                      foregroundColor: AppColors.primaryDark,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      minimumSize: const Size(0, 44),
+                    ),
+                    child: Text(
+                      'Buffet Lunch',
+                      style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                  ),
                 ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const CookeryExperienceScreen()),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.secondary,
+                      foregroundColor: AppColors.primaryDark,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      minimumSize: const Size(0, 44),
+                    ),
+                    child: Text(
+                      'Cookery',
+                      style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                  ),
                 ),
-                minimumSize: const Size(0, 44),
-              ),
-              child: Text(
-                'Explore Experiences',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              ],
             ),
           ],
         ),

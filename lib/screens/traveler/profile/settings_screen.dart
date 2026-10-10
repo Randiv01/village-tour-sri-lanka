@@ -111,7 +111,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: AppSpacing.xxl),
                 _buildSupportSection(),
                 const SizedBox(height: AppSpacing.xxl),
-                _buildSignOutButton(context),
+                _buildDeleteAccountButton(context),
                 const SizedBox(height: AppSpacing.md),
                 Center(
                   child: Text(
@@ -161,23 +161,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         style: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.bold, color: AppColors.primaryDark),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Container(
-                      margin: const EdgeInsets.only(left: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF0E6), // Soft orange
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFFFD1B3)),
-                      ),
-                      child: Text(
-                        'GUEST',
-                        style: AppTextStyles.caption.copyWith(
-                          color: const Color(0xFFD97706),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 10,
-                        ),
                       ),
                     ),
                   ],
@@ -443,15 +426,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildSignOutButton(BuildContext context) {
+  Widget _buildDeleteAccountButton(BuildContext context) {
     return InkWell(
       onTap: () async {
-        await AuthService().signOut();
-        if (context.mounted) {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const TravelerMainScreen()),
-            (route) => false,
-          );
+        final confirm = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Delete Account', style: AppTextStyles.screenHeading.copyWith(color: AppColors.error)),
+            content: const Text(
+              'Are you sure you want to completely delete your account? This will permanently delete your profile, bookings, packages, and personal details. This action cannot be undone.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: Colors.white),
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
+        );
+        
+        if (confirm == true && context.mounted) {
+          try {
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+            );
+            
+            await AuthService().deleteAccount();
+            
+            if (context.mounted) {
+              Navigator.pop(context); // pop loading
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Account deleted successfully')),
+              );
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => const TravelerMainScreen()),
+                (route) => false,
+              );
+            }
+          } catch (e) {
+            if (context.mounted) {
+              Navigator.pop(context); // pop loading
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(e.toString()), backgroundColor: AppColors.error),
+              );
+            }
+          }
         }
       },
       borderRadius: BorderRadius.circular(12),
@@ -466,10 +492,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.logout, color: Colors.red, size: 20),
+            const Icon(Icons.delete_forever, color: Colors.red, size: 20),
             const SizedBox(width: 8),
             Text(
-              'Sign Out',
+              'Delete Account',
               style: AppTextStyles.labelLarge.copyWith(
                 color: Colors.red,
                 fontWeight: FontWeight.bold,

@@ -3,8 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
@@ -77,9 +75,6 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
   final List<XFile> _selectedLocalImages = [];
   final CloudinaryService _cloudinaryService = CloudinaryService();
 
-  // Map Location
-  LatLng? _selectedLocationPoint;
-  final MapController _mapController = MapController();
   bool _isSaving = false;
 
   @override
@@ -310,21 +305,12 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
                     _buildSectionHeader('1. Basic Information'),
                     _buildBasicInfoSection(),
                     const SizedBox(height: AppSpacing.lg),
-                    _buildMapSection(),
-                    const SizedBox(height: AppSpacing.lg),
                     _buildSectionHeader('2. Accommodation'),
                     _buildAccommodationSection(),
                     const SizedBox(height: AppSpacing.xl),
                     _buildSectionHeader('3. Amenities'),
                     _buildAmenitiesSection(),
-                    
-                    const SizedBox(height: AppSpacing.xl),
-                    _buildSectionHeader('2. Accommodation'),
-                    _buildAccommodationSection(),
-                    
-                    const SizedBox(height: AppSpacing.xl),
-                    _buildSectionHeader('3. Amenities'),
-                    _buildAmenitiesSection(),
+
 
                     const SizedBox(height: AppSpacing.xl),
                     _buildSectionHeader('4. Gallery'),
@@ -515,66 +501,27 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
     );
   }
 
-  Widget _buildMapSection() {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border, width: 0.5),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Pin Location', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryDark)),
-              if (_selectedLocationPoint != null)
-                const Icon(Icons.check_circle, size: 16, color: Colors.green),
-            ],
-          ),
-          const SizedBox(height: 4),
-          const Text('Tap on the map to update your homestay location', style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
-          const SizedBox(height: AppSpacing.md),
-          SizedBox(
-            height: 200,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: FlutterMap(
-                mapController: _mapController,
-                options: MapOptions(
-                  initialCenter: _selectedLocationPoint ?? const LatLng(7.8731, 80.7718),
-                  initialZoom: _selectedLocationPoint != null ? 12.0 : 7.0,
-                  onTap: (tapPosition, point) {
-                    setState(() {
-                      _selectedLocationPoint = point;
-                    });
-                  },
-                ),
-                children: [
-                  TileLayer(
-                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'com.villagetoursrilanka.app',
-                  ),
-                  if (_selectedLocationPoint != null)
-                    MarkerLayer(
-                      markers: [
-                        Marker(
-                          point: _selectedLocationPoint!,
-                          width: 40,
-                          height: 40,
-                          child: const Icon(Icons.location_on, color: AppColors.primary, size: 40),
-                        ),
-                      ],
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+
+
+  static IconData _amenityIcon(String amenity) {
+    switch (amenity) {
+      case 'Wi-Fi':            return Icons.wifi_rounded;
+      case 'Free Parking':     return Icons.local_parking_rounded;
+      case 'Breakfast':        return Icons.free_breakfast_rounded;
+      case 'Private Bathroom': return Icons.bathtub_outlined;
+      case 'Hot Water':        return Icons.water_drop_outlined;
+      case 'Air Conditioning': return Icons.ac_unit_rounded;
+      case 'Fan':              return Icons.wind_power_rounded;
+      case 'Kitchen':          return Icons.kitchen_rounded;
+      case 'Garden':           return Icons.yard_rounded;
+      case 'TV':               return Icons.tv_rounded;
+      // House rules
+      case 'No Smoking':       return Icons.smoke_free_rounded;
+      case 'No Parties':       return Icons.do_not_disturb_on_rounded;
+      case 'Pets Allowed':     return Icons.pets_rounded;
+      case 'Children Allowed': return Icons.child_care_rounded;
+      default:                 return Icons.check_circle_outline_rounded;
+    }
   }
 
   Widget _buildAmenitiesSection() {
@@ -584,16 +531,20 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
         children: _availableAmenities.map((amenity) {
           final isSelected = _selectedAmenities.contains(amenity);
           return FilterChip(
+            avatar: Icon(_amenityIcon(amenity), size: 16,
+                color: isSelected ? AppColors.primaryDark : AppColors.textSecondary),
             label: Text(amenity),
             selected: isSelected,
             onSelected: (val) => setState(() { if (val) { _selectedAmenities.add(amenity); } else { _selectedAmenities.remove(amenity); } }),
             selectedColor: AppColors.primaryDark.withValues(alpha: 0.2),
             checkmarkColor: AppColors.primaryDark,
+            showCheckmark: false,
           );
         }).toList(),
       ),
     );
   }
+
 
   Widget _buildGallerySection() {
     int totalImages = _networkImages.length + _selectedLocalImages.length;
@@ -722,9 +673,13 @@ class _UpdateHomestayScreenState extends State<UpdateHomestayScreen> {
         children: _availableRules.map((rule) {
           final isSelected = _selectedRules.contains(rule);
           return FilterChip(
+            avatar: Icon(_amenityIcon(rule), size: 16,
+                color: isSelected ? AppColors.primaryDark : AppColors.textSecondary),
             label: Text(rule), selected: isSelected,
             onSelected: (val) => setState(() { if (val) { _selectedRules.add(rule); } else { _selectedRules.remove(rule); } }),
-            selectedColor: AppColors.primaryDark.withValues(alpha: 0.2), checkmarkColor: AppColors.primaryDark,
+            selectedColor: AppColors.primaryDark.withValues(alpha: 0.2),
+            checkmarkColor: AppColors.primaryDark,
+            showCheckmark: false,
           );
         }).toList(),
       ),

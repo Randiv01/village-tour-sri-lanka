@@ -4,6 +4,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import 'admin_dashboard_screen.dart';
 import 'destinations/manage_destinations_screen.dart';
+import 'homestays/admin_manage_homestays_screen.dart';
 import 'users/manage_users_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/auth_service.dart';
@@ -21,7 +22,7 @@ class _AdminShellState extends State<AdminShell> {
     const AdminDashboardScreen(),
     const ManageDestinationsScreen(),
     // Placeholders for future modules
-    const Center(child: Text('Homestays (Coming Soon)')),
+    const AdminManageHomestaysScreen(),
     const Center(child: Text('Experiences (Coming Soon)')),
     const Center(child: Text('Bookings (Coming Soon)')),
     const ManageUsersScreen(),

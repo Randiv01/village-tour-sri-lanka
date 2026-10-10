@@ -40,4 +40,13 @@ class HomestayRepository {
       return snapshot.docs.map((doc) => Homestay.fromMap(doc.data(), doc.id)).toList();
     });
   }
+
+  Stream<List<Homestay>> getAllHomestays() {
+    return _firestore
+        .collection('homestays')
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) => Homestay.fromMap(doc.data(), doc.id)).toList();
+    });
+  }
 }

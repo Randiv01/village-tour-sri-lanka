@@ -253,6 +253,12 @@ class _UsersListTabState extends State<UsersListTab> {
                                   _getRoleIcon(widget.role),
                                   AppColors.primary,
                                 ),
+                                if (admin.isVerified)
+                                  _buildBadge(
+                                    'Verified',
+                                    Icons.verified,
+                                    AppColors.primary,
+                                  ),
                               ],
                             ),
                             const SizedBox(height: 8),
@@ -274,6 +280,23 @@ class _UsersListTabState extends State<UsersListTab> {
                                       padding: const EdgeInsets.all(8),
                                     ),
                                     const SizedBox(width: 4),
+                                    if (widget.role == 'host' || widget.role == 'guide')
+                                      IconButton(
+                                        icon: Icon(
+                                          admin.isVerified
+                                              ? Icons.verified
+                                              : Icons.verified_outlined,
+                                          color: admin.isVerified
+                                              ? AppColors.primary
+                                              : AppColors.textSecondary,
+                                        ),
+                                        onPressed: () => _toggleUserVerification(admin),
+                                        tooltip: admin.isVerified ? 'Unverify' : 'Verify',
+                                        constraints: const BoxConstraints(),
+                                        padding: const EdgeInsets.all(8),
+                                      ),
+                                    if (widget.role == 'host' || widget.role == 'guide')
+                                      const SizedBox(width: 4),
                                     IconButton(
                                       icon: Icon(
                                         admin.isActive
@@ -582,6 +605,17 @@ class _UsersListTabState extends State<UsersListTab> {
           .update({'isActive': !user.isActive});
     } catch (e) {
       debugPrint('Error toggling ${widget.role} status: $e');
+    }
+  }
+
+  Future<void> _toggleUserVerification(UserModel user) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .update({'isVerified': !user.isVerified});
+    } catch (e) {
+      debugPrint('Error toggling ${widget.role} verification: $e');
     }
   }
 
