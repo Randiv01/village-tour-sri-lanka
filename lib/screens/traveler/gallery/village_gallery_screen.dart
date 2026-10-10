@@ -44,16 +44,14 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
   
   Color _getColorForTag(String tag) {
     switch (tag) {
-      case 'Location':
+      case 'Surroundings & Views':
         return Colors.black.withValues(alpha: 0.6);
-      case 'Homestay':
+      case 'Homestay Spaces':
         return Colors.teal.shade700.withValues(alpha: 0.8);
-      case 'Past Tourists':
+      case 'Activities':
         return Colors.orange.shade800.withValues(alpha: 0.8);
-      case 'Crafts':
+      case 'Food':
         return Colors.brown.shade800.withValues(alpha: 0.8);
-      case 'Farm':
-        return Colors.green.shade800.withValues(alpha: 0.8);
       default:
         return Colors.black.withValues(alpha: 0.6);
     }
@@ -90,7 +88,11 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
               return const Center(child: CircularProgressIndicator());
             }
 
-            final images = snapshot.data ?? [];
+            List<GalleryImage> images = snapshot.data ?? [];
+            if (_selectedFilterIndex > 0) {
+              final selectedCategory = _filters[_selectedFilterIndex];
+              images = images.where((img) => img.category == selectedCategory).toList();
+            }
 
             if (images.isEmpty) {
               return Center(
@@ -504,7 +506,7 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
   }
 
   Widget _buildGridItem(GalleryImage image, int index) {
-    final String tag = _getTagForIndex(index);
+    final String tag = image.category.isNotEmpty ? image.category : 'Location';
     final Color tagColor = _getColorForTag(tag);
     
     return GestureDetector(
@@ -580,6 +582,26 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  if (image.location.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.location_on, size: 12, color: Colors.black54),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            image.location,
+                            style: AppTextStyles.caption.copyWith(
+                              color: Colors.black54,
+                              fontSize: 10,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),

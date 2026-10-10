@@ -23,8 +23,11 @@ class _AdminAddEditGalleryImageScreenState
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
+  final _locationController = TextEditingController();
 
-  String _status = 'draft';
+  String _status = 'published';
+  String _category = 'Surroundings & Views';
+  DateTime? _imageDate;
   XFile? _selectedImage;
   String? _existingImageUrl;
   bool _isLoading = false;
@@ -38,8 +41,11 @@ class _AdminAddEditGalleryImageScreenState
     if (widget.image != null) {
       _titleController.text = widget.image!.title;
       _descController.text = widget.image!.description;
+      _locationController.text = widget.image!.location;
       _existingImageUrl = widget.image!.imageUrl;
       _status = widget.image!.status;
+      _category = widget.image!.category;
+      _imageDate = widget.image!.imageDate;
     }
   }
 
@@ -47,6 +53,7 @@ class _AdminAddEditGalleryImageScreenState
   void dispose() {
     _titleController.dispose();
     _descController.dispose();
+    _locationController.dispose();
     super.dispose();
   }
 
@@ -94,6 +101,9 @@ class _AdminAddEditGalleryImageScreenState
           description: _descController.text.trim(),
           imageUrl: imageUrl,
           status: _status,
+          category: _category,
+          location: _locationController.text.trim(),
+          imageDate: _imageDate,
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
           uploaderId: uploaderId,
@@ -106,6 +116,9 @@ class _AdminAddEditGalleryImageScreenState
           description: _descController.text.trim(),
           imageUrl: imageUrl,
           status: _status,
+          category: _category,
+          location: _locationController.text.trim(),
+          imageDate: _imageDate,
           createdAt: widget.image!.createdAt,
           updatedAt: DateTime.now(),
           uploaderId: widget.image!.uploaderId,
@@ -220,6 +233,62 @@ class _AdminAddEditGalleryImageScreenState
                         border: OutlineInputBorder(),
                       ),
                       maxLines: 3,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+
+                    // Location
+                    TextFormField(
+                      controller: _locationController,
+                      decoration: const InputDecoration(
+                        labelText: 'Location (Optional)',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+
+                    // Category Dropdown
+                    DropdownButtonFormField<String>(
+                      initialValue: _category,
+                      decoration: const InputDecoration(
+                        labelText: 'Category',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'Surroundings & Views', child: Text('Surroundings & Views')),
+                        DropdownMenuItem(value: 'Homestay Spaces', child: Text('Homestay Spaces')),
+                        DropdownMenuItem(value: 'Activities', child: Text('Activities')),
+                        DropdownMenuItem(value: 'Food', child: Text('Food')),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) setState(() => _category = val);
+                      },
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+
+                    // Date Picker
+                    InkWell(
+                      onTap: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: _imageDate ?? DateTime.now(),
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        );
+                        if (date != null) {
+                          setState(() => _imageDate = date);
+                        }
+                      },
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: 'Date (Optional)',
+                          border: OutlineInputBorder(),
+                        ),
+                        child: Text(
+                          _imageDate == null 
+                            ? 'Select Date' 
+                            : '${_imageDate!.year}-${_imageDate!.month.toString().padLeft(2, '0')}-${_imageDate!.day.toString().padLeft(2, '0')}',
+                        ),
+                      ),
                     ),
                     const SizedBox(height: AppSpacing.md),
 
