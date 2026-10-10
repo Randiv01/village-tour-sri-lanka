@@ -6,6 +6,7 @@ import 'admin_dashboard_screen.dart';
 import 'destinations/manage_destinations_screen.dart';
 import 'homestays/admin_manage_homestays_screen.dart';
 import 'users/manage_users_screen.dart';
+import 'gallery/admin_manage_gallery_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/auth_service.dart';
 class AdminShell extends StatefulWidget {
@@ -26,6 +27,7 @@ class _AdminShellState extends State<AdminShell> {
     const Center(child: Text('Experiences (Coming Soon)')),
     const Center(child: Text('Bookings (Coming Soon)')),
     const ManageUsersScreen(),
+    const AdminManageGalleryScreen(),
   ];
 
   @override
@@ -144,6 +146,7 @@ class _AdminShellState extends State<AdminShell> {
           ),
           _buildDrawerItem(Icons.book, 'Bookings', 4),
           _buildDrawerItem(Icons.people, 'Users', 5),
+          _buildDrawerItem(Icons.image, 'Gallery', 6),
         ],
       ),
     );

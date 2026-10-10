@@ -8,6 +8,7 @@ import '../../screens/traveler/experiences/buffet_lunch_experience_screen.dart';
 import '../../screens/traveler/experiences/cookery_experience_screen.dart';
 import '../../screens/traveler/profile/settings_screen.dart';
 import '../../screens/traveler/packages/traveler_tour_packages_screen.dart';
+import '../../screens/traveler/gallery/village_gallery_screen.dart';
 
 class AppSideMenu extends StatelessWidget {
   const AppSideMenu({super.key});
@@ -152,6 +153,15 @@ class AppSideMenu extends StatelessWidget {
                     Icons.image_outlined,
                     'Village Gallery',
                     'Lake flora, wildlife & visitor stories',
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const VillageGalleryScreen(),
+                        ),
+                      );
+                    },
                   ),
 
                   const SizedBox(height: AppSpacing.xl),
