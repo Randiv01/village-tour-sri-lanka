@@ -6,6 +6,9 @@ class GalleryImage {
   final String description;
   final String imageUrl;
   final String status; // 'published' or 'draft'
+  final String category;
+  final String location;
+  final DateTime? imageDate;
   final DateTime createdAt;
   final DateTime updatedAt;
   final String uploaderId;
@@ -16,6 +19,9 @@ class GalleryImage {
     required this.description,
     required this.imageUrl,
     required this.status,
+    required this.category,
+    required this.location,
+    this.imageDate,
     required this.createdAt,
     required this.updatedAt,
     required this.uploaderId,
@@ -27,7 +33,10 @@ class GalleryImage {
       title: data['title'] ?? '',
       description: data['description'] ?? '',
       imageUrl: data['imageUrl'] ?? '',
-      status: data['status'] ?? 'draft',
+      status: data['status'] ?? 'published',
+      category: data['category'] ?? 'Surroundings & Views',
+      location: data['location'] ?? '',
+      imageDate: (data['imageDate'] as Timestamp?)?.toDate(),
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       uploaderId: data['uploaderId'] ?? '',
@@ -40,6 +49,9 @@ class GalleryImage {
       'description': description,
       'imageUrl': imageUrl,
       'status': status,
+      'category': category,
+      'location': location,
+      'imageDate': imageDate != null ? Timestamp.fromDate(imageDate!) : null,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
       'uploaderId': uploaderId,
