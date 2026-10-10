@@ -361,19 +361,27 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
                           _buildAmenitiesList(),
                           const SizedBox(height: AppSpacing.lg),
                         ] else if (_activeTabIndex == 2) ...[
-                          const Text('No reviews yet.', style: TextStyle(color: AppColors.textSecondary)),
+                          HomestayReviewsScreen(
+                            homestayId: widget.homestayId,
+                            homestayTitle: _homestay!.title,
+                            homestayLocation: _homestay!.location,
+                            hostName: _hostData != null ? (_hostData!['name'] ?? _hostData!['fullName'] ?? 'Host') : 'Host',
+                            isEmbedded: true,
+                          ),
                           const SizedBox(height: AppSpacing.lg),
                         ],
-                        const SizedBox(height: AppSpacing.xl),
-                        _buildInlineCalendar(nights),
-                        const SizedBox(height: AppSpacing.xl),
-                        if (_homestay!.optionalAddOns.isNotEmpty) ...[
-                          _buildAddOnsSection(),
+                        if (_activeTabIndex != 2) ...[
                           const SizedBox(height: AppSpacing.xl),
+                          _buildInlineCalendar(nights),
+                          const SizedBox(height: AppSpacing.xl),
+                          if (_homestay!.optionalAddOns.isNotEmpty) ...[
+                            _buildAddOnsSection(),
+                            const SizedBox(height: AppSpacing.xl),
+                          ],
+                          _buildGuestsSection(),
+                          const SizedBox(height: AppSpacing.xl),
+                          if (nights > 0) _buildPaymentSummary(nights, accommodationAmount, addOnAmount, totalAmount),
                         ],
-                        _buildGuestsSection(),
-                        const SizedBox(height: AppSpacing.xl),
-                        if (nights > 0) _buildPaymentSummary(nights, accommodationAmount, addOnAmount, totalAmount),
                         const SizedBox(height: AppSpacing.xxl),
                       ],
                     ),
@@ -476,7 +484,31 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        const Text('No reviews yet', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+        StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('homestay_reviews')
+              .where('homestayId', isEqualTo: widget.homestayId)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+              return const Text('No reviews yet', style: TextStyle(color: AppColors.textSecondary, fontSize: 12));
+            }
+            final docs = snapshot.data!.docs;
+            double total = 0;
+            for (var doc in docs) {
+              total += (doc.data() as Map<String, dynamic>)['rating'] ?? 0.0;
+            }
+            final avg = total / docs.length;
+            return Row(
+              children: [
+                const Icon(Icons.star, color: Colors.amber, size: 14),
+                const SizedBox(width: 4),
+                Text(avg.toStringAsFixed(1), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primaryDark)),
+                Text(' (${docs.length} review${docs.length > 1 ? 's' : ''})', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+              ],
+            );
+          },
+        ),
         if (_hostData?['isSuperhost'] == true) ...[
           const Padding(padding: EdgeInsets.symmetric(horizontal: 8.0), child: Text('•', style: TextStyle(color: AppColors.textSecondary))),
           const Text('Superhost', style: TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.bold, decoration: TextDecoration.underline)),
@@ -507,7 +539,7 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
                   if (tabs[index] == 'Host') {
                     _handleMessageHost();
                   } else if (tabs[index] == 'Reviews') {
-                    _handleReviews();
+                    // Just change tab, do not navigate
                   }
                 },
                 child: Column(
@@ -598,35 +630,7 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
     }
   }
 
-  Future<void> _handleReviews() async {
-    if (_homestay == null) return;
-    
-    final hostId = _homestay!.hostId;
-    String hostName = 'Host';
-    if (hostId.isNotEmpty) {
-      try {
-        final hostDoc = await FirebaseFirestore.instance.collection('users').doc(hostId).get();
-        if (hostDoc.exists) {
-          hostName = hostDoc.data()?['fullName'] ?? 'Host';
-        }
-      } catch (e) {
-        // ignore
-      }
-    }
-    
-    if (!mounted) return;
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => HomestayReviewsScreen(
-          homestayId: widget.homestayId,
-          homestayTitle: _homestay!.title,
-          homestayLocation: _homestay!.location,
-          hostName: hostName,
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildOverviewText() {
     return Text(_homestay!.description, style: const TextStyle(fontSize: 13, height: 1.5, color: AppColors.textSecondary));

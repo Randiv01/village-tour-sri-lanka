@@ -14,6 +14,7 @@ class HomestayReviewsScreen extends StatefulWidget {
   final String homestayTitle;
   final String homestayLocation;
   final String hostName;
+  final bool isEmbedded;
 
   const HomestayReviewsScreen({
     super.key,
@@ -21,6 +22,7 @@ class HomestayReviewsScreen extends StatefulWidget {
     required this.homestayTitle,
     required this.homestayLocation,
     required this.hostName,
+    this.isEmbedded = false,
   });
 
   @override
@@ -207,39 +209,42 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final streamBuilder = StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('homestay_reviews')
+          .where('homestayId', isEqualTo: widget.homestayId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final reviews = snapshot.data?.docs ?? [];
+        return SingleChildScrollView(
+          controller: widget.isEmbedded ? null : _scrollController,
+          physics: widget.isEmbedded ? const NeverScrollableScrollPhysics() : null,
+          padding: EdgeInsets.all(widget.isEmbedded ? 0 : AppSpacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildOverallRatingSection(reviews),
+              const SizedBox(height: AppSpacing.lg),
+              _buildWriteReviewSection(),
+              const SizedBox(height: AppSpacing.xl),
+              _buildReviewList(reviews),
+            ],
+          ),
+        );
+      }
+    );
+
+    if (widget.isEmbedded) {
+      return streamBuilder;
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F6EF),
       body: SafeArea(
         child: Column(
           children: [
             _buildAppBar(),
-            Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('homestay_reviews')
-                    .where('homestayId', isEqualTo: widget.homestayId)
-                    // Note: Cannot use orderBy('timestamp', descending: true) 
-                    // without a composite index when using where()
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  final reviews = snapshot.data?.docs ?? [];
-                  return SingleChildScrollView(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildOverallRatingSection(reviews),
-                        const SizedBox(height: AppSpacing.lg),
-                        _buildWriteReviewSection(),
-                        const SizedBox(height: AppSpacing.xl),
-                        _buildReviewList(reviews),
-                      ],
-                    ),
-                  );
-                }
-              ),
-            ),
+            Expanded(child: streamBuilder),
           ],
         ),
       ),
