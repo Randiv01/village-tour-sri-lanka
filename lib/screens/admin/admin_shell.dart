@@ -24,7 +24,6 @@ class _AdminShellState extends State<AdminShell> {
     const ManageDestinationsScreen(),
     // Placeholders for future modules
     const AdminManageHomestaysScreen(),
-    const Center(child: Text('Experiences (Coming Soon)')),
     const Center(child: Text('Bookings (Coming Soon)')),
     const ManageUsersScreen(),
     const AdminManageGalleryScreen(),
@@ -133,7 +132,6 @@ class _AdminShellState extends State<AdminShell> {
           ),
           _buildDrawerItem(Icons.place, 'Destinations', 1),
           _buildDrawerItem(Icons.house, 'Homestays', 2),
-          _buildDrawerItem(Icons.explore, 'Experiences', 3),
           const Padding(
             padding: EdgeInsets.all(16.0),
             child: Text(
@@ -144,9 +142,9 @@ class _AdminShellState extends State<AdminShell> {
               ),
             ),
           ),
-          _buildDrawerItem(Icons.book, 'Bookings', 4),
-          _buildDrawerItem(Icons.people, 'Users', 5),
-          _buildDrawerItem(Icons.image, 'Gallery', 6),
+          _buildDrawerItem(Icons.book, 'Bookings', 3),
+          _buildDrawerItem(Icons.people, 'Users', 4),
+          _buildDrawerItem(Icons.image, 'Gallery', 5),
         ],
       ),
     );

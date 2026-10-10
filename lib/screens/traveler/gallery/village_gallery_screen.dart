@@ -27,20 +27,8 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
     'Food'
   ];
 
-  final List<String> _tags = [
-    'Location',
-    'Homestay',
-    'Past Tourists',
-    'Crafts',
-    'Farm'
-  ];
-  
   final PageController _pageController = PageController();
   int _currentHeroIndex = 0;
-
-  String _getTagForIndex(int index) {
-    return _tags[index % _tags.length];
-  }
   
   Color _getColorForTag(String tag) {
     switch (tag) {
