@@ -35,6 +35,16 @@ service cloud.firestore {
                       request.auth.uid == uid
                       || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"
                     );
+
+      // Saved payment cards for the user
+      match /saved_cards/{cardId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+    }
+
+    // Root saved_cards fallback
+    match /saved_cards/{cardId} {
+      allow read, write: if request.auth != null;
     }
 
     // Existing destination development rules
