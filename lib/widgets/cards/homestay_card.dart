@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../models/homestay.dart';
+import '../../screens/common/auth/auth_guard.dart';
 
 class HomestayCard extends StatefulWidget {
   final Homestay homestay;
@@ -107,24 +108,29 @@ class _HomestayCardState extends State<HomestayCard>
   }
 
   Future<void> _toggleFavorite() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
+    AuthGuard.requireAuth(
+      context: context,
+      onAuthenticated: () async {
+        final uid = FirebaseAuth.instance.currentUser?.uid;
+        if (uid == null) return;
 
-    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
-    final newFav = !_isFavorite;
-    setState(() => _isFavorite = newFav);
+        final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
+        final newFav = !_isFavorite;
+        setState(() => _isFavorite = newFav);
 
-    _heartController.forward().then((_) => _heartController.reverse());
+        _heartController.forward().then((_) => _heartController.reverse());
 
-    if (newFav) {
-      await userRef.update({
-        'favorites': FieldValue.arrayUnion([widget.homestay.id]),
-      });
-    } else {
-      await userRef.update({
-        'favorites': FieldValue.arrayRemove([widget.homestay.id]),
-      });
-    }
+        if (newFav) {
+          await userRef.update({
+            'favorites': FieldValue.arrayUnion([widget.homestay.id]),
+          });
+        } else {
+          await userRef.update({
+            'favorites': FieldValue.arrayRemove([widget.homestay.id]),
+          });
+        }
+      },
+    );
   }
 
   @override

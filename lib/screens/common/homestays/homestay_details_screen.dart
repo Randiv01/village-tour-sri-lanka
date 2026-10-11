@@ -133,31 +133,32 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
   }
 
   Future<void> _toggleFavorite() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null || _homestay == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please sign in to favorite.')),
-      );
-      return;
-    }
-    final newFav = !_isFavorite;
-    setState(() => _isFavorite = newFav);
-    try {
-      final userRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid);
-      if (newFav) {
-        await userRef.update({
-          'favorites': FieldValue.arrayUnion([_homestay!.id]),
-        });
-      } else {
-        await userRef.update({
-          'favorites': FieldValue.arrayRemove([_homestay!.id]),
-        });
-      }
-    } catch (e) {
-      setState(() => _isFavorite = !newFav);
-    }
+    if (_homestay == null) return;
+    AuthGuard.requireAuth(
+      context: context,
+      onAuthenticated: () async {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user == null || _homestay == null) return;
+        final newFav = !_isFavorite;
+        setState(() => _isFavorite = newFav);
+        try {
+          final userRef = FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid);
+          if (newFav) {
+            await userRef.update({
+              'favorites': FieldValue.arrayUnion([_homestay!.id]),
+            });
+          } else {
+            await userRef.update({
+              'favorites': FieldValue.arrayRemove([_homestay!.id]),
+            });
+          }
+        } catch (e) {
+          setState(() => _isFavorite = !newFav);
+        }
+      },
+    );
   }
 
   void _shareHomestay() {
