@@ -164,6 +164,47 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
     }
   }
 
+  void _showConfirmationDialog(double totalPrice) {
+    final durationStr = widget.package.nights > 0
+        ? '${widget.package.durationDays} day(s), ${widget.package.nights} night(s)'
+        : '${widget.package.durationDays} day(s)';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text(
+          'Confirm Request',
+          style: TextStyle(
+            color: AppColors.primaryDark,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to request a booking for $durationStr ($_guestCount guest(s))?\n\nTotal: Rs. ${totalPrice.toStringAsFixed(1)}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _submitBooking();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryDark,
+            ),
+            child: const Text('Confirm', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _submitBooking() async {
     if (_selectedDate == null || _calculatedEndDate == null) return;
 
@@ -644,7 +685,9 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _isSubmitting ? null : _submitBooking,
+                  onPressed: _isSubmitting
+                      ? null
+                      : () => _showConfirmationDialog(totalPrice),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryDark,
                     foregroundColor: Colors.white,

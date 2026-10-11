@@ -319,7 +319,7 @@ class _HomestayBookingSheetState extends State<HomestayBookingSheet> {
       ),
       child: ElevatedButton(
         onPressed: isValid && !_isSubmitting
-            ? () => _submitRequest(totalAmount, nights)
+            ? () => _showConfirmationDialog(totalAmount, nights)
             : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primaryDark,
@@ -506,6 +506,40 @@ class _HomestayBookingSheetState extends State<HomestayBookingSheet> {
     } catch (e) {
       debugPrint('Error checking availability: $e');
     }
+  }
+
+  void _showConfirmationDialog(double totalAmount, int nights) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text(
+          'Confirm Request',
+          style: TextStyle(color: AppColors.primaryDark),
+        ),
+        content: Text(
+          'Are you sure you want to request a booking for $nights night(s)?\n\nTotal: Rs. $totalAmount',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _submitRequest(totalAmount, nights);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryDark,
+            ),
+            child: const Text('Confirm', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _submitRequest(double totalAmount, int nights) async {
