@@ -521,7 +521,7 @@ class _HomestayBookingSheetState extends State<HomestayBookingSheet> {
           .get();
       if (!userDoc.exists) throw Exception('User profile not found');
       final userData = userDoc.data() as Map<String, dynamic>;
-      final userName = userData['fullName'] ?? userData['name'] ?? 'Traveler';
+      final userName = userData['fullName'] ?? userData['name'] ?? user.displayName ?? 'Traveler';
       final userEmail = userData['email'] ?? user.email ?? '';
 
       final booking = HomestayBooking(

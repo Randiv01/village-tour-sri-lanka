@@ -110,7 +110,9 @@ class _HomestayBookingsTabState extends State<_HomestayBookingsTab> {
                 if (_searchQuery.isNotEmpty) {
                   final searchLower = _searchQuery.toLowerCase();
                   final idMatch = booking.id.toLowerCase().contains(searchLower);
-                  final nameMatch = booking.travelerName.toLowerCase().contains(searchLower);
+                  final cachedName = _BookingUserName._userNamesCache[booking.travelerId]?.toLowerCase() ?? '';
+                  final nameMatch = booking.travelerName.toLowerCase().contains(searchLower) ||
+                      cachedName.contains(searchLower);
                   final titleMatch = booking.homestayTitle.toLowerCase().contains(searchLower);
                   if (!idMatch && !nameMatch && !titleMatch) {
                     return false;
@@ -230,9 +232,13 @@ class _HomestayBookingsTabState extends State<_HomestayBookingsTab> {
               style: AppTextStyles.caption.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            Text(
-              'Traveler: ${booking.travelerName}',
-              style: AppTextStyles.bodyMedium,
+            _BookingUserName(
+              label: 'Traveler',
+              userId: booking.travelerId,
+              initialName: booking.travelerName,
+              bookingId: booking.id,
+              collection: 'homestay_bookings',
+              nameField: 'travelerName',
             ),
             const SizedBox(height: 4),
             Text(
@@ -279,6 +285,118 @@ class _HomestayBookingsTabState extends State<_HomestayBookingsTab> {
         '${isPayment ? 'Payment: ' : ''}${status.toUpperCase()}',
         style: AppTextStyles.caption.copyWith(color: color, fontWeight: FontWeight.bold),
       ),
+    );
+  }
+}
+
+class _BookingUserName extends StatefulWidget {
+  final String label;
+  final String userId;
+  final String initialName;
+  final String bookingId;
+  final String collection;
+  final String nameField;
+
+  const _BookingUserName({
+    required this.label,
+    required this.userId,
+    required this.initialName,
+    required this.bookingId,
+    required this.collection,
+    required this.nameField,
+  });
+
+  static final Map<String, String> _userNamesCache = {};
+
+  @override
+  State<_BookingUserName> createState() => _BookingUserNameState();
+}
+
+class _BookingUserNameState extends State<_BookingUserName> {
+  String? _resolvedName;
+
+  @override
+  void initState() {
+    super.initState();
+    _resolveName();
+  }
+
+  @override
+  void didUpdateWidget(covariant _BookingUserName oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.userId != widget.userId ||
+        oldWidget.initialName != widget.initialName) {
+      _resolveName();
+    }
+  }
+
+  void _resolveName() {
+    final raw = widget.initialName.trim();
+    final isPlaceholder = raw.isEmpty ||
+        raw.toLowerCase() == 'traveler' ||
+        raw.toLowerCase() == 'guest';
+
+    if (!isPlaceholder) {
+      _resolvedName = raw;
+      return;
+    }
+
+    if (_BookingUserName._userNamesCache.containsKey(widget.userId)) {
+      _resolvedName = _BookingUserName._userNamesCache[widget.userId];
+      return;
+    }
+
+    if (widget.userId.isEmpty) {
+      _resolvedName = raw.isNotEmpty ? raw : 'Unknown';
+      return;
+    }
+
+    FirebaseFirestore.instance
+        .collection('users')
+        .doc(widget.userId)
+        .get()
+        .then((doc) {
+      if (!mounted) return;
+      if (doc.exists && doc.data() != null) {
+        final data = doc.data()!;
+        final name = (data['fullName'] ?? data['name'] ?? data['email'])
+            ?.toString()
+            .trim();
+        if (name != null && name.isNotEmpty) {
+          _BookingUserName._userNamesCache[widget.userId] = name;
+          setState(() {
+            _resolvedName = name;
+          });
+
+          // Heal booking document in Firestore if it previously held the placeholder role string
+          FirebaseFirestore.instance
+              .collection(widget.collection)
+              .doc(widget.bookingId)
+              .update({widget.nameField: name}).catchError((_) {});
+          return;
+        }
+      }
+      setState(() {
+        _resolvedName = raw.isNotEmpty ? raw : 'Unknown';
+      });
+    }).catchError((_) {
+      if (mounted) {
+        setState(() {
+          _resolvedName = raw.isNotEmpty ? raw : 'Unknown';
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final displayName = _resolvedName ??
+        (widget.initialName.trim().isNotEmpty
+            ? widget.initialName
+            : 'Loading...');
+    return Text(
+      '${widget.label}: $displayName',
+      style: AppTextStyles.bodyMedium,
     );
   }
 }
@@ -341,7 +459,9 @@ class _PackageBookingsTabState extends State<_PackageBookingsTab> {
                 if (_searchQuery.isNotEmpty) {
                   final searchLower = _searchQuery.toLowerCase();
                   final idMatch = booking.id.toLowerCase().contains(searchLower);
-                  final nameMatch = booking.guestName.toLowerCase().contains(searchLower);
+                  final cachedName = _BookingUserName._userNamesCache[booking.guestId]?.toLowerCase() ?? '';
+                  final nameMatch = booking.guestName.toLowerCase().contains(searchLower) ||
+                      cachedName.contains(searchLower);
                   final titleMatch = booking.packageTitle.toLowerCase().contains(searchLower);
                   if (!idMatch && !nameMatch && !titleMatch) {
                     return false;
@@ -461,9 +581,13 @@ class _PackageBookingsTabState extends State<_PackageBookingsTab> {
               style: AppTextStyles.caption.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            Text(
-              'Guest: ${booking.guestName}',
-              style: AppTextStyles.bodyMedium,
+            _BookingUserName(
+              label: 'Guest',
+              userId: booking.guestId,
+              initialName: booking.guestName,
+              bookingId: booking.id,
+              collection: 'guide_bookings',
+              nameField: 'guestName',
             ),
             const SizedBox(height: 4),
             Text(

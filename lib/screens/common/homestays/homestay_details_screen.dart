@@ -337,7 +337,7 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
       final userData = userDoc.exists
           ? userDoc.data() as Map<String, dynamic>
           : {};
-      final userName = userData['name'] ?? 'Traveler';
+      final userName = userData['fullName'] ?? userData['name'] ?? user.displayName ?? 'Traveler';
       final userEmail = userData['email'] ?? user.email ?? '';
 
       final booking = HomestayBooking(
