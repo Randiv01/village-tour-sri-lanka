@@ -79,6 +79,19 @@ class _HostChatScreenState extends State<HostChatScreen> {
           doc.reference.update({'read': true});
         }
       });
+
+      // Also mark any message notifications for this chat as read
+      FirebaseFirestore.instance
+          .collection('notifications')
+          .where('userId', isEqualTo: currentUserId)
+          .where('relatedId', isEqualTo: _chatId)
+          .where('read', isEqualTo: false)
+          .get()
+          .then((snap) {
+        for (var doc in snap.docs) {
+          doc.reference.update({'read': true});
+        }
+      });
     }
   }
 
