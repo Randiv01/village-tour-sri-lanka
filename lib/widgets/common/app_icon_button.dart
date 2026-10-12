@@ -8,6 +8,7 @@ class AppIconButton extends StatelessWidget {
   final Color? iconColor;
   final Color? backgroundColor;
   final bool hasBadge;
+  final int? badgeCount;
 
   const AppIconButton({
     super.key,
@@ -16,6 +17,7 @@ class AppIconButton extends StatelessWidget {
     this.iconColor,
     this.backgroundColor,
     this.hasBadge = false,
+    this.badgeCount,
   });
 
   @override
@@ -43,7 +45,31 @@ class AppIconButton extends StatelessWidget {
             ),
           ),
         ),
-        if (hasBadge)
+        if (badgeCount != null && badgeCount! > 0)
+          Positioned(
+            right: 0,
+            top: 0,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+              constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+              decoration: BoxDecoration(
+                color: AppColors.secondary,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 1.5),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                badgeCount! > 99 ? '99+' : badgeCount.toString(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  height: 1,
+                ),
+              ),
+            ),
+          )
+        else if (hasBadge)
           Positioned(
             right: 12,
             top: 12,

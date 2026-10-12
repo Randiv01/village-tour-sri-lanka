@@ -12,6 +12,7 @@ import '../../../models/guide_booking.dart';
 import '../../../services/auth_service.dart';
 import '../../../repositories/tour_package_repository.dart';
 import '../../../repositories/guide_booking_repository.dart';
+import '../../../repositories/notification_repository.dart';
 import '../packages/create_edit_package_screen.dart';
 import '../packages/package_management_screen.dart';
 import '../bookings/guide_booking_detail_screen.dart';
@@ -242,17 +243,26 @@ class _GuideHomeScreenState extends State<GuideHomeScreen> {
               ],
             ),
           ),
-          _GuideIconButton(
-            icon: Icons.notifications_outlined,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const GuideNotificationsScreen(),
-                ),
+          StreamBuilder<int>(
+            stream: (guide?.uid != null && guide!.uid.isNotEmpty)
+                ? NotificationRepository().getTotalUnreadCountForGuide(guide.uid)
+                : const Stream.empty(),
+            builder: (context, snapshot) {
+              final unreadCount = snapshot.data ?? 0;
+              return _GuideIconButton(
+                icon: Icons.notifications_outlined,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const GuideNotificationsScreen(),
+                    ),
+                  );
+                },
+                hasIndicator: unreadCount > 0,
+                badgeCount: unreadCount,
               );
             },
-            hasIndicator: true,
           ),
           const SizedBox(width: AppSpacing.sm),
           _buildProfileAvatar(guide),
@@ -649,11 +659,15 @@ class _GuideIconButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
   final bool hasIndicator;
+  final int badgeCount;
+
   const _GuideIconButton({
     required this.icon,
     required this.onTap,
     this.hasIndicator = false,
+    this.badgeCount = 0,
   });
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -673,14 +687,27 @@ class _GuideIconButton extends StatelessWidget {
           ),
           if (hasIndicator)
             Positioned(
-              top: -2,
-              right: -2,
+              top: -4,
+              right: -4,
               child: Container(
-                width: 10,
-                height: 10,
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
                 decoration: const BoxDecoration(
                   color: AppColors.error,
                   shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    badgeCount > 99
+                        ? '99+'
+                        : (badgeCount > 0 ? '$badgeCount' : ''),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      height: 1,
+                    ),
+                  ),
                 ),
               ),
             ),

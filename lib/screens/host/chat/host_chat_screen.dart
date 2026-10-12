@@ -11,8 +11,10 @@ import '../../../../services/cloudinary_service.dart';
 
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
+import '../../../../repositories/notification_repository.dart';
 
 class HostChatScreen extends StatefulWidget {
+  final String? chatId;
   final String touristId;
   final String touristName;
   final String touristImage;
@@ -23,6 +25,7 @@ class HostChatScreen extends StatefulWidget {
 
   const HostChatScreen({
     super.key,
+    this.chatId,
     required this.touristId,
     required this.touristName,
     required this.touristImage,
@@ -53,11 +56,48 @@ class _HostChatScreenState extends State<HostChatScreen> {
     super.initState();
     _speech = stt.SpeechToText();
     final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
-    _chatId = '${widget.touristId}_${currentUserId}_${widget.homestayId}';
+    _chatId = widget.chatId != null && widget.chatId!.isNotEmpty
+        ? widget.chatId!
+        : '${widget.touristId}_${currentUserId}_${widget.homestayId}';
+
+    // Clear unread count for current user and mark messages as read
+    if (currentUserId.isNotEmpty) {
+      FirebaseFirestore.instance
+          .collection('hostChats')
+          .doc(_chatId)
+          .set({'unreadCount_$currentUserId': 0}, SetOptions(merge: true));
+
+      FirebaseFirestore.instance
+          .collection('hostChats')
+          .doc(_chatId)
+          .collection('messages')
+          .where('receiverId', isEqualTo: currentUserId)
+          .where('read', isEqualTo: false)
+          .get()
+          .then((snap) {
+        for (var doc in snap.docs) {
+          doc.reference.update({'read': true});
+        }
+      });
+
+      // Also mark any message notifications for this chat as read
+      FirebaseFirestore.instance
+          .collection('notifications')
+          .where('userId', isEqualTo: currentUserId)
+          .where('relatedId', isEqualTo: _chatId)
+          .where('read', isEqualTo: false)
+          .get()
+          .then((snap) {
+        for (var doc in snap.docs) {
+          doc.reference.update({'read': true});
+        }
+      });
+    }
   }
 
   @override
   void dispose() {
+    _speech.stop();
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -82,11 +122,13 @@ class _HostChatScreenState extends State<HostChatScreen> {
         from: 'si',
         to: 'en',
       );
+      if (!mounted) return;
       setState(() {
         _sinhalaPreview = translation.text;
         _isTranslating = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _sinhalaPreview = 'Translation failed';
         _isTranslating = false;
@@ -143,6 +185,15 @@ class _HostChatScreenState extends State<HostChatScreen> {
             .add(messageData);
       }
 
+      // Fetch host name
+      String hostName = 'Host';
+      try {
+        final userDoc = await FirebaseFirestore.instance.collection('users').doc(currentUserId).get();
+        if (userDoc.exists) {
+          hostName = userDoc.data()?['fullName'] ?? FirebaseAuth.instance.currentUser?.displayName ?? 'Host';
+        }
+      } catch (_) {}
+
       // Update chat metadata
       await FirebaseFirestore.instance.collection('hostChats').doc(_chatId).set(
         {
@@ -154,10 +205,30 @@ class _HostChatScreenState extends State<HostChatScreen> {
           'lastMessageTime': FieldValue.serverTimestamp(),
           'unreadCount_${widget.touristId}': FieldValue.increment(1),
           'touristName': widget.touristName,
+          'hostName': hostName,
           'homestayTitle': widget.homestayTitle,
         },
         SetOptions(merge: true),
       );
+
+      // Create notification alert for tourist
+      try {
+        await NotificationRepository().sendNotification(
+          userId: widget.touristId,
+          recipientRole: 'traveler',
+          type: 'message',
+          title: hostName,
+          message: text,
+          relatedId: _chatId,
+          metadata: {
+            'chatId': _chatId,
+            'hostId': currentUserId,
+            'hostName': hostName,
+            'homestayId': widget.homestayId,
+            'homestayTitle': widget.homestayTitle,
+          },
+        );
+      } catch (_) {}
 
       _scrollToBottom();
     } catch (e) {
@@ -237,6 +308,19 @@ class _HostChatScreenState extends State<HostChatScreen> {
               .collection('messages')
               .add(messageData);
 
+          // Fetch host name
+          String hostName = 'Host';
+          try {
+            final userDoc = await FirebaseFirestore.instance.collection('users').doc(currentUserId).get();
+            if (userDoc.exists) {
+              hostName = userDoc.data()?['fullName'] ?? FirebaseAuth.instance.currentUser?.displayName ?? 'Host';
+            }
+          } catch (_) {}
+
+          final fileText = isImage
+              ? '[Image Attached]'
+              : '[File Attached: ${file.name}]';
+
           await FirebaseFirestore.instance
               .collection('hostChats')
               .doc(_chatId)
@@ -244,17 +328,33 @@ class _HostChatScreenState extends State<HostChatScreen> {
                 'touristId': widget.touristId,
                 'hostId': currentUserId,
                 'homestayId': widget.homestayId,
-                'lastMessage': isImage
-                    ? '[Image Attached]'
-                    : '[File Attached: ${file.name}]',
-                'lastTranslatedMessage': isImage
-                    ? '[Image Attached]'
-                    : '[File Attached: ${file.name}]',
+                'lastMessage': fileText,
+                'lastTranslatedMessage': fileText,
                 'lastMessageTime': FieldValue.serverTimestamp(),
                 'unreadCount_${widget.touristId}': FieldValue.increment(1),
                 'touristName': widget.touristName,
+                'hostName': hostName,
                 'homestayTitle': widget.homestayTitle,
               }, SetOptions(merge: true));
+
+          // Create notification alert for tourist
+          try {
+            await NotificationRepository().sendNotification(
+              userId: widget.touristId,
+              recipientRole: 'traveler',
+              type: 'message',
+              title: hostName,
+              message: fileText,
+              relatedId: _chatId,
+              metadata: {
+                'chatId': _chatId,
+                'hostId': currentUserId,
+                'hostName': hostName,
+                'homestayId': widget.homestayId,
+                'homestayTitle': widget.homestayTitle,
+              },
+            );
+          } catch (_) {}
 
           _scrollToBottom();
           if (mounted) {
@@ -281,10 +381,12 @@ class _HostChatScreenState extends State<HostChatScreen> {
   void _listen() async {
     if (!_isListening) {
       bool available = await _speech.initialize();
+      if (!mounted) return;
       if (available) {
         setState(() => _isListening = true);
         _speech.listen(
           onResult: (val) {
+            if (!mounted) return;
             setState(() {
               _messageController.text = val.recognizedWords;
               _onMessageChanged(val.recognizedWords);
@@ -293,6 +395,7 @@ class _HostChatScreenState extends State<HostChatScreen> {
         );
       }
     } else {
+      if (!mounted) return;
       setState(() => _isListening = false);
       _speech.stop();
     }
