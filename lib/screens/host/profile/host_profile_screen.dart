@@ -10,6 +10,7 @@ import '../../../../theme/app_radius.dart';
 import '../../../../models/user_model.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../services/cloudinary_service.dart';
+import '../../../../services/host_language_service.dart';
 import '../../traveler/profile/edit_profile_screen.dart';
 
 class HostProfileScreen extends StatelessWidget {
@@ -44,7 +45,7 @@ class HostProfileScreen extends StatelessWidget {
           backgroundColor: AppColors.background,
           appBar: AppBar(
             title: Text(
-              'Host Profile',
+              HostTranslation.hostProfileTitle,
               style: AppTextStyles.screenHeading.copyWith(
                 color: AppColors.primaryDark,
               ),
@@ -95,7 +96,7 @@ class HostProfileScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Earnings & Payouts',
+          HostTranslation.earningsAndPayouts,
           style: AppTextStyles.sectionHeading.copyWith(
             color: AppColors.primaryDark,
           ),
@@ -119,7 +120,7 @@ class HostProfileScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Available Balance',
+                HostTranslation.availableBalance,
                 style: AppTextStyles.bodyMedium.copyWith(
                   color: Colors.white70,
                 ),
@@ -146,7 +147,7 @@ class HostProfileScreen extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Cash Hand-Delivery Enabled. Your earnings will be delivered to your location.',
+                        HostTranslation.cashDeliveryNote,
                         style: AppTextStyles.caption.copyWith(color: Colors.white),
                       ),
                     ),
@@ -176,7 +177,7 @@ class HostProfileScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Account & Preferences',
+          HostTranslation.accountAndPrefs,
           style: AppTextStyles.sectionHeading.copyWith(
             color: AppColors.primaryDark,
           ),
@@ -192,7 +193,7 @@ class HostProfileScreen extends StatelessWidget {
             children: [
               _buildPreferenceRow(
                 Icons.person_outline,
-                'Personal Information',
+                HostTranslation.personalInfo,
                 '$email • $phone',
                 onTap: () {
                   Navigator.push(
@@ -262,7 +263,7 @@ class HostProfileScreen extends StatelessWidget {
         },
         icon: const Icon(Icons.logout, color: AppColors.error, size: 20),
         label: Text(
-          'Sign Out',
+          HostTranslation.signOut,
           style: AppTextStyles.buttonText.copyWith(color: AppColors.error),
         ),
         style: OutlinedButton.styleFrom(
@@ -283,14 +284,14 @@ class HostProfileScreen extends StatelessWidget {
         backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(borderRadius: AppRadius.cardRadius),
         title: Text(
-          'Sign out?',
+          HostTranslation.signOutConfirmTitle,
           style: AppTextStyles.labelLarge.copyWith(
             fontSize: 18,
             color: AppColors.primaryDark,
           ),
         ),
         content: Text(
-          'Are you sure you want to sign out of your account?',
+          HostTranslation.signOutConfirmMsg,
           style: AppTextStyles.bodyMedium.copyWith(
             color: AppColors.textSecondary,
           ),
@@ -299,7 +300,7 @@ class HostProfileScreen extends StatelessWidget {
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: Text(
-              'Cancel',
+              HostTranslation.cancel,
               style: AppTextStyles.buttonText.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -317,7 +318,7 @@ class HostProfileScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text('Sign Out'),
+            child: Text(HostTranslation.signOut),
           ),
         ],
       ),
@@ -588,7 +589,7 @@ class _HostIdentityCardState extends State<_HostIdentityCard> {
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
-                                  'Homestay Host',
+                                  HostTranslation.homestayHost,
                                   style: AppTextStyles.bodyMedium.copyWith(
                                     color: AppColors.textSecondary,
                                     fontWeight: FontWeight.bold,

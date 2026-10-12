@@ -7,6 +7,7 @@ import '../../../../theme/app_text_styles.dart';
 import '../../../../theme/app_spacing.dart';
 import '../../../../models/homestay_booking.dart';
 import '../../../../repositories/homestay_booking_repository.dart';
+import '../../../../services/host_language_service.dart';
 import 'host_booking_details_screen.dart';
 
 class HostBookingsScreen extends StatefulWidget {
@@ -30,7 +31,7 @@ class _HostBookingsScreenState extends State<HostBookingsScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(
-          'Manage Bookings',
+          HostTranslation.hostBookingsTitle,
           style: AppTextStyles.sectionHeading.copyWith(
             color: AppColors.primaryDark,
             fontSize: 20,
@@ -48,10 +49,10 @@ class _HostBookingsScreenState extends State<HostBookingsScreen> {
 
   Widget _buildFilterTabs() {
     final tabs = [
-      {'label': 'Pending', 'value': 'pending'},
-      {'label': 'Accepted (Unpaid)', 'value': 'accepted'},
-      {'label': 'Confirmed', 'value': 'confirmed'},
-      {'label': 'All', 'value': 'all'},
+      {'label': HostTranslation.tabPending, 'value': 'pending'},
+      {'label': HostTranslation.tabAccepted, 'value': 'accepted'},
+      {'label': HostTranslation.tabConfirmed, 'value': 'confirmed'},
+      {'label': HostTranslation.tabAll, 'value': 'all'},
     ];
 
     return SingleChildScrollView(
@@ -271,7 +272,7 @@ class _HostBookingsScreenState extends State<HostBookingsScreen> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        '${booking.guestCount} Guests',
+                        '${booking.guestCount} ${HostTranslation.guests}',
                         style: const TextStyle(color: AppColors.textPrimary),
                       ),
                     ],
