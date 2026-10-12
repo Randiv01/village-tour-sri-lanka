@@ -14,6 +14,9 @@ import '../../host/promotions/my_promotions_screen.dart';
 import 'edit_profile_screen.dart';
 import 'settings_screen.dart';
 import 'saved_homestays_screen.dart';
+import 'saved_cards_screen.dart';
+import '../../../../models/payment_card.dart';
+import '../../../../repositories/payment_card_repository.dart';
 
 class TravelerProfileScreen extends StatelessWidget {
   final VoidCallback? onBackTap;
@@ -274,11 +277,36 @@ class TravelerProfileScreen extends StatelessWidget {
                 onTap: () {},
               ),
               const Divider(height: 1, color: AppColors.border),
-              _buildPreferenceRow(
-                Icons.credit_card,
-                'Payment & Bank Accounts',
-                'Commercial Bank •••• 4821',
-                onTap: () {},
+              StreamBuilder<List<PaymentCardModel>>(
+                stream: PaymentCardRepository().streamCards(user.uid),
+                builder: (context, cardSnap) {
+                  final cards = cardSnap.data ?? [];
+                  String cardSubtitle = 'No cards saved • Tap to add';
+                  if (cards.isNotEmpty) {
+                    final defaultCard = cards.firstWhere(
+                      (c) => c.isDefault,
+                      orElse: () => cards.first,
+                    );
+                    cardSubtitle =
+                        '${defaultCard.bankName} •••• ${defaultCard.last4}';
+                    if (cards.length > 1) {
+                      cardSubtitle += ' (+${cards.length - 1} more)';
+                    }
+                  }
+                  return _buildPreferenceRow(
+                    Icons.credit_card,
+                    'Payment & Bank Accounts',
+                    cardSubtitle,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SavedCardsScreen(),
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
             ],
           ),

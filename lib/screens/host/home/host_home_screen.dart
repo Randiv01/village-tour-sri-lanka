@@ -3,12 +3,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../services/auth_service.dart';
 
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../theme/app_spacing.dart';
-import 'widgets/analytics_stat_card.dart';
 import 'widgets/host_homestay_card.dart';
 import 'widgets/upcoming_booking_tile.dart';
 import '../homestays/add_homestay_screen.dart';
@@ -19,18 +17,22 @@ import '../../../../models/homestay_booking.dart';
 import '../bookings/host_bookings_screen.dart';
 import '../notifications/host_notifications_screen.dart';
 import '../../../../services/host_language_service.dart';
+import 'widgets/analytics_stat_card.dart';
 import 'widgets/host_language_toggle_button.dart';
 
 class HostHomeScreen extends StatelessWidget {
   final VoidCallback? onGoToBookings;
+  final VoidCallback? onGoToProfile;
 
-  const HostHomeScreen({super.key, this.onGoToBookings});
+  const HostHomeScreen({super.key, this.onGoToBookings, this.onGoToProfile});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SingleChildScrollView(
+      body: SafeArea(
+        bottom: false,
+        child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -46,6 +48,7 @@ class HostHomeScreen extends StatelessWidget {
           ],
         ),
       ),
+      ),
     );
   }
 
@@ -53,9 +56,8 @@ class HostHomeScreen extends StatelessWidget {
     return Stack(
       children: [
         // Background landscape image with fade
-        Container(
-          height: 240,
-          width: double.infinity,
+        Positioned.fill(
+          child: Container(
           decoration: const BoxDecoration(
             image: DecorationImage(
               image: AssetImage(
@@ -79,6 +81,7 @@ class HostHomeScreen extends StatelessWidget {
               ),
             ),
           ),
+        ),
         ),
 
         // SafeArea content
@@ -179,17 +182,9 @@ class HostHomeScreen extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(width: AppSpacing.sm),
-                        PopupMenuButton<String>(
-                          onSelected: (value) async {
-                            if (value == 'sign_out') {
-                              await AuthService().signOut();
-                            }
-                          },
-                          offset: const Offset(0, 50),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                        const SizedBox(width: AppSpacing.md),
+                        GestureDetector(
+                          onTap: onGoToProfile,
                           child: CircleAvatar(
                             radius: 18,
                             backgroundImage:
@@ -205,45 +200,6 @@ class HostHomeScreen extends StatelessWidget {
                                   )
                                 : null,
                           ),
-                          itemBuilder: (context) => [
-                            PopupMenuItem(
-                              value: 'profile',
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.person_outline,
-                                    size: 20,
-                                    color: AppColors.primaryDark,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    HostTranslation.myProfile,
-                                    style: AppTextStyles.bodyMedium,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const PopupMenuDivider(),
-                            PopupMenuItem(
-                              value: 'sign_out',
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.logout,
-                                    size: 20,
-                                    color: Colors.red,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    HostTranslation.signOut,
-                                    style: AppTextStyles.bodyMedium.copyWith(
-                                      color: Colors.red,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
                         ),
                       ],
                     ),
@@ -949,6 +905,16 @@ class HostHomeScreen extends StatelessWidget {
       ),
     );
   }
-
-
 }
+
+
+
+
+
+
+
+
+
+
+
+

@@ -414,37 +414,70 @@ class _AdminManageGalleryScreenState extends State<AdminManageGalleryScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                width: 100,
-                height: 100,
-                color: AppColors.background,
-                child: Image.network(
-                  image.imageUrl,
-                  fit: BoxFit.cover,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Container(
-                      color: Colors.grey.withValues(alpha: 0.2),
-                      child: const Center(
-                        child: SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      ),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Icon(
-                      Icons.broken_image,
-                      color: AppColors.textSecondary,
-                    );
-                  },
+            // Image with multiple photo indicator
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    width: 100,
+                    height: 100,
+                    color: AppColors.background,
+                    child: Image.network(
+                      image.imageUrl,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          color: Colors.grey.withValues(alpha: 0.2),
+                          child: const Center(
+                            child: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Icon(
+                          Icons.broken_image,
+                          color: AppColors.textSecondary,
+                        );
+                      },
+                    ),
+                  ),
                 ),
-              ),
+                if (image.imageUrls.length > 1)
+                  Positioned(
+                    bottom: 6,
+                    right: 6,
+                    child: Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.75),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.photo_library,
+                              color: Colors.white, size: 10),
+                          const SizedBox(width: 3),
+                          Text(
+                            '${image.imageUrls.length}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(width: AppSpacing.md),
             // Info
@@ -479,6 +512,18 @@ class _AdminManageGalleryScreenState extends State<AdminManageGalleryScreen> {
                         isPublished ? Icons.check : Icons.edit_note,
                         isPublished ? Colors.green : Colors.orange,
                       ),
+                      if (image.imageUrls.length > 1)
+                        _buildBadge(
+                          '${image.imageUrls.length} Photos',
+                          Icons.photo_library_outlined,
+                          AppColors.primary,
+                        ),
+                      if (image.isCover)
+                        _buildBadge(
+                          'Cover',
+                          Icons.star,
+                          Colors.amber.shade800,
+                        ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -494,6 +539,28 @@ class _AdminManageGalleryScreenState extends State<AdminManageGalleryScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
+                          if (!image.isCover)
+                            IconButton(
+                              icon: const Icon(
+                                Icons.star_border,
+                                color: Colors.amber,
+                              ),
+                              onPressed: () async {
+                                await _galleryRepository.setCoverImage(image.id);
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        '"${image.title.isNotEmpty ? image.title : 'Image'}" set as cover photo.',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+                              tooltip: 'Set as Cover',
+                              constraints: const BoxConstraints(),
+                              padding: const EdgeInsets.all(8),
+                            ),
                           IconButton(
                             icon: const Icon(
                               Icons.edit,

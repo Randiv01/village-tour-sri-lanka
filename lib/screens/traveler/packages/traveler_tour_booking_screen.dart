@@ -9,6 +9,7 @@ import '../../../theme/app_spacing.dart';
 import '../../../models/tour_package.dart';
 import '../../../models/guide_booking.dart';
 import '../../../repositories/guide_booking_repository.dart';
+import '../../../services/email_service.dart';
 
 class TravelerTourBookingScreen extends StatefulWidget {
   final TourPackage package;
@@ -163,6 +164,47 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
     }
   }
 
+  void _showConfirmationDialog(double totalPrice) {
+    final durationStr = widget.package.nights > 0
+        ? '${widget.package.durationDays} day(s), ${widget.package.nights} night(s)'
+        : '${widget.package.durationDays} day(s)';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text(
+          'Confirm Request',
+          style: TextStyle(
+            color: AppColors.primaryDark,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to request a booking for $durationStr ($_guestCount guest(s))?\n\nTotal: Rs. ${totalPrice.toStringAsFixed(1)}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _submitBooking();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryDark,
+            ),
+            child: const Text('Confirm', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _submitBooking() async {
     if (_selectedDate == null || _calculatedEndDate == null) return;
 
@@ -207,7 +249,7 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
         packageId: widget.package.id,
         packageTitle: widget.package.title,
         guestId: user.uid,
-        guestName: userData['fullName'] ?? user.displayName ?? 'Traveler',
+        guestName: userData['fullName'] ?? userData['name'] ?? user.displayName ?? 'Traveler',
         guestEmail: userData['email'] ?? user.email ?? '',
         guestPhone: userData['phoneNumber'],
         guestProfileUrl: userData['profileImageUrl'],
@@ -219,7 +261,32 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
         paymentStatus: 'unpaid',
       );
 
-      await _bookingRepo.createBooking(booking);
+      final newBookingId = await _bookingRepo.createBooking(booking);
+
+      // ✉️ Send Emails
+      EmailService.notifyTravelerBookingRequested(
+        toEmail: booking.guestEmail,
+        customerName: booking.guestName,
+        bookingId: newBookingId,
+        type: 'Tour',
+      );
+
+      // Fetch guide details to send email
+      FirebaseFirestore.instance.collection('users').doc(booking.guideId).get().then((doc) {
+        if (doc.exists) {
+          final guideEmail = doc.data()?['email'];
+          final guideName = doc.data()?['name'] ?? doc.data()?['fullName'] ?? 'Guide';
+          if (guideEmail != null) {
+            EmailService.notifyHostNewBookingRequest(
+              hostEmail: guideEmail,
+              hostName: guideName,
+              bookingId: newBookingId,
+              travelerName: booking.guestName,
+              dates: '${DateFormat('MMM dd').format(booking.startDate)} - ${DateFormat('MMM dd, yyyy').format(booking.endDate)}',
+            );
+          }
+        }
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(
@@ -618,7 +685,9 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _isSubmitting ? null : _submitBooking,
+                  onPressed: _isSubmitting
+                      ? null
+                      : () => _showConfirmationDialog(totalPrice),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryDark,
                     foregroundColor: Colors.white,

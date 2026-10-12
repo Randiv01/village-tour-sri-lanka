@@ -32,6 +32,13 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
 
   final PageController _pageController = PageController();
   int _currentHeroIndex = 0;
+  late final Stream<List<GalleryImage>> _publishedImagesStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _publishedImagesStream = _galleryRepository.getPublishedImagesStream();
+  }
 
   Color _getColorForTag(String tag) {
     switch (tag) {
@@ -69,7 +76,7 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: StreamBuilder<List<GalleryImage>>(
-          stream: _galleryRepository.getPublishedImagesStream(),
+          stream: _publishedImagesStream,
           builder: (context, snapshot) {
             if (snapshot.hasError) {
               return Center(child: Text('Error: ${snapshot.error}'));
@@ -79,15 +86,8 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
               return const Center(child: CircularProgressIndicator());
             }
 
-            List<GalleryImage> images = snapshot.data ?? [];
-            if (_selectedFilterIndex > 0) {
-              final selectedCategory = _filters[_selectedFilterIndex];
-              images = images
-                  .where((img) => img.category == selectedCategory)
-                  .toList();
-            }
-
-            if (images.isEmpty) {
+            List<GalleryImage> allImages = snapshot.data ?? [];
+            if (allImages.isEmpty) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -109,29 +109,63 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
               );
             }
 
+            List<GalleryImage> images = allImages;
+            if (_selectedFilterIndex > 0) {
+              final selectedCategory = _filters[_selectedFilterIndex];
+              images = allImages
+                  .where((img) => img.category == selectedCategory)
+                  .toList();
+            }
+
             return CustomScrollView(
               slivers: [
-                SliverToBoxAdapter(child: _buildHeader(images.length)),
-                SliverToBoxAdapter(child: _buildFilters(images.length)),
-                SliverToBoxAdapter(child: _buildHeroCarousel(images)),
-                SliverToBoxAdapter(child: _buildSectionTitle()),
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
+                SliverToBoxAdapter(child: _buildHeader(allImages.length)),
+                SliverToBoxAdapter(child: _buildFilters(allImages)),
+                if (images.isNotEmpty) ...[
+                  SliverToBoxAdapter(child: _buildHeroCarousel(images)),
+                  SliverToBoxAdapter(child: _buildSectionTitle()),
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                    ),
+                    sliver: SliverGrid(
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: AppSpacing.md,
+                            mainAxisSpacing: AppSpacing.md,
+                            childAspectRatio: 0.82,
+                          ),
+                      delegate: SliverChildBuilderDelegate((context, index) {
+                        return _buildGridItem(images[index], index);
+                      }, childCount: images.length),
+                    ),
                   ),
-                  sliver: SliverGrid(
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: AppSpacing.md,
-                          mainAxisSpacing: AppSpacing.md,
-                          childAspectRatio: 0.82,
+                ] else ...[
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 48),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            const Icon(
+                              Icons.filter_none,
+                              size: 48,
+                              color: AppColors.textSecondary,
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            Text(
+                              'No photos in "${_filters[_selectedFilterIndex]}" yet',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
                         ),
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      return _buildGridItem(images[index], index);
-                    }, childCount: images.length),
+                      ),
+                    ),
                   ),
-                ),
+                ],
                 const SliverToBoxAdapter(
                   child: SizedBox(height: AppSpacing.xxl),
                 ),
@@ -241,7 +275,7 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
     );
   }
 
-  Widget _buildFilters(int count) {
+  Widget _buildFilters(List<GalleryImage> allImages) {
     return SizedBox(
       height: 44,
       child: ListView.builder(
@@ -250,8 +284,11 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
         itemCount: _filters.length,
         itemBuilder: (context, index) {
           final isSelected = index == _selectedFilterIndex;
-          String label = _filters[index];
-          if (index == 0) label = 'All ($count)';
+          final categoryName = _filters[index];
+          final int count = index == 0
+              ? allImages.length
+              : allImages.where((img) => img.category == categoryName).length;
+          final String label = '$categoryName ($count)';
 
           return Padding(
             padding: const EdgeInsets.only(right: AppSpacing.sm),
@@ -259,7 +296,11 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
               onTap: () {
                 setState(() {
                   _selectedFilterIndex = index;
+                  _currentHeroIndex = 0;
                 });
+                if (_pageController.hasClients) {
+                  _pageController.jumpToPage(0);
+                }
               },
               child: Container(
                 padding: const EdgeInsets.symmetric(
@@ -294,6 +335,12 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
   Widget _buildHeroCarousel(List<GalleryImage> images) {
     if (images.isEmpty) return const SizedBox.shrink();
 
+    final int heroIndex =
+        (_currentHeroIndex >= 0 && _currentHeroIndex < images.length)
+            ? _currentHeroIndex
+            : 0;
+    final GalleryImage currentHeroImage = images[heroIndex];
+
     return Container(
       height: 280,
       margin: const EdgeInsets.all(AppSpacing.md),
@@ -303,6 +350,9 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
             borderRadius: BorderRadius.circular(24),
             child: PageView.builder(
               controller: _pageController,
+              physics: const PageScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              ),
               onPageChanged: (index) {
                 setState(() {
                   _currentHeroIndex = index;
@@ -311,6 +361,7 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
               itemCount: images.length,
               itemBuilder: (context, index) {
                 return GestureDetector(
+                  behavior: HitTestBehavior.opaque,
                   onTap: () => _openFullScreen(images[index]),
                   child: Image.network(
                     images[index].imageUrl,
@@ -363,7 +414,7 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
             top: 16,
             right: 16,
             child: GestureDetector(
-              onTap: () => _openFullScreen(images[_currentHeroIndex]),
+              onTap: () => _openFullScreen(currentHeroImage),
               child: Container(
                 width: 36,
                 height: 36,
@@ -380,63 +431,75 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
             ),
           ),
 
-          // Navigation Arrows
+          // Navigation Arrows (bounded so they don't block horizontal swipes)
           Positioned(
             left: 16,
-            top: 0,
-            bottom: 0,
-            child: Center(
-              child: GestureDetector(
-                onTap: () {
-                  if (_currentHeroIndex > 0) {
-                    _pageController.previousPage(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    );
-                  }
-                },
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.chevron_left,
-                    color: Colors.black,
-                    size: 24,
-                  ),
+            top: 122,
+            width: 36,
+            height: 36,
+            child: GestureDetector(
+              onTap: () {
+                if (heroIndex > 0) {
+                  _pageController.previousPage(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                }
+              },
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  shape: BoxShape.circle,
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 4,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.chevron_left,
+                  color: Colors.black87,
+                  size: 24,
                 ),
               ),
             ),
           ),
           Positioned(
             right: 16,
-            top: 0,
-            bottom: 0,
-            child: Center(
-              child: GestureDetector(
-                onTap: () {
-                  if (_currentHeroIndex < images.length - 1) {
-                    _pageController.nextPage(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    );
-                  }
-                },
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.chevron_right,
-                    color: Colors.black,
-                    size: 24,
-                  ),
+            top: 122,
+            width: 36,
+            height: 36,
+            child: GestureDetector(
+              onTap: () {
+                if (heroIndex < images.length - 1) {
+                  _pageController.nextPage(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                }
+              },
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  shape: BoxShape.circle,
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 4,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.chevron_right,
+                  color: Colors.black87,
+                  size: 24,
                 ),
               ),
             ),
@@ -461,7 +524,7 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      '${_currentHeroIndex + 1} / ${images.length} • ${images[_currentHeroIndex].title.isNotEmpty ? images[_currentHeroIndex].title : 'Gallery Image'}',
+                      '${heroIndex + 1} / ${images.length} • ${currentHeroImage.title.isNotEmpty ? currentHeroImage.title : 'Gallery Image'}',
                       style: AppTextStyles.caption.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w500,
@@ -471,25 +534,29 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.shade800,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    'COVER',
-                    style: AppTextStyles.caption.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1,
+                if (currentHeroImage.isCover ||
+                    (heroIndex == 0 &&
+                        !images.any((img) => img.isCover))) ...[
+                  const SizedBox(width: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade800,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'COVER',
+                      style: AppTextStyles.caption.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
                     ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -583,6 +650,40 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
                       ),
                     ),
                   ),
+                  if (image.imageUrls.length > 1)
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.65),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.collections_rounded,
+                              color: Colors.white,
+                              size: 12,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${image.imageUrls.length}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -645,36 +746,108 @@ class _VillageGalleryScreenState extends State<VillageGalleryScreen> {
   }
 }
 
-class FullScreenImageViewer extends StatelessWidget {
+class FullScreenImageViewer extends StatefulWidget {
   final GalleryImage image;
 
   const FullScreenImageViewer({super.key, required this.image});
 
   @override
+  State<FullScreenImageViewer> createState() => _FullScreenImageViewerState();
+}
+
+class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
+  late final List<String> _urls;
+  late final PageController _pageController;
+  int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _urls = widget.image.imageUrls.isNotEmpty
+        ? widget.image.imageUrls
+        : (widget.image.imageUrl.isNotEmpty ? [widget.image.imageUrl] : []);
+
+    int initialPage = 0;
+    if (widget.image.imageUrl.isNotEmpty) {
+      final foundIndex = _urls.indexOf(widget.image.imageUrl);
+      if (foundIndex != -1) {
+        initialPage = foundIndex;
+      }
+    }
+    _currentIndex = initialPage;
+    _pageController = PageController(initialPage: initialPage);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final image = widget.image;
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
+        title: _urls.length > 1
+            ? Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  '${_currentIndex + 1} / ${_urls.length}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              )
+            : null,
+        centerTitle: true,
       ),
       extendBodyBehindAppBar: true,
       body: Stack(
         children: [
-          Center(
-            child: InteractiveViewer(
-              child: Image.network(
-                image.imageUrl,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) => const Icon(
-                  Icons.broken_image,
-                  color: Colors.white,
-                  size: 64,
-                ),
+          if (_urls.isNotEmpty)
+            PageView.builder(
+              controller: _pageController,
+              itemCount: _urls.length,
+              onPageChanged: (idx) {
+                setState(() => _currentIndex = idx);
+              },
+              itemBuilder: (context, idx) {
+                return Center(
+                  child: InteractiveViewer(
+                    child: Image.network(
+                      _urls[idx],
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) => const Icon(
+                        Icons.broken_image,
+                        color: Colors.white,
+                        size: 64,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            )
+          else
+            const Center(
+              child: Icon(
+                Icons.broken_image,
+                color: Colors.white,
+                size: 64,
               ),
             ),
-          ),
           if (image.title.isNotEmpty || image.description.isNotEmpty)
             Positioned(
               bottom: 0,
@@ -686,7 +859,7 @@ class FullScreenImageViewer extends StatelessWidget {
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
                     colors: [
-                      Colors.black.withValues(alpha: 0.8),
+                      Colors.black.withValues(alpha: 0.85),
                       Colors.transparent,
                     ],
                   ),
@@ -695,6 +868,26 @@ class FullScreenImageViewer extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (_urls.length > 1) ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(
+                          _urls.length,
+                          (i) => Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 3),
+                            width: _currentIndex == i ? 18 : 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: _currentIndex == i
+                                  ? Colors.white
+                                  : Colors.white38,
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                    ],
                     if (image.title.isNotEmpty)
                       Text(
                         image.title,
@@ -711,7 +904,7 @@ class FullScreenImageViewer extends StatelessWidget {
                           color: Colors.white70,
                         ),
                       ),
-                    const SizedBox(height: AppSpacing.xxl),
+                    const SizedBox(height: AppSpacing.lg),
                   ],
                 ),
               ),

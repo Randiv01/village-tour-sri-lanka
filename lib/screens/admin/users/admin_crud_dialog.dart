@@ -24,6 +24,11 @@ class _UserCrudDialogState extends State<UserCrudDialog> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _countryController = TextEditingController();
+  final _languageController = TextEditingController();
+  final _specializationController = TextEditingController();
+  final _bioController = TextEditingController();
+  final _languagesController = TextEditingController();
   bool _isPasswordObscured = true;
 
   bool _isActive = true;
@@ -37,6 +42,11 @@ class _UserCrudDialogState extends State<UserCrudDialog> {
       _emailController.text = widget.user!.email;
       _phoneController.text = widget.user!.phoneNumber;
       _isActive = widget.user!.isActive;
+      _countryController.text = widget.user!.country ?? '';
+      _languageController.text = widget.user!.preferredLanguage ?? '';
+      _specializationController.text = widget.user!.specialization ?? '';
+      _bioController.text = widget.user!.bio ?? '';
+      _languagesController.text = widget.user!.languages?.join(', ') ?? '';
     }
   }
 
@@ -47,6 +57,11 @@ class _UserCrudDialogState extends State<UserCrudDialog> {
     _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _countryController.dispose();
+    _languageController.dispose();
+    _specializationController.dispose();
+    _bioController.dispose();
+    _languagesController.dispose();
 
     super.dispose();
   }
@@ -65,16 +80,27 @@ class _UserCrudDialogState extends State<UserCrudDialog> {
 
       if (isUpdating) {
         // Update existing profile
+        final Map<String, dynamic> updateData = {
+          'fullName': _nameController.text.trim(),
+          'email': email,
+          'phoneNumber': _phoneController.text.trim(),
+          'isActive': _isActive,
+          'country': _countryController.text.trim(),
+          'preferredLanguage': _languageController.text.trim(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        };
+        if (widget.role == 'guide' || widget.role == 'host') {
+          updateData['bio'] = _bioController.text.trim();
+        }
+        if (widget.role == 'guide') {
+          updateData['specialization'] = _specializationController.text.trim();
+          updateData['languages'] = _languagesController.text.trim().split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+        }
+
         await FirebaseFirestore.instance
             .collection('users')
             .doc(widget.user!.uid)
-            .update({
-              'fullName': _nameController.text.trim(),
-              'email': email,
-              'phoneNumber': _phoneController.text.trim(),
-              'isActive': _isActive,
-              'updatedAt': FieldValue.serverTimestamp(),
-            });
+            .update(updateData);
       } else {
         // Create new admin authentication via a temporary Firebase App
         // This avoids logging out the current admin!
@@ -105,6 +131,11 @@ class _UserCrudDialogState extends State<UserCrudDialog> {
           role: widget.role,
           isActive: _isActive,
           isEmailVerified: false,
+          country: _countryController.text.trim(),
+          preferredLanguage: _languageController.text.trim(),
+          bio: (widget.role == 'guide' || widget.role == 'host') ? _bioController.text.trim() : null,
+          specialization: widget.role == 'guide' ? _specializationController.text.trim() : null,
+          languages: widget.role == 'guide' ? _languagesController.text.trim().split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList() : null,
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         );
@@ -161,8 +192,11 @@ class _UserCrudDialogState extends State<UserCrudDialog> {
                   labelText: 'Full Name *',
                   border: OutlineInputBorder(),
                 ),
-                validator: (val) =>
-                    val == null || val.isEmpty ? 'Required' : null,
+                validator: (val) {
+                  if (val == null || val.trim().isEmpty) return 'Required';
+                  if (val.trim().length < 3) return 'Name must be at least 3 characters';
+                  return null;
+                },
               ),
               const SizedBox(height: AppSpacing.md),
               TextFormField(
@@ -186,11 +220,68 @@ class _UserCrudDialogState extends State<UserCrudDialog> {
               TextFormField(
                 controller: _phoneController,
                 decoration: const InputDecoration(
-                  labelText: 'Phone Number',
+                  labelText: 'Phone Number *',
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.phone,
+                validator: (val) {
+                  if (val == null || val.isEmpty) return 'Required';
+                  if (!RegExp(r'^\+?[\d\s\-]{9,15}$').hasMatch(val)) {
+                    return 'Enter a valid phone number';
+                  }
+                  return null;
+                },
               ),
+              const SizedBox(height: AppSpacing.md),
+              TextFormField(
+                controller: _countryController,
+                decoration: const InputDecoration(
+                  labelText: 'Country *',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (val) => val == null || val.isEmpty ? 'Required' : null,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              TextFormField(
+                controller: _languageController,
+                decoration: const InputDecoration(
+                  labelText: 'Preferred Language *',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (val) => val == null || val.isEmpty ? 'Required' : null,
+              ),
+              if (widget.role == 'guide' || widget.role == 'host') ...[
+                const SizedBox(height: AppSpacing.md),
+                TextFormField(
+                  controller: _bioController,
+                  decoration: const InputDecoration(
+                    labelText: 'Bio',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                ),
+              ],
+              if (widget.role == 'guide') ...[
+                const SizedBox(height: AppSpacing.md),
+                TextFormField(
+                  controller: _specializationController,
+                  decoration: const InputDecoration(
+                    labelText: 'Specialization *',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (val) => (val == null || val.isEmpty) ? 'Required for guides' : null,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                TextFormField(
+                  controller: _languagesController,
+                  decoration: const InputDecoration(
+                    labelText: 'Languages (comma separated) *',
+                    border: OutlineInputBorder(),
+                    hintText: 'eg: English, Sinhala',
+                  ),
+                  validator: (val) => (val == null || val.isEmpty) ? 'Required for guides' : null,
+                ),
+              ],
               const SizedBox(height: AppSpacing.md),
               SwitchListTile(
                 title: const Text('Is Active'),
@@ -288,3 +379,9 @@ class _UserCrudDialogState extends State<UserCrudDialog> {
     );
   }
 }
+
+
+
+
+
+

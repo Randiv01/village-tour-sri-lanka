@@ -193,7 +193,7 @@ class _UsersListTabState extends State<UsersListTab> {
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Avatar placeholder
+                                  // Avatar
                                   ClipRRect(
                                     borderRadius: BorderRadius.circular(12),
                                     child: Container(
@@ -204,13 +204,27 @@ class _UsersListTabState extends State<UsersListTab> {
                                               alpha: 0.1,
                                             )
                                           : Colors.red.withValues(alpha: 0.1),
-                                      child: Icon(
-                                        _getRoleIcon(widget.role),
-                                        size: 32,
-                                        color: admin.isActive
-                                            ? AppColors.primary
-                                            : Colors.red,
-                                      ),
+                                      child: (admin.profileImageUrl != null && admin.profileImageUrl!.isNotEmpty)
+                                          ? Image.network(
+                                              admin.profileImageUrl!,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) {
+                                                return Icon(
+                                                  _getRoleIcon(widget.role),
+                                                  size: 32,
+                                                  color: admin.isActive
+                                                      ? AppColors.primary
+                                                      : Colors.red,
+                                                );
+                                              },
+                                            )
+                                          : Icon(
+                                              _getRoleIcon(widget.role),
+                                              size: 32,
+                                              color: admin.isActive
+                                                  ? AppColors.primary
+                                                  : Colors.red,
+                                            ),
                                     ),
                                   ),
                                   const SizedBox(width: 12),
@@ -713,9 +727,31 @@ class _UsersListTabState extends State<UsersListTab> {
   }
 
   Future<void> _deleteUser(BuildContext context, UserModel user) async {
+    if (widget.role == 'admin') {
+      try {
+        final adminDocs = await FirebaseFirestore.instance
+            .collection('users')
+            .where('role', isEqualTo: 'admin')
+            .get();
+        if (adminDocs.docs.length <= 1) {
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Cannot delete the last admin in the system.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+      } catch (e) {
+        debugPrint('Error checking admin count: ');
+      }
+    }
+
     String displayRole =
         widget.role.substring(0, 1).toUpperCase() + widget.role.substring(1);
 
+    if (!context.mounted) return;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -739,10 +775,33 @@ class _UsersListTabState extends State<UsersListTab> {
 
     if (confirm == true) {
       try {
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .delete();
+        final uid = user.uid;
+        final db = FirebaseFirestore.instance;
+        final batch = db.batch();
+
+        batch.delete(db.collection('users').doc(uid));
+
+        if (widget.role == 'traveler') {
+          final hsBookings = await db.collection('homestay_bookings').where('travelerId', isEqualTo: uid).get();
+          for (var doc in hsBookings.docs) { batch.delete(doc.reference); }
+          
+          final gBookings = await db.collection('guide_bookings').where('guestId', isEqualTo: uid).get();
+          for (var doc in gBookings.docs) { batch.delete(doc.reference); }
+        } else if (widget.role == 'host') {
+          final homestays = await db.collection('homestays').where('hostId', isEqualTo: uid).get();
+          for (var doc in homestays.docs) { batch.delete(doc.reference); }
+          
+          final hsBookings = await db.collection('homestay_bookings').where('hostId', isEqualTo: uid).get();
+          for (var doc in hsBookings.docs) { batch.delete(doc.reference); }
+        } else if (widget.role == 'guide') {
+          final packages = await db.collection('tour_packages').where('guideId', isEqualTo: uid).get();
+          for (var doc in packages.docs) { batch.delete(doc.reference); }
+          
+          final gBookings = await db.collection('guide_bookings').where('guideId', isEqualTo: uid).get();
+          for (var doc in gBookings.docs) { batch.delete(doc.reference); }
+        }
+
+        await batch.commit();
       } catch (e) {
         debugPrint('Error deleting ${widget.role}: $e');
       }

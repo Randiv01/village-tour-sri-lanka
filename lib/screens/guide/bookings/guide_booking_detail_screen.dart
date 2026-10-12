@@ -7,6 +7,7 @@ import '../../../theme/app_spacing.dart';
 import '../../../theme/app_radius.dart';
 import '../../../models/guide_booking.dart';
 import '../../../repositories/guide_booking_repository.dart';
+import '../../../services/email_service.dart';
 import '../chat/guide_chat_screen.dart';
 
 class GuideBookingDetailScreen extends StatefulWidget {
@@ -51,6 +52,14 @@ class _GuideBookingDetailScreenState extends State<GuideBookingDetailScreen> {
       } else {
         await _repo.updateBookingStatus(_booking.id, newStatus);
       }
+
+      // ✉️ Send status update email
+      await EmailService.notifyTravelerStatusUpdate(
+        toEmail: _booking.guestEmail,
+        customerName: _booking.guestName,
+        bookingId: _booking.id,
+        status: newStatus,
+      );
 
       final updated = await _repo.getBooking(_booking.id);
       if (updated != null && mounted) {

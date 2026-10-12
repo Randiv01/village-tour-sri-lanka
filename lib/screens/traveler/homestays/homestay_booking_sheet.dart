@@ -8,6 +8,7 @@ import '../../../../theme/app_spacing.dart';
 import '../../../../models/homestay.dart';
 import '../../../../models/homestay_booking.dart';
 import '../../../../repositories/homestay_booking_repository.dart';
+import '../../../../services/email_service.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -318,7 +319,7 @@ class _HomestayBookingSheetState extends State<HomestayBookingSheet> {
       ),
       child: ElevatedButton(
         onPressed: isValid && !_isSubmitting
-            ? () => _submitRequest(totalAmount, nights)
+            ? () => _showConfirmationDialog(totalAmount, nights)
             : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primaryDark,
@@ -507,6 +508,40 @@ class _HomestayBookingSheetState extends State<HomestayBookingSheet> {
     }
   }
 
+  void _showConfirmationDialog(double totalAmount, int nights) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text(
+          'Confirm Request',
+          style: TextStyle(color: AppColors.primaryDark),
+        ),
+        content: Text(
+          'Are you sure you want to request a booking for $nights night(s)?\n\nTotal: Rs. $totalAmount',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _submitRequest(totalAmount, nights);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryDark,
+            ),
+            child: const Text('Confirm', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _submitRequest(double totalAmount, int nights) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -520,7 +555,7 @@ class _HomestayBookingSheetState extends State<HomestayBookingSheet> {
           .get();
       if (!userDoc.exists) throw Exception('User profile not found');
       final userData = userDoc.data() as Map<String, dynamic>;
-      final userName = userData['name'] ?? 'Traveler';
+      final userName = userData['fullName'] ?? userData['name'] ?? user.displayName ?? 'Traveler';
       final userEmail = userData['email'] ?? user.email ?? '';
 
       final booking = HomestayBooking(
@@ -543,7 +578,32 @@ class _HomestayBookingSheetState extends State<HomestayBookingSheet> {
         bookingStatus: 'pending',
       );
 
-      await _bookingRepo.createBooking(booking);
+      final newBookingId = await _bookingRepo.createBooking(booking);
+
+      // ✉️ Send Emails
+      EmailService.notifyTravelerBookingRequested(
+        toEmail: booking.travelerEmail,
+        customerName: booking.travelerName,
+        bookingId: newBookingId,
+        type: 'Homestay',
+      );
+
+      // Fetch host details to send email
+      FirebaseFirestore.instance.collection('users').doc(booking.hostId).get().then((doc) {
+        if (doc.exists) {
+          final hostEmail = doc.data()?['email'];
+          final hostName = doc.data()?['name'] ?? doc.data()?['fullName'] ?? 'Host';
+          if (hostEmail != null) {
+            EmailService.notifyHostNewBookingRequest(
+              hostEmail: hostEmail,
+              hostName: hostName,
+              bookingId: newBookingId,
+              travelerName: booking.travelerName,
+              dates: '${DateFormat('MMM dd').format(booking.checkInDate)} - ${DateFormat('MMM dd, yyyy').format(booking.checkOutDate)}',
+            );
+          }
+        }
+      });
 
       if (mounted) {
         Navigator.pop(context);

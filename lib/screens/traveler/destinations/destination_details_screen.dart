@@ -15,6 +15,7 @@ import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_spacing.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../utils/cloudinary_utils.dart';
+import '../../common/auth/auth_guard.dart';
 import 'full_screen_gallery.dart';
 
 class DestinationDetailsScreen extends StatefulWidget {
@@ -121,35 +122,35 @@ class _DestinationDetailsScreenState extends State<DestinationDetailsScreen> {
   }
 
   Future<void> _toggleFavorite() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please sign in to favorite.')),
-      );
-      return;
-    }
-    final newFav = !_isFavorite;
-    setState(() => _isFavorite = newFav);
-    try {
-      final userRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid);
-      if (newFav) {
-        await userRef.update({
-          'favoriteDestinations': FieldValue.arrayUnion([
-            _currentDestination.id,
-          ]),
-        });
-      } else {
-        await userRef.update({
-          'favoriteDestinations': FieldValue.arrayRemove([
-            _currentDestination.id,
-          ]),
-        });
-      }
-    } catch (e) {
-      setState(() => _isFavorite = !newFav);
-    }
+    AuthGuard.requireAuth(
+      context: context,
+      onAuthenticated: () async {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user == null) return;
+        final newFav = !_isFavorite;
+        setState(() => _isFavorite = newFav);
+        try {
+          final userRef = FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid);
+          if (newFav) {
+            await userRef.update({
+              'favoriteDestinations': FieldValue.arrayUnion([
+                _currentDestination.id,
+              ]),
+            });
+          } else {
+            await userRef.update({
+              'favoriteDestinations': FieldValue.arrayRemove([
+                _currentDestination.id,
+              ]),
+            });
+          }
+        } catch (e) {
+          setState(() => _isFavorite = !newFav);
+        }
+      },
+    );
   }
 
   void _shareDestination() {

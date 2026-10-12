@@ -78,7 +78,22 @@ class AdminDashboardScreen extends StatelessWidget {
                     .collection('tour_packages')
                     .snapshots(),
               ),
-              _buildCountCard('Bookings', Icons.book, AppColors.textSecondary),
+              _buildCountCard(
+                'Homestay Bookings',
+                Icons.book_online,
+                AppColors.textSecondary,
+                stream: FirebaseFirestore.instance
+                    .collection('homestay_bookings')
+                    .snapshots(),
+              ),
+              _buildCountCard(
+                'Package Bookings',
+                Icons.collections_bookmark,
+                AppColors.primary,
+                stream: FirebaseFirestore.instance
+                    .collection('guide_bookings')
+                    .snapshots(),
+              ),
             ],
           ),
 

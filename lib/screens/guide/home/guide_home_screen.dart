@@ -138,6 +138,8 @@ class _GuideHomeScreenState extends State<GuideHomeScreen> {
                           _buildHeader(),
                           const SizedBox(height: AppSpacing.lg),
                           _buildOverview(uid),
+                          const SizedBox(height: AppSpacing.md),
+                          _buildEarningsOverview(uid),
                           const SizedBox(height: AppSpacing.xl),
                           _buildCreatePackageCard(context),
                           const SizedBox(height: AppSpacing.xxl),
@@ -324,6 +326,42 @@ class _GuideHomeScreenState extends State<GuideHomeScreen> {
                   .getUpcomingBookingsStream(uid)
                   .map((l) => l.length),
               icon: Icons.calendar_month_outlined,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEarningsOverview(String uid) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Row(
+        children: [
+          Expanded(
+            child: _CurrencyOverviewStat(
+              title: 'Total Earnings',
+              stream: _bookingRepo.getGuideBookingsStream(uid).map((bookings) =>
+                  bookings
+                      .where((b) => b.paymentStatus == 'paid')
+                      .fold(0.0, (sum, b) => sum + b.totalPrice)),
+              icon: Icons.account_balance_wallet,
+              iconColor: Colors.green,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: _CurrencyOverviewStat(
+              title: 'Pending Payments',
+              stream: _bookingRepo.getGuideBookingsStream(uid).map((bookings) =>
+                  bookings
+                      .where((b) =>
+                          b.paymentStatus != 'paid' &&
+                          b.status != 'rejected' &&
+                          b.status != 'cancelled')
+                      .fold(0.0, (sum, b) => sum + b.totalPrice)),
+              icon: Icons.pending,
+              iconColor: Colors.orange,
             ),
           ),
         ],
@@ -646,6 +684,58 @@ class _GuideIconButton extends StatelessWidget {
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CurrencyOverviewStat extends StatelessWidget {
+  final String title;
+  final Stream<double> stream;
+  final IconData icon;
+  final Color iconColor;
+  const _CurrencyOverviewStat({
+    required this.title,
+    required this.stream,
+    required this.icon,
+    this.iconColor = AppColors.secondary,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppRadius.cardRadius,
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: iconColor, size: 24),
+          const SizedBox(height: AppSpacing.sm),
+          StreamBuilder<double>(
+            stream: stream,
+            builder: (context, snapshot) {
+              final amount = snapshot.data ?? 0.0;
+              return Text(
+                'Rs. ${NumberFormat('#,##0').format(amount)}',
+                style: AppTextStyles.labelLarge.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryDark,
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );

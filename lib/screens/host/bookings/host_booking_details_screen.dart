@@ -6,6 +6,7 @@ import '../../../../theme/app_text_styles.dart';
 import '../../../../theme/app_spacing.dart';
 import '../../../../models/homestay_booking.dart';
 import '../../../../repositories/homestay_booking_repository.dart';
+import '../../../../services/email_service.dart';
 
 class HostBookingDetailsScreen extends StatefulWidget {
   final HomestayBooking booking;
@@ -25,6 +26,15 @@ class _HostBookingDetailsScreenState extends State<HostBookingDetailsScreen> {
     setState(() => _isProcessing = true);
     try {
       await _bookingRepo.updateBookingStatus(widget.booking.id, 'accepted');
+      
+      // ✉️ Send status update email
+      await EmailService.notifyTravelerStatusUpdate(
+        toEmail: widget.booking.travelerEmail,
+        customerName: widget.booking.travelerName,
+        bookingId: widget.booking.id,
+        status: 'Accepted',
+      );
+
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -49,48 +59,85 @@ class _HostBookingDetailsScreenState extends State<HostBookingDetailsScreen> {
   }
 
   Future<void> _handleReject() async {
+    String? selectedReason;
     final reasonController = TextEditingController();
+    final reasons = [
+      'Homestay unavailable',
+      'Schedule conflict',
+      'Maintenance issues',
+      'Personal reason',
+      'Other',
+    ];
+
     final shouldReject = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Reject Booking'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Please provide a reason for rejecting this booking request (Required):',
-              style: TextStyle(fontSize: 12),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Reject Booking'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Why are you rejecting this booking?'),
+                const SizedBox(height: 8),
+                ...reasons.map(
+                  (reason) => InkWell(
+                    onTap: () => setState(() => selectedReason = reason),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Row(
+                        children: [
+                          Icon(
+                            selectedReason == reason
+                                ? Icons.radio_button_checked
+                                : Icons.radio_button_unchecked,
+                            color: selectedReason == reason
+                                ? AppColors.primary
+                                : Colors.grey,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(reason),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                if (selectedReason == 'Other')
+                  TextField(
+                    controller: reasonController,
+                    decoration: const InputDecoration(
+                      labelText: 'Please specify',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+              ],
             ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: reasonController,
-              decoration: const InputDecoration(
-                hintText: 'e.g. Homestay is under maintenance',
-                border: OutlineInputBorder(),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
               ),
-              maxLines: 3,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (reasonController.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Reason is required')),
-                );
-                return;
-              }
-              Navigator.pop(context, true);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            child: const Text('Reject', style: TextStyle(color: Colors.white)),
-          ),
-        ],
+              ElevatedButton(
+                onPressed: () {
+                  final finalReason = selectedReason == 'Other'
+                      ? reasonController.text.trim()
+                      : selectedReason;
+                  if (finalReason == null || finalReason.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please select or enter a reason')),
+                    );
+                    return;
+                  }
+                  reasonController.text = finalReason; // Store for outside
+                  Navigator.pop(context, true);
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+                child: const Text('Reject', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          );
+        },
       ),
     );
 
@@ -101,6 +148,14 @@ class _HostBookingDetailsScreenState extends State<HostBookingDetailsScreen> {
           widget.booking.id,
           'rejected',
           rejectionReason: reasonController.text.trim(),
+        );
+
+        // ✉️ Send status update email for rejection
+        await EmailService.notifyTravelerStatusUpdate(
+          toEmail: widget.booking.travelerEmail,
+          customerName: widget.booking.travelerName,
+          bookingId: widget.booking.id,
+          status: 'rejected',
         );
         if (mounted) {
           Navigator.pop(context);
