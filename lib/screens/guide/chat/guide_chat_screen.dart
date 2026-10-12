@@ -8,7 +8,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../services/cloudinary_service.dart';
-
+import '../../../../repositories/notification_repository.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 
@@ -20,6 +20,7 @@ class GuideChatScreen extends StatefulWidget {
   final String packageId;
   final String packageTitle;
   final String packagePrice;
+  final String? chatId;
 
   const GuideChatScreen({
     super.key,
@@ -30,6 +31,7 @@ class GuideChatScreen extends StatefulWidget {
     required this.packageId,
     required this.packageTitle,
     required this.packagePrice,
+    this.chatId,
   });
 
   @override
@@ -53,7 +55,43 @@ class _GuideChatScreenState extends State<GuideChatScreen> {
     super.initState();
     _speech = stt.SpeechToText();
     final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
-    _chatId = '${widget.touristId}_${currentUserId}_${widget.packageId}';
+    _chatId = widget.chatId != null && widget.chatId!.isNotEmpty
+        ? widget.chatId!
+        : '${widget.touristId}_${currentUserId}_${widget.packageId}';
+
+    // Clear unread count for current user and mark messages as read
+    if (currentUserId.isNotEmpty) {
+      FirebaseFirestore.instance
+          .collection('chats')
+          .doc(_chatId)
+          .set({'unreadCount_$currentUserId': 0}, SetOptions(merge: true));
+
+      FirebaseFirestore.instance
+          .collection('chats')
+          .doc(_chatId)
+          .collection('messages')
+          .where('receiverId', isEqualTo: currentUserId)
+          .where('read', isEqualTo: false)
+          .get()
+          .then((snap) {
+        for (var doc in snap.docs) {
+          doc.reference.update({'read': true});
+        }
+      });
+
+      // Also mark any message notifications for this chat as read
+      FirebaseFirestore.instance
+          .collection('notifications')
+          .where('userId', isEqualTo: currentUserId)
+          .where('relatedId', isEqualTo: _chatId)
+          .where('read', isEqualTo: false)
+          .get()
+          .then((snap) {
+        for (var doc in snap.docs) {
+          doc.reference.update({'read': true});
+        }
+      });
+    }
   }
 
   @override
@@ -148,6 +186,21 @@ class _GuideChatScreenState extends State<GuideChatScreen> {
             .add(messageData);
       }
 
+      // Fetch guide name
+      String guideName = 'Tour Guide';
+      try {
+        final guideDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUserId)
+            .get();
+        if (guideDoc.exists && guideDoc.data() != null) {
+          guideName = guideDoc.data()?['fullName'] ??
+              guideDoc.data()?['name'] ??
+              FirebaseAuth.instance.currentUser?.displayName ??
+              'Tour Guide';
+        }
+      } catch (_) {}
+
       // Update chat metadata
       await FirebaseFirestore.instance.collection('chats').doc(_chatId).set({
         'touristId': widget.touristId,
@@ -158,8 +211,31 @@ class _GuideChatScreenState extends State<GuideChatScreen> {
         'lastMessageTime': FieldValue.serverTimestamp(),
         'unreadCount_${widget.touristId}': FieldValue.increment(1),
         'touristName': widget.touristName,
+        'guideName': guideName,
         'packageTitle': widget.packageTitle,
       }, SetOptions(merge: true));
+
+      // Create notification alert for tourist
+      try {
+        await NotificationRepository().sendNotification(
+          userId: widget.touristId,
+          recipientRole: 'traveler',
+          type: 'message',
+          title: guideName,
+          message: text,
+          relatedId: _chatId,
+          guideName: guideName,
+          packageTitle: widget.packageTitle,
+          metadata: {
+            'isGuideMessage': true,
+            'chatId': _chatId,
+            'guideId': currentUserId,
+            'guideName': guideName,
+            'packageId': widget.packageId,
+            'packageTitle': widget.packageTitle,
+          },
+        );
+      } catch (_) {}
 
       _scrollToBottom();
     } catch (e) {

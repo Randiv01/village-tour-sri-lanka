@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/guide_booking.dart';
+import 'notification_repository.dart';
 
 class GuideBookingRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -56,17 +57,25 @@ class GuideBookingRepository {
     String title,
     String body,
     String type,
-    String bookingId,
-  ) async {
-    await _firestore.collection('notifications').add({
-      'userId': guideId,
-      'title': title,
-      'body': body,
-      'type': type,
-      'bookingId': bookingId,
-      'read': false,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+    String bookingId, {
+    String? packageTitle,
+  }) async {
+    try {
+      await NotificationRepository().sendNotification(
+        userId: guideId,
+        recipientRole: 'guide',
+        title: title,
+        message: body,
+        type: type,
+        relatedId: bookingId,
+        packageTitle: packageTitle,
+        metadata: {
+          'isGuideBooking': true,
+          'bookingId': bookingId,
+          'packageTitle': ?packageTitle,
+        },
+      );
+    } catch (_) {}
   }
 
   // Create a new booking
@@ -78,13 +87,25 @@ class GuideBookingRepository {
     };
     await docRef.set(data);
 
-    await _createNotification(
-      booking.guideId,
-      'New Booking Request',
-      '${booking.guestName} has requested to book ${booking.packageTitle}.',
-      'booking_new',
-      docRef.id,
-    );
+    try {
+      await NotificationRepository().sendNotification(
+        userId: booking.guideId,
+        recipientRole: 'guide',
+        title: 'New Booking Request',
+        message: '${booking.guestName} has requested to book ${booking.packageTitle}.',
+        type: 'booking_new',
+        relatedId: docRef.id,
+        packageTitle: booking.packageTitle,
+        metadata: {
+          'isGuideBooking': true,
+          'bookingId': docRef.id,
+          'guestId': booking.guestId,
+          'guestName': booking.guestName,
+          'packageId': booking.packageId,
+          'packageTitle': booking.packageTitle,
+        },
+      );
+    } catch (_) {}
 
     return docRef.id;
   }
@@ -161,6 +182,88 @@ class GuideBookingRepository {
     // Fetch booking to get details for notification
     final booking = await getBooking(bookingId);
     if (booking != null) {
+      // Mark any pending booking notifications for the guide for this booking as read
+      try {
+        final guideNotifs = await _firestore
+            .collection('notifications')
+            .where('userId', isEqualTo: booking.guideId)
+            .where('read', isEqualTo: false)
+            .get();
+        for (var doc in guideNotifs.docs) {
+          final data = doc.data();
+          final relId = data['relatedId'] ?? data['bookingId'];
+          if (relId == bookingId) {
+            doc.reference.update({'read': true});
+          }
+        }
+      } catch (_) {}
+
+      // Resolve guide name
+      String guideName = 'Tour Guide';
+      try {
+        final guideDoc =
+            await _firestore.collection('users').doc(booking.guideId).get();
+        if (guideDoc.exists && guideDoc.data() != null) {
+          guideName = guideDoc.data()!['fullName'] ??
+              guideDoc.data()!['name'] ??
+              'Tour Guide';
+        }
+      } catch (_) {}
+
+      if (status == 'accepted' || status == 'confirmed') {
+        // 🔔 Notify traveler that their booking is approved!
+        try {
+          await NotificationRepository().sendNotification(
+            userId: booking.guestId,
+            recipientRole: 'traveler',
+            type: 'booking_accepted',
+            title: 'Booking Approved',
+            message:
+                'Your booking request for "${booking.packageTitle}" was approved by guide $guideName.',
+            relatedId: bookingId,
+            guideName: guideName,
+            packageTitle: booking.packageTitle,
+            metadata: {
+              'isGuideBooking': true,
+              'bookingId': bookingId,
+              'guideId': booking.guideId,
+              'guideName': guideName,
+              'packageId': booking.packageId,
+              'packageTitle': booking.packageTitle,
+              'status': status,
+            },
+          );
+        } catch (_) {}
+      } else if (status == 'rejected') {
+        // 🔔 Notify traveler that their booking was declined!
+        final reasonSuffix = (rejectionReason != null && rejectionReason.isNotEmpty)
+            ? ' Reason: $rejectionReason'
+            : '';
+        try {
+          await NotificationRepository().sendNotification(
+            userId: booking.guestId,
+            recipientRole: 'traveler',
+            type: 'booking_rejected',
+            title: 'Booking Rejected',
+            message:
+                'Your booking request for "${booking.packageTitle}" was rejected by guide $guideName.$reasonSuffix',
+            relatedId: bookingId,
+            guideName: guideName,
+            packageTitle: booking.packageTitle,
+            metadata: {
+              'isGuideBooking': true,
+              'bookingId': bookingId,
+              'guideId': booking.guideId,
+              'guideName': guideName,
+              'packageId': booking.packageId,
+              'packageTitle': booking.packageTitle,
+              'status': status,
+              'rejectionReason': rejectionReason,
+            },
+          );
+        } catch (_) {}
+      }
+
       if (paymentStatus == 'paid') {
         await _createNotification(
           booking.guideId,
@@ -168,6 +271,7 @@ class GuideBookingRepository {
           'Payment received for ${booking.packageTitle} from ${booking.guestName}.',
           'payment_success',
           bookingId,
+          packageTitle: booking.packageTitle,
         );
       } else if (paymentStatus == 'failed') {
         await _createNotification(
@@ -176,6 +280,7 @@ class GuideBookingRepository {
           'Payment failed for ${booking.packageTitle} from ${booking.guestName}.',
           'payment_failed',
           bookingId,
+          packageTitle: booking.packageTitle,
         );
       } else if (status == 'cancelled') {
         await _createNotification(
@@ -184,6 +289,7 @@ class GuideBookingRepository {
           '${booking.guestName} has cancelled the booking for ${booking.packageTitle}.',
           'booking_cancelled',
           bookingId,
+          packageTitle: booking.packageTitle,
         );
       }
     }

@@ -12,6 +12,8 @@ class NotificationModel {
   final String? relatedId; // bookingId, homestayId, chatId, etc.
   final String? hostName;
   final String? homestayTitle;
+  final String? guideName;
+  final String? packageTitle;
   final Map<String, dynamic>? metadata;
 
   NotificationModel({
@@ -26,6 +28,8 @@ class NotificationModel {
     this.relatedId,
     this.hostName,
     this.homestayTitle,
+    this.guideName,
+    this.packageTitle,
     this.metadata,
   });
 
@@ -35,7 +39,9 @@ class NotificationModel {
       type == 'booking_update' ||
       type == 'booking_accepted' ||
       type == 'booking_rejected' ||
-      type == 'booking_cancelled';
+      type == 'booking_cancelled' ||
+      type == 'payment_success' ||
+      type == 'payment_failed';
 
   bool get isMessage => type == 'message';
 
@@ -53,6 +59,8 @@ class NotificationModel {
       if (relatedId != null) 'relatedId': relatedId,
       if (hostName != null) 'hostName': hostName,
       if (homestayTitle != null) 'homestayTitle': homestayTitle,
+      if (guideName != null) 'guideName': guideName,
+      if (packageTitle != null) 'packageTitle': packageTitle,
       if (metadata != null) 'metadata': metadata,
     };
   }
@@ -70,6 +78,8 @@ class NotificationModel {
       parsedDate = (map['timestamp'] as Timestamp).toDate();
     }
 
+    final meta = map['metadata'] as Map<String, dynamic>?;
+
     return NotificationModel(
       id: id,
       userId: map['userId'] as String? ?? '',
@@ -80,9 +90,11 @@ class NotificationModel {
       read: (map['read'] ?? map['isRead'] ?? false) as bool,
       createdAt: parsedDate,
       relatedId: (map['relatedId'] ?? map['bookingId'] ?? map['chatId']) as String?,
-      hostName: map['hostName'] as String?,
-      homestayTitle: map['homestayTitle'] as String?,
-      metadata: map['metadata'] as Map<String, dynamic>?,
+      hostName: map['hostName'] as String? ?? (meta != null ? meta['hostName'] as String? : null),
+      homestayTitle: map['homestayTitle'] as String? ?? (meta != null ? meta['homestayTitle'] as String? : null),
+      guideName: map['guideName'] as String? ?? (meta != null ? meta['guideName'] as String? : null),
+      packageTitle: map['packageTitle'] as String? ?? (meta != null ? meta['packageTitle'] as String? : null),
+      metadata: meta,
     );
   }
 
@@ -98,6 +110,8 @@ class NotificationModel {
     String? relatedId,
     String? hostName,
     String? homestayTitle,
+    String? guideName,
+    String? packageTitle,
     Map<String, dynamic>? metadata,
   }) {
     return NotificationModel(
@@ -112,6 +126,8 @@ class NotificationModel {
       relatedId: relatedId ?? this.relatedId,
       hostName: hostName ?? this.hostName,
       homestayTitle: homestayTitle ?? this.homestayTitle,
+      guideName: guideName ?? this.guideName,
+      packageTitle: packageTitle ?? this.packageTitle,
       metadata: metadata ?? this.metadata,
     );
   }

@@ -17,8 +17,12 @@ class NotificationRepository {
     required String title,
     required String message,
     required String type, // 'booking', 'message', 'review', 'other'
-    String? recipientRole, // 'host' or 'traveler'
+    String? recipientRole, // 'host', 'traveler', or 'guide'
     String? relatedId,
+    String? hostName,
+    String? homestayTitle,
+    String? guideName,
+    String? packageTitle,
     Map<String, dynamic>? metadata,
   }) async {
     final notification = NotificationModel(
@@ -31,6 +35,10 @@ class NotificationRepository {
       read: false,
       createdAt: DateTime.now(),
       relatedId: relatedId,
+      hostName: hostName,
+      homestayTitle: homestayTitle,
+      guideName: guideName,
+      packageTitle: packageTitle,
       metadata: metadata,
     );
     return createNotification(notification);
@@ -80,6 +88,8 @@ class NotificationRepository {
         .map((snapshot) {
           return snapshot.docs.where((doc) {
             final data = doc.data();
+            final type = data['type'] as String? ?? '';
+            if (type == 'message') return false;
             final isRead = data['read'] ?? data['isRead'] ?? false;
             return isRead == false;
           }).length;
@@ -110,6 +120,8 @@ class NotificationRepository {
             .listen((snapshot) {
           notifUnread = snapshot.docs.where((doc) {
             final data = doc.data();
+            final type = data['type'] as String? ?? '';
+            if (type == 'message') return false; // Already tracked by hostChats
             return (data['read'] ?? data['isRead'] ?? false) == false;
           }).length;
           update();
@@ -139,8 +151,8 @@ class NotificationRepository {
     return controller.stream;
   }
 
-  // 5. READ: Real-time total unread count for TRAVELER (notifications + unread hostChats)
-  Stream<int> getTotalUnreadCountForTraveler(String travelerId) {
+  // 5. READ: Real-time total unread count for GUIDE (notifications + unread chats)
+  Stream<int> getTotalUnreadCountForGuide(String guideId) {
     late StreamController<int> controller;
     StreamSubscription? notifSub;
     StreamSubscription? chatSub;
@@ -158,17 +170,76 @@ class NotificationRepository {
       onListen: () {
         notifSub = _firestore
             .collection('notifications')
-            .where('userId', isEqualTo: travelerId)
+            .where('userId', isEqualTo: guideId)
             .snapshots()
             .listen((snapshot) {
           notifUnread = snapshot.docs.where((doc) {
             final data = doc.data();
+            final type = data['type'] as String? ?? '';
+            if (type == 'message') return false; // Already tracked by chats
             return (data['read'] ?? data['isRead'] ?? false) == false;
           }).length;
           update();
         }, onError: (_) {});
 
         chatSub = _firestore
+            .collection('chats')
+            .where('guideId', isEqualTo: guideId)
+            .snapshots()
+            .listen((snapshot) {
+          int count = 0;
+          for (var doc in snapshot.docs) {
+            final data = doc.data();
+            final unread = data['unreadCount_$guideId'] as int? ?? 0;
+            if (unread > 0) count += unread;
+          }
+          chatUnread = count;
+          update();
+        }, onError: (_) {});
+      },
+      onCancel: () {
+        notifSub?.cancel();
+        chatSub?.cancel();
+      },
+    );
+
+    return controller.stream;
+  }
+
+  // 6. READ: Real-time total unread count for TRAVELER (notifications + unread hostChats + unread guide chats)
+  Stream<int> getTotalUnreadCountForTraveler(String travelerId) {
+    late StreamController<int> controller;
+    StreamSubscription? notifSub;
+    StreamSubscription? hostChatSub;
+    StreamSubscription? guideChatSub;
+
+    int notifUnread = 0;
+    int hostChatUnread = 0;
+    int guideChatUnread = 0;
+
+    void update() {
+      if (!controller.isClosed) {
+        controller.add(notifUnread + hostChatUnread + guideChatUnread);
+      }
+    }
+
+    controller = StreamController<int>(
+      onListen: () {
+        notifSub = _firestore
+            .collection('notifications')
+            .where('userId', isEqualTo: travelerId)
+            .snapshots()
+            .listen((snapshot) {
+          notifUnread = snapshot.docs.where((doc) {
+            final data = doc.data();
+            final type = data['type'] as String? ?? '';
+            if (type == 'message') return false; // Already tracked by hostChats & chats
+            return (data['read'] ?? data['isRead'] ?? false) == false;
+          }).length;
+          update();
+        }, onError: (_) {});
+
+        hostChatSub = _firestore
             .collection('hostChats')
             .where('touristId', isEqualTo: travelerId)
             .snapshots()
@@ -179,13 +250,29 @@ class NotificationRepository {
             final unread = data['unreadCount_$travelerId'] as int? ?? 0;
             if (unread > 0) count += unread;
           }
-          chatUnread = count;
+          hostChatUnread = count;
+          update();
+        }, onError: (_) {});
+
+        guideChatSub = _firestore
+            .collection('chats')
+            .where('touristId', isEqualTo: travelerId)
+            .snapshots()
+            .listen((snapshot) {
+          int count = 0;
+          for (var doc in snapshot.docs) {
+            final data = doc.data();
+            final unread = data['unreadCount_$travelerId'] as int? ?? 0;
+            if (unread > 0) count += unread;
+          }
+          guideChatUnread = count;
           update();
         }, onError: (_) {});
       },
       onCancel: () {
         notifSub?.cancel();
-        chatSub?.cancel();
+        hostChatSub?.cancel();
+        guideChatSub?.cancel();
       },
     );
 
@@ -213,13 +300,61 @@ class NotificationRepository {
       for (var doc in snapshot.docs) {
         final data = doc.data();
         final type = data['type'] as String? ?? '';
-        final isBookType = type.startsWith('booking');
+        final isBookType =
+            type.startsWith('booking') || type.startsWith('payment');
 
-        if (isBooking == null || (isBooking && isBookType) || (!isBooking && !isBookType)) {
+        if (isBooking == null ||
+            (isBooking && isBookType) ||
+            (!isBooking && !isBookType)) {
           batch.update(doc.reference, {'read': true});
         }
       }
       await batch.commit();
+
+      // Reset chat unread counts for this user if clearing all or non-booking notifications
+      if (isBooking == null || !isBooking) {
+        try {
+          final hostChatsAsHost = await _firestore
+              .collection('hostChats')
+              .where('hostId', isEqualTo: userId)
+              .get();
+          for (var doc in hostChatsAsHost.docs) {
+            if ((doc.data()['unreadCount_$userId'] as int? ?? 0) > 0) {
+              doc.reference.update({'unreadCount_$userId': 0});
+            }
+          }
+
+          final hostChatsAsTourist = await _firestore
+              .collection('hostChats')
+              .where('touristId', isEqualTo: userId)
+              .get();
+          for (var doc in hostChatsAsTourist.docs) {
+            if ((doc.data()['unreadCount_$userId'] as int? ?? 0) > 0) {
+              doc.reference.update({'unreadCount_$userId': 0});
+            }
+          }
+
+          final guideChatsAsGuide = await _firestore
+              .collection('chats')
+              .where('guideId', isEqualTo: userId)
+              .get();
+          for (var doc in guideChatsAsGuide.docs) {
+            if ((doc.data()['unreadCount_$userId'] as int? ?? 0) > 0) {
+              doc.reference.update({'unreadCount_$userId': 0});
+            }
+          }
+
+          final guideChatsAsTourist = await _firestore
+              .collection('chats')
+              .where('touristId', isEqualTo: userId)
+              .get();
+          for (var doc in guideChatsAsTourist.docs) {
+            if ((doc.data()['unreadCount_$userId'] as int? ?? 0) > 0) {
+              doc.reference.update({'unreadCount_$userId': 0});
+            }
+          }
+        } catch (_) {}
+      }
     } catch (_) {}
   }
 
