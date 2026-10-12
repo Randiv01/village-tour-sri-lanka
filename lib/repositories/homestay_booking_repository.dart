@@ -116,18 +116,28 @@ class HomestayBookingRepository {
     // Notify traveler or host depending on status
     final booking = await getBookingById(id);
     if (booking != null) {
+      String hostName = 'Host';
+      try {
+        final hostDoc = await _firestore.collection('users').doc(booking.hostId).get();
+        if (hostDoc.exists && hostDoc.data() != null) {
+          hostName = hostDoc.data()!['fullName'] as String? ?? 'Host';
+        }
+      } catch (_) {}
+
       String msg = '';
       String title = 'Booking Status Updated';
       if (status == 'accepted') {
         title = 'Booking Approved!';
         msg =
-            'Your booking request for ${booking.homestayTitle} was accepted! Please complete payment.';
+            'Host $hostName has approved your booking request for "${booking.homestayTitle}". Please complete payment.';
       } else if (status == 'rejected') {
         title = 'Booking Declined';
-        msg = 'Your booking request for ${booking.homestayTitle} was declined.${rejectionReason != null && rejectionReason.isNotEmpty ? " Reason: $rejectionReason" : ""}';
+        msg =
+            'Host $hostName declined your booking request for "${booking.homestayTitle}".${rejectionReason != null && rejectionReason.isNotEmpty ? " Reason: $rejectionReason" : ""}';
       } else if (status == 'confirmed') {
         title = 'Booking Confirmed!';
-        msg = 'Your payment was successful and booking is confirmed.';
+        msg =
+            'Your booking for "${booking.homestayTitle}" hosted by $hostName is confirmed. Payment successful!';
       }
 
       if (msg.isNotEmpty) {
@@ -144,6 +154,8 @@ class HomestayBookingRepository {
           'bookingId': id,
           'homestayId': booking.homestayId,
           'homestayTitle': booking.homestayTitle,
+          'hostId': booking.hostId,
+          'hostName': hostName,
         });
       }
 

@@ -10,6 +10,8 @@ class NotificationModel {
   final bool read;
   final DateTime createdAt;
   final String? relatedId; // bookingId, homestayId, chatId, etc.
+  final String? hostName;
+  final String? homestayTitle;
   final Map<String, dynamic>? metadata;
 
   NotificationModel({
@@ -22,6 +24,8 @@ class NotificationModel {
     this.read = false,
     required this.createdAt,
     this.relatedId,
+    this.hostName,
+    this.homestayTitle,
     this.metadata,
   });
 
@@ -47,6 +51,8 @@ class NotificationModel {
       'read': read,
       'createdAt': Timestamp.fromDate(createdAt),
       if (relatedId != null) 'relatedId': relatedId,
+      if (hostName != null) 'hostName': hostName,
+      if (homestayTitle != null) 'homestayTitle': homestayTitle,
       if (metadata != null) 'metadata': metadata,
     };
   }
@@ -74,6 +80,8 @@ class NotificationModel {
       read: (map['read'] ?? map['isRead'] ?? false) as bool,
       createdAt: parsedDate,
       relatedId: (map['relatedId'] ?? map['bookingId'] ?? map['chatId']) as String?,
+      hostName: map['hostName'] as String?,
+      homestayTitle: map['homestayTitle'] as String?,
       metadata: map['metadata'] as Map<String, dynamic>?,
     );
   }
@@ -88,6 +96,8 @@ class NotificationModel {
     bool? read,
     DateTime? createdAt,
     String? relatedId,
+    String? hostName,
+    String? homestayTitle,
     Map<String, dynamic>? metadata,
   }) {
     return NotificationModel(
@@ -100,6 +110,8 @@ class NotificationModel {
       read: read ?? this.read,
       createdAt: createdAt ?? this.createdAt,
       relatedId: relatedId ?? this.relatedId,
+      hostName: hostName ?? this.hostName,
+      homestayTitle: homestayTitle ?? this.homestayTitle,
       metadata: metadata ?? this.metadata,
     );
   }

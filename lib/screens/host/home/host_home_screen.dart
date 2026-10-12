@@ -168,14 +168,36 @@ class HostHomeScreen extends StatelessWidget {
                                     ),
                                     if (unreadCount > 0)
                                       Positioned(
-                                        right: 2,
-                                        top: 2,
+                                        right: -2,
+                                        top: -2,
                                         child: Container(
-                                          width: 8,
-                                          height: 8,
-                                          decoration: const BoxDecoration(
-                                            color: Colors.green,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 4,
+                                            vertical: 2,
+                                          ),
+                                          constraints: const BoxConstraints(
+                                            minWidth: 16,
+                                            minHeight: 16,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF1E6B52),
                                             shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: Colors.white,
+                                              width: 1.5,
+                                            ),
+                                          ),
+                                          alignment: Alignment.center,
+                                          child: Text(
+                                            unreadCount > 99
+                                                ? '99+'
+                                                : unreadCount.toString(),
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.bold,
+                                              height: 1,
+                                            ),
                                           ),
                                         ),
                                       ),

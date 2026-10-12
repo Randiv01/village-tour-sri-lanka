@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../repositories/homestay_booking_repository.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../models/notification_model.dart';
@@ -225,22 +226,594 @@ class _TravelerBookingDetailsTab extends StatelessWidget {
           separatorBuilder: (context, index) =>
               const Divider(height: 1, color: AppColors.border),
           itemBuilder: (context, index) {
+            return _TravelerBookingNotificationItem(
+              notif: notifications[index],
+              repo: repo,
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _TravelerBookingNotificationItem extends StatefulWidget {
+  final NotificationModel notif;
+  final NotificationRepository repo;
+
+  const _TravelerBookingNotificationItem({
+    required this.notif,
+    required this.repo,
+  });
+
+  @override
+  State<_TravelerBookingNotificationItem> createState() =>
+      _TravelerBookingNotificationItemState();
+}
+
+class _TravelerBookingNotificationItemState
+    extends State<_TravelerBookingNotificationItem> {
+  String? _hostName;
+  String? _homestayTitle;
+
+  @override
+  void initState() {
+    super.initState();
+    _hostName = widget.notif.hostName;
+    _homestayTitle = widget.notif.homestayTitle;
+
+    if (_hostName == null || _homestayTitle == null) {
+      _resolveBookingDetails();
+    }
+  }
+
+  Future<void> _resolveBookingDetails() async {
+    final bookingId = widget.notif.relatedId;
+    if (bookingId == null || bookingId.isEmpty) return;
+
+    try {
+      final booking =
+          await HomestayBookingRepository().getBookingById(bookingId);
+      if (booking != null) {
+        String resolvedHost = 'Host';
+        try {
+          final hostDoc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(booking.hostId)
+              .get();
+          if (hostDoc.exists && hostDoc.data() != null) {
+            resolvedHost =
+                hostDoc.data()!['fullName'] as String? ?? 'Host';
+          }
+        } catch (_) {}
+
+        if (mounted) {
+          setState(() {
+            _hostName ??= resolvedHost;
+            _homestayTitle ??= booking.homestayTitle;
+          });
+        }
+      }
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final notif = widget.notif;
+    final timeStr = DateFormat('MMM d, h:mm a').format(notif.createdAt);
+
+    IconData icon = Icons.event_available;
+    Color iconColor = const Color(0xFF1E6B52);
+    if (notif.title.toLowerCase().contains('approved') ||
+        notif.title.toLowerCase().contains('accepted')) {
+      icon = Icons.check_circle_outline;
+      iconColor = const Color(0xFF1E6B52);
+    } else if (notif.title.toLowerCase().contains('declined') ||
+        notif.title.toLowerCase().contains('rejected')) {
+      icon = Icons.cancel_outlined;
+      iconColor = AppColors.error;
+    } else if (notif.title.toLowerCase().contains('confirmed')) {
+      icon = Icons.verified;
+      iconColor = Colors.teal;
+    }
+
+    return Dismissible(
+      key: Key(notif.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        color: AppColors.error,
+        child: const Icon(Icons.delete, color: Colors.white),
+      ),
+      onDismissed: (_) {
+        widget.repo.deleteNotification(notif.id);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Notification removed')),
+        );
+      },
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
+        leading: Stack(
+          children: [
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: iconColor.withValues(alpha: 0.12),
+              child: Icon(icon, color: iconColor, size: 24),
+            ),
+            if (!notif.read)
+              Positioned(
+                right: 0,
+                top: 0,
+                child: Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: iconColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        title: Text(
+          notif.title,
+          style: AppTextStyles.labelLarge.copyWith(
+            fontWeight: notif.read ? FontWeight.w600 : FontWeight.bold,
+            color: AppColors.primaryDark,
+            fontSize: 16,
+          ),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_homestayTitle != null && _homestayTitle!.isNotEmpty) ...[
+              const SizedBox(height: 3),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.home_outlined,
+                    size: 14,
+                    color: Color(0xFFC47F46),
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      _homestayTitle!,
+                      style: AppTextStyles.caption.copyWith(
+                        color: const Color(0xFFC47F46),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            if (_hostName != null && _hostName!.isNotEmpty) ...[
+              const SizedBox(height: 2),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.person_outline,
+                    size: 14,
+                    color: AppColors.textSecondary,
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      'Host: $_hostName',
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.primaryDark,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 4),
+            Text(
+              notif.message,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: notif.read
+                    ? AppColors.textSecondary
+                    : AppColors.textPrimary,
+                fontSize: 14,
+                fontWeight: notif.read ? FontWeight.normal : FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              timeStr,
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.textSecondary,
+                fontSize: 11,
+              ),
+            ),
+          ],
+        ),
+        trailing: IconButton(
+          icon: const Icon(
+            Icons.delete_outline,
+            size: 20,
+            color: AppColors.textSecondary,
+          ),
+          onPressed: () {
+            widget.repo.deleteNotification(notif.id);
+          },
+        ),
+        onTap: () async {
+          if (!notif.read) {
+            await widget.repo.markAsRead(notif.id);
+          }
+        },
+      ),
+    );
+  }
+}
+
+class _TravelerHostMessagesTab extends StatelessWidget {
+  const _TravelerHostMessagesTab();
+
+  @override
+  Widget build(BuildContext context) {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    if (currentUserId == null) {
+      return const Center(child: Text('Not logged in'));
+    }
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('hostChats')
+          .where('touristId', isEqualTo: currentUserId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        var chats = snapshot.data?.docs.toList() ?? [];
+
+        // Sort locally by lastMessageTime descending
+        chats.sort((a, b) {
+          final dataA = a.data() as Map<String, dynamic>;
+          final dataB = b.data() as Map<String, dynamic>;
+          final timeA = dataA['lastMessageTime'] as Timestamp?;
+          final timeB = dataB['lastMessageTime'] as Timestamp?;
+
+          if (timeA == null && timeB == null) return 0;
+          if (timeA == null) return 1;
+          if (timeB == null) return -1;
+
+          return timeB.compareTo(timeA);
+        });
+
+        if (chats.isEmpty) {
+          return _buildEmptyState(
+            Icons.chat_bubble_outline,
+            'No Messages Yet',
+            'You have no messages from hosts.',
+          );
+        }
+
+        return ListView.separated(
+          itemCount: chats.length,
+          separatorBuilder: (context, index) =>
+              const Divider(height: 1, color: AppColors.border),
+          itemBuilder: (context, index) {
+            final chatDoc = chats[index];
+            final chatData = chatDoc.data() as Map<String, dynamic>;
+            final hostId = chatData['hostId'] as String? ?? '';
+            final homestayId = chatData['homestayId'] as String? ?? '';
+            final homestayTitle =
+                chatData['homestayTitle'] as String? ?? 'Homestay Stay';
+            final lastMessage = chatData['lastTranslatedMessage'] as String? ??
+                chatData['lastMessage'] as String? ??
+                '';
+            final lastMessageTime = chatData['lastMessageTime'] as Timestamp?;
+            final unreadCount =
+                chatData['unreadCount_$currentUserId'] as int? ?? 0;
+
+            return StreamBuilder<DocumentSnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(hostId)
+                  .snapshots(),
+              builder: (context, hostSnapshot) {
+                String hostName = chatData['hostName'] as String? ?? 'Host';
+                String hostImage = '';
+
+                if (hostSnapshot.hasData &&
+                    hostSnapshot.data != null &&
+                    hostSnapshot.data!.exists) {
+                  final userData =
+                      hostSnapshot.data!.data() as Map<String, dynamic>;
+                  hostName = userData['fullName'] as String? ?? hostName;
+                  hostImage = userData['profileImageUrl'] as String? ?? '';
+                }
+
+                return StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('hostChats')
+                      .doc(chatDoc.id)
+                      .collection('messages')
+                      .orderBy('timestamp', descending: true)
+                      .limit(1)
+                      .snapshots(),
+                  builder: (context, msgSnapshot) {
+                    String displayMessage = lastMessage;
+                    DateTime? displayTime = lastMessageTime?.toDate();
+                    int effectiveUnread = unreadCount;
+
+                    if (msgSnapshot.hasData &&
+                        msgSnapshot.data != null &&
+                        msgSnapshot.data!.docs.isNotEmpty) {
+                      final latestDoc = msgSnapshot.data!.docs.first;
+                      final latestData =
+                          latestDoc.data() as Map<String, dynamic>;
+                      final senderId = latestData['senderId'] as String? ?? '';
+                      final isFromHost = senderId != currentUserId;
+
+                      final msgText = latestData['text'] as String? ?? '';
+                      final msgTranslated =
+                          latestData['translatedText'] as String? ?? '';
+
+                      if (isFromHost) {
+                        if (msgTranslated.isNotEmpty &&
+                            msgTranslated != 'Ready' &&
+                            msgTranslated != 'Translation failed') {
+                          displayMessage = msgTranslated;
+                        } else if (msgText.isNotEmpty) {
+                          displayMessage = msgText;
+                        }
+                      } else {
+                        if (msgText.isNotEmpty) {
+                          displayMessage = msgText;
+                        } else if (msgTranslated.isNotEmpty) {
+                          displayMessage = msgTranslated;
+                        }
+                      }
+
+                      final msgTimestamp =
+                          latestData['timestamp'] as Timestamp?;
+                      if (msgTimestamp != null) {
+                        displayTime = msgTimestamp.toDate();
+                      }
+
+                      final isRead = latestData['read'] as bool? ?? false;
+                      if (isFromHost && !isRead) {
+                        effectiveUnread = effectiveUnread > 0 ? effectiveUnread : 1;
+                      }
+                    }
+
+                    String timeStr = '';
+                    if (displayTime != null) {
+                      timeStr = DateFormat('MMM d, h:mm a').format(displayTime);
+                    }
+
+                    return ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      leading: CircleAvatar(
+                        radius: 28,
+                        backgroundImage: hostImage.isNotEmpty
+                            ? NetworkImage(hostImage)
+                            : null,
+                        backgroundColor: AppColors.border,
+                        child: hostImage.isEmpty
+                            ? const Icon(
+                                Icons.person,
+                                color: AppColors.textSecondary,
+                                size: 28,
+                              )
+                            : null,
+                      ),
+                      title: Text(
+                        hostName,
+                        style: AppTextStyles.labelLarge.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryDark,
+                          fontSize: 16,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 4),
+                          Text(
+                            homestayTitle,
+                            style: AppTextStyles.caption.copyWith(
+                              color: const Color(0xFFC47F46),
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            displayMessage,
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: effectiveUnread > 0
+                                  ? AppColors.textPrimary
+                                  : AppColors.textSecondary,
+                              fontWeight: effectiveUnread > 0
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              fontSize: 14,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                      trailing: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (timeStr.isNotEmpty)
+                            Text(
+                              timeStr,
+                              style: AppTextStyles.caption.copyWith(
+                                color: effectiveUnread > 0
+                                    ? const Color(0xFF1E6B52)
+                                    : AppColors.textSecondary,
+                                fontWeight: effectiveUnread > 0
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                fontSize: 11,
+                              ),
+                            ),
+                          if (effectiveUnread > 0) ...[
+                            const SizedBox(height: 6),
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF1E6B52),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Text(
+                                effectiveUnread.toString(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      onTap: () {
+                        // Reset unread count for tourist
+                        FirebaseFirestore.instance
+                            .collection('hostChats')
+                            .doc(chatDoc.id)
+                            .update({'unreadCount_$currentUserId': 0});
+
+                        FirebaseFirestore.instance
+                            .collection('hostChats')
+                            .doc(chatDoc.id)
+                            .collection('messages')
+                            .where('receiverId', isEqualTo: currentUserId)
+                            .where('read', isEqualTo: false)
+                            .get()
+                            .then((snap) {
+                          for (var doc in snap.docs) {
+                            doc.reference.update({'read': true});
+                          }
+                        });
+
+                        // Also mark message notifications for this chat as read
+                        FirebaseFirestore.instance
+                            .collection('notifications')
+                            .where('userId', isEqualTo: currentUserId)
+                            .where('relatedId', isEqualTo: chatDoc.id)
+                            .where('read', isEqualTo: false)
+                            .get()
+                            .then((snap) {
+                          for (var doc in snap.docs) {
+                            doc.reference.update({'read': true});
+                          }
+                        });
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => TravelerHostChatScreen(
+                              chatId: chatDoc.id,
+                              hostId: hostId,
+                              hostName: hostName,
+                              hostImage: hostImage,
+                              hostLanguages: 'English, Sinhala',
+                              homestayId: homestayId,
+                              homestayTitle: homestayTitle,
+                              homestayPrice: '',
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _TravelerOthersTab extends StatelessWidget {
+  const _TravelerOthersTab();
+
+  @override
+  Widget build(BuildContext context) {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    if (currentUserId == null) {
+      return const Center(child: Text('Not logged in'));
+    }
+
+    final repo = NotificationRepository();
+
+    return StreamBuilder<List<NotificationModel>>(
+      stream: repo.getNotificationsStream(
+        userId: currentUserId,
+        isBooking: false,
+      ),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        final notifications = snapshot.data ?? [];
+        if (notifications.isEmpty) {
+          return _buildEmptyState(
+            Icons.notifications_off_outlined,
+            'All Caught Up!',
+            'You have no other notifications.',
+          );
+        }
+
+        return ListView.separated(
+          itemCount: notifications.length,
+          separatorBuilder: (context, index) =>
+              const Divider(height: 1, color: AppColors.border),
+          itemBuilder: (context, index) {
             final notif = notifications[index];
             final timeStr = DateFormat('MMM d, h:mm a').format(notif.createdAt);
 
-            IconData icon = Icons.event_available;
+            IconData icon = Icons.notifications_active_outlined;
             Color iconColor = const Color(0xFF1E6B52);
-            if (notif.title.toLowerCase().contains('approved') ||
-                notif.title.toLowerCase().contains('accepted')) {
-              icon = Icons.check_circle_outline;
+            if (notif.type == 'review') {
+              icon = Icons.star;
+              iconColor = const Color(0xFFC47F46);
+            } else if (notif.type == 'promotion') {
+              icon = Icons.local_offer;
+              iconColor = Colors.orange;
+            } else if (notif.type == 'message') {
+              icon = Icons.chat_bubble_outline;
               iconColor = const Color(0xFF1E6B52);
-            } else if (notif.title.toLowerCase().contains('declined') ||
-                notif.title.toLowerCase().contains('rejected')) {
-              icon = Icons.cancel_outlined;
-              iconColor = AppColors.error;
-            } else if (notif.title.toLowerCase().contains('confirmed')) {
-              icon = Icons.verified;
-              iconColor = Colors.teal;
             }
 
             return Dismissible(
@@ -327,215 +900,19 @@ class _TravelerBookingDetailsTab extends StatelessWidget {
                   if (!notif.read) {
                     await repo.markAsRead(notif.id);
                   }
-                },
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-}
-
-class _TravelerHostMessagesTab extends StatelessWidget {
-  const _TravelerHostMessagesTab();
-
-  @override
-  Widget build(BuildContext context) {
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-    if (currentUserId == null) {
-      return const Center(child: Text('Not logged in'));
-    }
-
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('hostChats')
-          .where('touristId', isEqualTo: currentUserId)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
-        }
-
-        var chats = snapshot.data?.docs.toList() ?? [];
-
-        // Sort locally by lastMessageTime descending
-        chats.sort((a, b) {
-          final dataA = a.data() as Map<String, dynamic>;
-          final dataB = b.data() as Map<String, dynamic>;
-          final timeA = dataA['lastMessageTime'] as Timestamp?;
-          final timeB = dataB['lastMessageTime'] as Timestamp?;
-
-          if (timeA == null && timeB == null) return 0;
-          if (timeA == null) return 1;
-          if (timeB == null) return -1;
-
-          return timeB.compareTo(timeA);
-        });
-
-        if (chats.isEmpty) {
-          return _buildEmptyState(
-            Icons.chat_bubble_outline,
-            'No Messages Yet',
-            'You have no messages from hosts.',
-          );
-        }
-
-        return ListView.separated(
-          itemCount: chats.length,
-          separatorBuilder: (context, index) =>
-              const Divider(height: 1, color: AppColors.border),
-          itemBuilder: (context, index) {
-            final chatDoc = chats[index];
-            final chatData = chatDoc.data() as Map<String, dynamic>;
-            final hostId = chatData['hostId'] as String? ?? '';
-            final homestayId = chatData['homestayId'] as String? ?? '';
-            final homestayTitle =
-                chatData['homestayTitle'] as String? ?? 'Homestay Stay';
-            final lastMessage =
-                chatData['lastMessage'] as String? ?? '';
-            final lastMessageTime = chatData['lastMessageTime'] as Timestamp?;
-            final unreadCount =
-                chatData['unreadCount_$currentUserId'] as int? ?? 0;
-
-            return StreamBuilder<DocumentSnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(hostId)
-                  .snapshots(),
-              builder: (context, hostSnapshot) {
-                String hostName = chatData['hostName'] as String? ?? 'Host';
-                String hostImage = '';
-
-                if (hostSnapshot.hasData &&
-                    hostSnapshot.data != null &&
-                    hostSnapshot.data!.exists) {
-                  final userData =
-                      hostSnapshot.data!.data() as Map<String, dynamic>;
-                  hostName = userData['fullName'] as String? ?? hostName;
-                  hostImage = userData['profileImageUrl'] as String? ?? '';
-                }
-
-                String timeStr = '';
-                if (lastMessageTime != null) {
-                  timeStr = DateFormat('MMM d, h:mm a')
-                      .format(lastMessageTime.toDate());
-                }
-
-                return ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  leading: CircleAvatar(
-                    radius: 28,
-                    backgroundImage: hostImage.isNotEmpty
-                        ? NetworkImage(hostImage)
-                        : null,
-                    backgroundColor: AppColors.border,
-                    child: hostImage.isEmpty
-                        ? const Icon(
-                            Icons.person,
-                            color: AppColors.textSecondary,
-                            size: 28,
-                          )
-                        : null,
-                  ),
-                  title: Text(
-                    hostName,
-                    style: AppTextStyles.labelLarge.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primaryDark,
-                      fontSize: 16,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 4),
-                      Text(
-                        homestayTitle,
-                        style: AppTextStyles.caption.copyWith(
-                          color: const Color(0xFFC47F46),
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        lastMessage,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: unreadCount > 0
-                              ? AppColors.textPrimary
-                              : AppColors.textSecondary,
-                          fontWeight: unreadCount > 0
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                          fontSize: 14,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                  trailing: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (timeStr.isNotEmpty)
-                        Text(
-                          timeStr,
-                          style: AppTextStyles.caption.copyWith(
-                            color: unreadCount > 0
-                                ? const Color(0xFF1E6B52)
-                                : AppColors.textSecondary,
-                            fontWeight: unreadCount > 0
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                            fontSize: 11,
-                          ),
-                        ),
-                      if (unreadCount > 0) ...[
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF1E6B52),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Text(
-                            unreadCount.toString(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  onTap: () {
-                    // Reset unread count for tourist
-                    FirebaseFirestore.instance
-                        .collection('hostChats')
-                        .doc(chatDoc.id)
-                        .update({'unreadCount_$currentUserId': 0});
-
+                  if (notif.type == 'message' && notif.relatedId != null && context.mounted) {
+                    final hostId = notif.metadata?['hostId'] ?? '';
+                    final hostName = notif.metadata?['hostName'] ?? notif.title;
+                    final homestayId = notif.metadata?['homestayId'] ?? '';
+                    final homestayTitle = notif.metadata?['homestayTitle'] ?? '';
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (_) => TravelerHostChatScreen(
+                          chatId: notif.relatedId,
                           hostId: hostId,
                           hostName: hostName,
-                          hostImage: hostImage,
+                          hostImage: '',
                           hostLanguages: 'English, Sinhala',
                           homestayId: homestayId,
                           homestayTitle: homestayTitle,
@@ -543,146 +920,6 @@ class _TravelerHostMessagesTab extends StatelessWidget {
                         ),
                       ),
                     );
-                  },
-                );
-              },
-            );
-          },
-        );
-      },
-    );
-  }
-}
-
-class _TravelerOthersTab extends StatelessWidget {
-  const _TravelerOthersTab();
-
-  @override
-  Widget build(BuildContext context) {
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-    if (currentUserId == null) {
-      return const Center(child: Text('Not logged in'));
-    }
-
-    final repo = NotificationRepository();
-
-    return StreamBuilder<List<NotificationModel>>(
-      stream: repo.getNotificationsStream(
-        userId: currentUserId,
-        isBooking: false,
-      ),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
-        }
-
-        final notifications = snapshot.data ?? [];
-        if (notifications.isEmpty) {
-          return _buildEmptyState(
-            Icons.notifications_off_outlined,
-            'All Caught Up!',
-            'You have no other notifications.',
-          );
-        }
-
-        return ListView.separated(
-          itemCount: notifications.length,
-          separatorBuilder: (context, index) =>
-              const Divider(height: 1, color: AppColors.border),
-          itemBuilder: (context, index) {
-            final notif = notifications[index];
-            final timeStr = DateFormat('MMM d, h:mm a').format(notif.createdAt);
-
-            return Dismissible(
-              key: Key(notif.id),
-              direction: DismissDirection.endToStart,
-              background: Container(
-                alignment: Alignment.centerRight,
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                color: AppColors.error,
-                child: const Icon(Icons.delete, color: Colors.white),
-              ),
-              onDismissed: (_) {
-                repo.deleteNotification(notif.id);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Notification removed')),
-                );
-              },
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                leading: Stack(
-                  children: [
-                    CircleAvatar(
-                      radius: 24,
-                      backgroundColor: const Color(0xFF1E6B52).withValues(alpha: 0.12),
-                      child: const Icon(
-                        Icons.notifications_active_outlined,
-                        color: Color(0xFF1E6B52),
-                        size: 24,
-                      ),
-                    ),
-                    if (!notif.read)
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: Container(
-                          width: 10,
-                          height: 10,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF1E6B52),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                title: Text(
-                  notif.title,
-                  style: AppTextStyles.labelLarge.copyWith(
-                    fontWeight: notif.read ? FontWeight.w600 : FontWeight.bold,
-                    color: AppColors.primaryDark,
-                    fontSize: 16,
-                  ),
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 4),
-                    Text(
-                      notif.message,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: notif.read
-                            ? AppColors.textSecondary
-                            : AppColors.textPrimary,
-                        fontSize: 14,
-                        fontWeight: notif.read ? FontWeight.normal : FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      timeStr,
-                      style: AppTextStyles.caption.copyWith(
-                        color: AppColors.textSecondary,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.textSecondary),
-                  onPressed: () {
-                    repo.deleteNotification(notif.id);
-                  },
-                ),
-                onTap: () async {
-                  if (!notif.read) {
-                    await repo.markAsRead(notif.id);
                   }
                 },
               ),

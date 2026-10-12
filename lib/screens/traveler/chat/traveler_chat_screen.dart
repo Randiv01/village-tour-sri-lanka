@@ -58,6 +58,7 @@ class _TravelerChatScreenState extends State<TravelerChatScreen> {
 
   @override
   void dispose() {
+    _speech.stop();
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -65,6 +66,7 @@ class _TravelerChatScreenState extends State<TravelerChatScreen> {
 
   void _onMessageChanged(String text) async {
     if (text.isEmpty) {
+      if (!mounted) return;
       setState(() {
         _sinhalaPreview = 'Ready';
         _isTranslating = false;
@@ -72,6 +74,7 @@ class _TravelerChatScreenState extends State<TravelerChatScreen> {
       return;
     }
 
+    if (!mounted) return;
     setState(() {
       _isTranslating = true;
     });
@@ -82,11 +85,13 @@ class _TravelerChatScreenState extends State<TravelerChatScreen> {
         from: 'en',
         to: 'si',
       );
+      if (!mounted) return;
       setState(() {
         _sinhalaPreview = translation.text;
         _isTranslating = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _sinhalaPreview = 'Translation failed';
         _isTranslating = false;

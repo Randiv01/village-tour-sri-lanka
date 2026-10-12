@@ -672,6 +672,7 @@ class TravelerHomeScreenState extends State<TravelerHomeScreen>
                       return AppIconButton(
                         icon: Icons.notifications_none,
                         hasBadge: unreadCount > 0,
+                        badgeCount: unreadCount,
                         onTap: () {
                           Navigator.push(
                             context,

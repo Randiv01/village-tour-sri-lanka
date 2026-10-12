@@ -392,6 +392,9 @@ class _OthersTab extends StatelessWidget {
             } else if (notif.type == 'promotion') {
               icon = Icons.local_offer;
               iconColor = Colors.orange;
+            } else if (notif.type == 'message') {
+              icon = Icons.chat_bubble_outline;
+              iconColor = const Color(0xFF1E6B52);
             }
 
             return Dismissible(
@@ -477,6 +480,27 @@ class _OthersTab extends StatelessWidget {
                 onTap: () async {
                   if (!notif.read) {
                     await repo.markAsRead(notif.id);
+                  }
+                  if (notif.type == 'message' && notif.relatedId != null && context.mounted) {
+                    final touristId = notif.metadata?['touristId'] ?? '';
+                    final touristName = notif.metadata?['touristName'] ?? notif.title;
+                    final homestayId = notif.metadata?['homestayId'] ?? '';
+                    final homestayTitle = notif.metadata?['homestayTitle'] ?? '';
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => HostChatScreen(
+                          chatId: notif.relatedId,
+                          touristId: touristId,
+                          touristName: touristName,
+                          touristImage: '',
+                          touristLanguages: 'English',
+                          homestayId: homestayId,
+                          homestayTitle: homestayTitle,
+                          packagePrice: '',
+                        ),
+                      ),
+                    );
                   }
                 },
               ),
@@ -572,129 +596,211 @@ class _TouristMessagesTab extends StatelessWidget {
                   touristImage = userData['profileImageUrl'] as String? ?? '';
                 }
 
-                String timeStr = '';
-                if (lastMessageTime != null) {
-                  timeStr = DateFormat('MMM d, h:mm a')
-                      .format(lastMessageTime.toDate());
-                }
+                return StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('hostChats')
+                      .doc(chatDoc.id)
+                      .collection('messages')
+                      .orderBy('timestamp', descending: true)
+                      .limit(1)
+                      .snapshots(),
+                  builder: (context, msgSnapshot) {
+                    String displayMessage = lastMessage;
+                    DateTime? displayTime = lastMessageTime?.toDate();
+                    int effectiveUnread = unreadCount;
 
-                return ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  leading: CircleAvatar(
-                    radius: 28,
-                    backgroundImage: touristImage.isNotEmpty
-                        ? NetworkImage(touristImage)
-                        : null,
-                    backgroundColor: AppColors.border,
-                    child: touristImage.isEmpty
-                        ? const Icon(
-                            Icons.person,
-                            color: AppColors.textSecondary,
-                            size: 28,
-                          )
-                        : null,
-                  ),
-                  title: Text(
-                    touristName,
-                    style: AppTextStyles.labelLarge.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primaryDark,
-                      fontSize: 16,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 4),
-                      Text(
-                        homestayTitle,
-                        style: AppTextStyles.caption.copyWith(
-                          color: const Color(0xFFC47F46),
-                          fontWeight: FontWeight.w600,
+                    if (msgSnapshot.hasData &&
+                        msgSnapshot.data != null &&
+                        msgSnapshot.data!.docs.isNotEmpty) {
+                      final latestDoc = msgSnapshot.data!.docs.first;
+                      final latestData =
+                          latestDoc.data() as Map<String, dynamic>;
+                      final senderId = latestData['senderId'] as String? ?? '';
+                      final isFromTourist = senderId != currentUserId;
+
+                      final msgText = latestData['text'] as String? ?? '';
+                      final msgTranslated =
+                          latestData['translatedText'] as String? ?? '';
+
+                      if (isFromTourist) {
+                        if (msgTranslated.isNotEmpty &&
+                            msgTranslated != 'Ready' &&
+                            msgTranslated != 'Translation failed') {
+                          displayMessage = msgTranslated;
+                        } else if (msgText.isNotEmpty) {
+                          displayMessage = msgText;
+                        }
+                      } else {
+                        if (msgText.isNotEmpty) {
+                          displayMessage = msgText;
+                        } else if (msgTranslated.isNotEmpty) {
+                          displayMessage = msgTranslated;
+                        }
+                      }
+
+                      final msgTimestamp =
+                          latestData['timestamp'] as Timestamp?;
+                      if (msgTimestamp != null) {
+                        displayTime = msgTimestamp.toDate();
+                      }
+
+                      final isRead = latestData['read'] as bool? ?? false;
+                      if (isFromTourist && !isRead) {
+                        effectiveUnread = effectiveUnread > 0 ? effectiveUnread : 1;
+                      }
+                    }
+
+                    String timeStr = '';
+                    if (displayTime != null) {
+                      timeStr = DateFormat('MMM d, h:mm a').format(displayTime);
+                    }
+
+                    return ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      leading: CircleAvatar(
+                        radius: 28,
+                        backgroundImage: touristImage.isNotEmpty
+                            ? NetworkImage(touristImage)
+                            : null,
+                        backgroundColor: AppColors.border,
+                        child: touristImage.isEmpty
+                            ? const Icon(
+                                Icons.person,
+                                color: AppColors.textSecondary,
+                                size: 28,
+                              )
+                            : null,
+                      ),
+                      title: Text(
+                        touristName,
+                        style: AppTextStyles.labelLarge.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryDark,
+                          fontSize: 16,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        lastMessage,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: unreadCount > 0
-                              ? AppColors.textPrimary
-                              : AppColors.textSecondary,
-                          fontWeight: unreadCount > 0
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                          fontSize: 14,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 4),
+                          Text(
+                            homestayTitle,
+                            style: AppTextStyles.caption.copyWith(
+                              color: const Color(0xFFC47F46),
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            displayMessage,
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: effectiveUnread > 0
+                                  ? AppColors.textPrimary
+                                  : AppColors.textSecondary,
+                              fontWeight: effectiveUnread > 0
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              fontSize: 14,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  trailing: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (timeStr.isNotEmpty)
-                        Text(
-                          timeStr,
-                          style: AppTextStyles.caption.copyWith(
-                            color: unreadCount > 0
-                                ? const Color(0xFF1E6B52)
-                                : AppColors.textSecondary,
-                            fontWeight: unreadCount > 0
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                            fontSize: 11,
-                          ),
-                        ),
-                      if (unreadCount > 0) ...[
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF1E6B52),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Text(
-                            unreadCount.toString(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
+                      trailing: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (timeStr.isNotEmpty)
+                            Text(
+                              timeStr,
+                              style: AppTextStyles.caption.copyWith(
+                                color: effectiveUnread > 0
+                                    ? const Color(0xFF1E6B52)
+                                    : AppColors.textSecondary,
+                                fontWeight: effectiveUnread > 0
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                fontSize: 11,
+                              ),
+                            ),
+                          if (effectiveUnread > 0) ...[
+                            const SizedBox(height: 6),
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF1E6B52),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Text(
+                                effectiveUnread.toString(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      onTap: () {
+                        // Reset unread count for host
+                        FirebaseFirestore.instance
+                            .collection('hostChats')
+                            .doc(chatDoc.id)
+                            .update({'unreadCount_$currentUserId': 0});
+
+                        FirebaseFirestore.instance
+                            .collection('hostChats')
+                            .doc(chatDoc.id)
+                            .collection('messages')
+                            .where('receiverId', isEqualTo: currentUserId)
+                            .where('read', isEqualTo: false)
+                            .get()
+                            .then((snap) {
+                          for (var doc in snap.docs) {
+                            doc.reference.update({'read': true});
+                          }
+                        });
+
+                        // Also mark message notifications for this chat as read
+                        FirebaseFirestore.instance
+                            .collection('notifications')
+                            .where('userId', isEqualTo: currentUserId)
+                            .where('relatedId', isEqualTo: chatDoc.id)
+                            .where('read', isEqualTo: false)
+                            .get()
+                            .then((snap) {
+                          for (var doc in snap.docs) {
+                            doc.reference.update({'read': true});
+                          }
+                        });
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => HostChatScreen(
+                              chatId: chatDoc.id,
+                              touristId: touristId,
+                              touristName: touristName,
+                              touristImage: touristImage,
+                              touristLanguages: 'English',
+                              homestayId: homestayId,
+                              homestayTitle: homestayTitle,
+                              packagePrice: '',
                             ),
                           ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  onTap: () {
-                    // Reset unread count for host
-                    FirebaseFirestore.instance
-                        .collection('hostChats')
-                        .doc(chatDoc.id)
-                        .update({'unreadCount_$currentUserId': 0});
-
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => HostChatScreen(
-                          touristId: touristId,
-                          touristName: touristName,
-                          touristImage: touristImage,
-                          touristLanguages: 'English',
-                          homestayId: homestayId,
-                          homestayTitle: homestayTitle,
-                          packagePrice: '',
-                        ),
-                      ),
+                        );
+                      },
                     );
                   },
                 );

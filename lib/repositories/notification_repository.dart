@@ -61,7 +61,7 @@ class NotificationRepository {
         if (isBooking) {
           list = list.where((n) => n.isBooking).toList();
         } else {
-          list = list.where((n) => !n.isBooking && !n.isMessage).toList();
+          list = list.where((n) => !n.isBooking).toList();
         }
       }
 
