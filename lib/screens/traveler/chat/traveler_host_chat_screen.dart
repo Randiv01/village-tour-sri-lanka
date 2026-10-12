@@ -54,6 +54,14 @@ class _TravelerHostChatScreenState extends State<TravelerHostChatScreen> {
     _speech = stt.SpeechToText();
     final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
     _chatId = '${currentUserId}_${widget.hostId}_${widget.homestayId}';
+
+    // Clear unread count for current user
+    if (currentUserId.isNotEmpty) {
+      FirebaseFirestore.instance
+          .collection('hostChats')
+          .doc(_chatId)
+          .set({'unreadCount_$currentUserId': 0}, SetOptions(merge: true));
+    }
   }
 
   @override

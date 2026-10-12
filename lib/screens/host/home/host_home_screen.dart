@@ -17,6 +17,7 @@ import '../../../../repositories/homestay_repository.dart';
 import '../../../../repositories/homestay_booking_repository.dart';
 import '../bookings/host_bookings_screen.dart';
 import '../notifications/host_notifications_screen.dart';
+import '../../../../repositories/notification_repository.dart';
 import 'package:intl/intl.dart';
 import '../../../../theme/app_radius.dart';
 
@@ -117,6 +118,7 @@ class HostHomeScreen extends StatelessWidget {
                 firstName = fullName.split(' ').first;
               }
 
+              final currentUserId = FirebaseAuth.instance.currentUser?.uid;
               return Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.lg,
@@ -138,35 +140,49 @@ class HostHomeScreen extends StatelessWidget {
                               ),
                             );
                           },
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(color: Colors.black12, blurRadius: 4),
-                              ],
-                            ),
-                            child: Stack(
-                              children: [
-                                const Icon(
-                                  Icons.notifications_none,
-                                  color: AppColors.primaryDark,
-                                ),
-                                Positioned(
-                                  right: 2,
-                                  top: 2,
-                                  child: Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: const BoxDecoration(
-                                      color: Colors.green,
-                                      shape: BoxShape.circle,
+                          child: StreamBuilder<int>(
+                            stream: currentUserId != null
+                                ? NotificationRepository()
+                                    .getTotalUnreadCountForHost(currentUserId)
+                                : const Stream.empty(),
+                            builder: (context, snapshot) {
+                              final unreadCount = snapshot.data ?? 0;
+                              return Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black12,
+                                      blurRadius: 4,
                                     ),
-                                  ),
+                                  ],
                                 ),
-                              ],
-                            ),
+                                child: Stack(
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    const Icon(
+                                      Icons.notifications_none,
+                                      color: AppColors.primaryDark,
+                                    ),
+                                    if (unreadCount > 0)
+                                      Positioned(
+                                        right: 2,
+                                        top: 2,
+                                        child: Container(
+                                          width: 8,
+                                          height: 8,
+                                          decoration: const BoxDecoration(
+                                            color: Colors.green,
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              );
+                            },
                           ),
                         ),
                         const SizedBox(width: AppSpacing.md),

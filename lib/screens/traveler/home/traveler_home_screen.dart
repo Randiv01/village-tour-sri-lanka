@@ -19,6 +19,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../models/destination.dart';
 import '../destinations/explore_destinations_screen.dart';
 import '../destinations/destination_details_screen.dart';
+import '../notifications/traveler_notifications_screen.dart';
+import '../../../../repositories/notification_repository.dart';
 import '../../common/auth/auth_guard.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -646,10 +648,43 @@ class TravelerHomeScreenState extends State<TravelerHomeScreen>
           // Notification & Profile
           Row(
             children: [
-              AppIconButton(
-                icon: Icons.notifications_none,
-                hasBadge: true,
-                onTap: () {},
+              StreamBuilder<User?>(
+                stream: FirebaseAuth.instance.authStateChanges(),
+                builder: (context, authSnap) {
+                  final uid = authSnap.data?.uid;
+                  if (uid == null) {
+                    return AppIconButton(
+                      icon: Icons.notifications_none,
+                      hasBadge: false,
+                      onTap: () {
+                        AuthGuard.requireAuth(
+                          context: context,
+                          onAuthenticated: () {},
+                        );
+                      },
+                    );
+                  }
+                  return StreamBuilder<int>(
+                    stream: NotificationRepository()
+                        .getTotalUnreadCountForTraveler(uid),
+                    builder: (context, countSnap) {
+                      final unreadCount = countSnap.data ?? 0;
+                      return AppIconButton(
+                        icon: Icons.notifications_none,
+                        hasBadge: unreadCount > 0,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  const TravelerNotificationsScreen(),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  );
+                },
               ),
               const SizedBox(width: AppSpacing.sm),
               _buildProfileIcon(context),

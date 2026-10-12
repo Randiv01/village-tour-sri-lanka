@@ -167,6 +167,31 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
           ) // User can only have one review per homestay
           .set(reviewData, SetOptions(merge: true));
 
+      // Notify the host about the review
+      try {
+        final hsDoc = await FirebaseFirestore.instance
+            .collection('homestays')
+            .doc(widget.homestayId)
+            .get();
+        if (hsDoc.exists) {
+          final hostId = hsDoc.data()?['hostId'] as String?;
+          final title = hsDoc.data()?['title'] as String? ?? 'your homestay';
+          if (hostId != null && hostId != _currentUserId) {
+            final reviewerName = userData?['fullName'] ?? 'A guest';
+            await FirebaseFirestore.instance.collection('notifications').add({
+              'userId': hostId,
+              'recipientRole': 'host',
+              'title': 'New Review Received',
+              'message': '$reviewerName left a ${_rating.toStringAsFixed(1)}★ review for $title.',
+              'type': 'review',
+              'read': false,
+              'createdAt': FieldValue.serverTimestamp(),
+              'relatedId': widget.homestayId,
+            });
+          }
+        }
+      } catch (_) {}
+
       if (!mounted) return;
       setState(() {
         _rating = 0;
