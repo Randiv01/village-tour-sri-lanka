@@ -114,4 +114,13 @@ class HostTranslation {
   static String get signOutConfirmTitle => isSi ? 'ගිණුමෙන් ඉවත් වන්නද?' : 'Sign out?';
   static String get signOutConfirmMsg => isSi ? 'ඔබට මෙම ගිණුමෙන් ඉවත් වීමට අවශ්‍ය බව ස්ථිරද?' : 'Are you sure you want to sign out of your account?';
   static String get cancel => isSi ? 'අවලංගු කරන්න' : 'Cancel';
+  static String get deleteAccount => isSi ? 'ගිණුම සම්පූර්ණයෙන්ම ඉවත් කරන්න' : 'Delete Account';
+  static String get deleteAccountConfirmTitle => isSi ? 'ගිණුම සම්පූර්ණයෙන්ම ඉවත් කරන්නද?' : 'Delete Account Permanently?';
+  static String get deleteAccountConfirmMsg => isSi
+      ? 'ඔබගේ සත්කාරක ගිණුම (Host Account), ඔබ ඇතුළත් කළ සියලුම හෝම්ස්ටේ (Homestays), වෙන්කිරීම් (Bookings) සහ පුද්ගලික තොරතුරු සදහටම මැකී යනු ඇත. මෙය නැවත ලබාගත නොහැක.'
+      : 'Are you sure you want to permanently delete your Host account? This will delete your profile, all listed homestays, bookings, and personal details. This action cannot be undone.';
+  static String get deleteAccountSuccess => isSi
+      ? 'ඔබගේ ගිණුම සාර්ථකව ඉවත් කරන ලදී.'
+      : 'Your account has been permanently deleted.';
+  static String get deleteBtn => isSi ? 'ගිණුම ඉවත් කරන්න' : 'Delete Account';
 }

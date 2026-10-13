@@ -85,6 +85,8 @@ class HostProfileScreen extends StatelessWidget {
           _buildSupportSection(context, userModel, currentUser),
           const SizedBox(height: AppSpacing.xxl),
           _buildSignOutSection(context),
+          const SizedBox(height: AppSpacing.md),
+          _buildDeleteAccountSection(context),
           const SizedBox(height: AppSpacing.xxl),
         ],
       ),
@@ -273,6 +275,126 @@ class HostProfileScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildDeleteAccountSection(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: () {
+          _showDeleteAccountConfirmation(context);
+        },
+        icon: const Icon(Icons.delete_forever, color: Colors.white, size: 20),
+        label: Text(
+          HostTranslation.deleteAccount,
+          style: AppTextStyles.buttonText.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.error,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteAccountConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.cardRadius),
+        title: Row(
+          children: [
+            const Icon(
+              Icons.warning_amber_rounded,
+              color: AppColors.error,
+              size: 24,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                HostTranslation.deleteAccountConfirmTitle,
+                style: AppTextStyles.labelLarge.copyWith(
+                  fontSize: 18,
+                  color: AppColors.error,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          HostTranslation.deleteAccountConfirmMsg,
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
+            height: 1.4,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              HostTranslation.cancel,
+              style: AppTextStyles.buttonText.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          ElevatedButton.icon(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final navigator = Navigator.of(context, rootNavigator: true);
+              final messenger = ScaffoldMessenger.of(context);
+
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                useRootNavigator: true,
+                builder: (_) => const Center(
+                  child: CircularProgressIndicator(color: AppColors.error),
+                ),
+              );
+
+              try {
+                await AuthService().deleteAccount();
+                navigator.pop();
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text(HostTranslation.deleteAccountSuccess),
+                    backgroundColor: AppColors.primaryDark,
+                  ),
+                );
+              } catch (e) {
+                navigator.pop();
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text(e.toString()),
+                    backgroundColor: AppColors.error,
+                  ),
+                );
+              }
+            },
+            icon: const Icon(Icons.delete_forever, size: 18),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            label: Text(HostTranslation.deleteBtn),
+          ),
+        ],
       ),
     );
   }

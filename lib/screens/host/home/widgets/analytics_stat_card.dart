@@ -65,12 +65,17 @@ class AnalyticsStatCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.md),
-          Text(
-            value,
-            style: AppTextStyles.sectionHeading.copyWith(
-              color: AppColors.primaryDark,
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: AppTextStyles.sectionHeading.copyWith(
+                color: AppColors.primaryDark,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
+              maxLines: 1,
             ),
           ),
           if (bottomWidget != null) ...[

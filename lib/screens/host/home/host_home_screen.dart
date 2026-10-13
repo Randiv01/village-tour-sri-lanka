@@ -17,6 +17,7 @@ import '../../../../models/homestay_booking.dart';
 import '../bookings/host_bookings_screen.dart';
 import '../notifications/host_notifications_screen.dart';
 import '../../../../services/host_language_service.dart';
+import '../../../../repositories/notification_repository.dart';
 import 'widgets/analytics_stat_card.dart';
 import 'widgets/host_language_toggle_button.dart';
 
@@ -269,30 +270,35 @@ class HostHomeScreen extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Text(
-                          HostTranslation.homestayHost,
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.secondary,
-                            fontWeight: FontWeight.bold,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            HostTranslation.homestayHost,
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColors.secondary,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 8.0),
-                          child: Icon(
-                            Icons.circle,
-                            size: 4,
-                            color: AppColors.secondary,
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 8.0),
+                            child: Icon(
+                              Icons.circle,
+                              size: 4,
+                              color: AppColors.secondary,
+                            ),
                           ),
-                        ),
-                        Text(
-                          'Nilagama Cluster • ${HostTranslation.superhost}',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.secondary,
+                          Text(
+                            'Nilagama Cluster • ${HostTranslation.superhost}',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColors.secondary,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -449,7 +455,7 @@ class HostHomeScreen extends StatelessWidget {
                       topIcon: Icons.payments_outlined,
                       title: HostTranslation.thisMonthRevenue,
                       value: "Rs. $formattedRevenue",
-                      width: 170,
+                      width: 195,
                       bottomWidget: Row(
                         children: [
                           Icon(growthIcon, size: 14, color: growthColor),
@@ -463,11 +469,15 @@ class HostHomeScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 4),
-                          Text(
-                            HostTranslation.vsLastMonth,
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 10,
+                          Expanded(
+                            child: Text(
+                              HostTranslation.vsLastMonth,
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 10,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -478,13 +488,15 @@ class HostHomeScreen extends StatelessWidget {
                       topIcon: Icons.calendar_today_outlined,
                       title: HostTranslation.upcomingGuests,
                       value: "$upcomingGuestsCount",
-                      width: 130,
+                      width: 145,
                       bottomWidget: Text(
                         HostTranslation.next7Days,
                         style: const TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 12,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: AppSpacing.md),
@@ -492,7 +504,7 @@ class HostHomeScreen extends StatelessWidget {
                       topIcon: Icons.king_bed_outlined,
                       title: HostTranslation.occupancyRate,
                       value: "$occupancyPercent%",
-                      width: 140,
+                      width: 155,
                       bottomWidget: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -732,41 +744,50 @@ class HostHomeScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Text(
-                        HostTranslation.myHomestays,
-                        style: AppTextStyles.sectionHeading.copyWith(
-                          color: AppColors.primaryDark,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          '$listedCount ${HostTranslation.listed}',
-                          style: AppTextStyles.caption.copyWith(
-                            color: AppColors.primaryDark,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 10,
+                  Expanded(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            HostTranslation.myHomestays,
+                            style: AppTextStyles.sectionHeading.copyWith(
+                              color: AppColors.primaryDark,
+                              fontSize: HostTranslation.isSi ? 18 : 22,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: AppSpacing.sm),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '$listedCount ${HostTranslation.listed}',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.primaryDark,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: 8),
                   InkWell(
                     onTap: onGoToBookings ?? () {},
                     child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           HostTranslation.manageAll,
@@ -831,14 +852,20 @@ class HostHomeScreen extends StatelessWidget {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
-                HostTranslation.upcomingBookings,
-                style: AppTextStyles.sectionHeading.copyWith(
-                  color: AppColors.primaryDark,
+              Expanded(
+                child: Text(
+                  HostTranslation.upcomingBookings,
+                  style: AppTextStyles.sectionHeading.copyWith(
+                    color: AppColors.primaryDark,
+                    fontSize: HostTranslation.isSi ? 18 : 22,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+              const SizedBox(width: 8),
               InkWell(
                 onTap: () {
                   Navigator.push(
@@ -849,6 +876,7 @@ class HostHomeScreen extends StatelessWidget {
                   );
                 },
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       HostTranslation.viewAll,
