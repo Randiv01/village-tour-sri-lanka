@@ -249,7 +249,13 @@ class TravelerProfileScreen extends StatelessWidget {
               StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                 stream: ShareRepository().getClicksStream(user.uid),
                 builder: (context, clickSnap) {
-                  final clickCount = clickSnap.data?.docs.length ?? 0;
+                  final allDocs = clickSnap.data?.docs ?? [];
+                  final clickCount = allDocs
+                      .where((d) => d.data()['docType'] != 'promo_campaign')
+                      .length;
+                  final campaignCount = allDocs
+                      .where((d) => d.data()['docType'] == 'promo_campaign')
+                      .length;
                   final rewardCredit =
                       (clickCount * ShareRepository.rewardPerClickLkr).toInt();
                   final formattedCredit =
@@ -257,7 +263,7 @@ class TravelerProfileScreen extends StatelessWidget {
                   return _buildPreferenceRow(
                     Icons.show_chart,
                     'Promoter & Referral Analytics',
-                    '$clickCount clicks • Rs. $formattedCredit earned credit',
+                    '$campaignCount campaigns • $clickCount clicks • Rs. $formattedCredit',
                     onTap: () {
                       Navigator.push(
                         context,

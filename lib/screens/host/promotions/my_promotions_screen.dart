@@ -199,6 +199,7 @@ class _MyPromotionsScreenState extends State<MyPromotionsScreen> {
                 uid: currentUser.uid,
                 periodFilter: _selectedPeriod,
               );
+              final campaigns = ShareRepository.extractCampaigns(clickDocs);
 
               return SafeArea(
                 child: SingleChildScrollView(
@@ -241,6 +242,11 @@ class _MyPromotionsScreenState extends State<MyPromotionsScreen> {
                           const SizedBox(width: AppSpacing.md),
                           Expanded(child: _buildEarningsCard(analytics)),
                         ],
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                      _buildPromotionalCampaignsSection(
+                        campaigns: campaigns,
+                        uid: currentUser.uid,
                       ),
                       const SizedBox(height: AppSpacing.xl),
                       _buildEarningsOverTimeCard(analytics),
@@ -1286,4 +1292,912 @@ class _MyPromotionsScreenState extends State<MyPromotionsScreen> {
       ),
     );
   }
+
+  // ===========================================================================
+  // PROMOTIONAL CAMPAIGNS CRUD SECTION (Create, Read, Update, Delete)
+  // ===========================================================================
+
+  Widget _buildPromotionalCampaignsSection({
+    required List<PromoCampaign> campaigns,
+    required String uid,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border, width: 0.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'My Promotional Campaigns',
+                      style: AppTextStyles.sectionHeading.copyWith(
+                        color: AppColors.primaryDark,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      'Create, edit & manage custom homestay share links',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: () => _showCampaignFormDialog(uid: uid),
+                icon: const Icon(Icons.add, size: 16, color: Colors.white),
+                label: const Text(
+                  'New Campaign',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryDark,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  minimumSize: Size.zero,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          if (campaigns.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFBF9F6),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.campaign_outlined,
+                    size: 36,
+                    color: AppColors.primaryDark.withValues(alpha: 0.4),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'No promotional campaigns yet',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                      color: AppColors.primaryDark,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Tap "New Campaign" to create a custom referral post with your own caption and track clicks.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            ...campaigns.map(
+              (c) => _buildCampaignCard(campaign: c, uid: uid),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCampaignCard({
+    required PromoCampaign campaign,
+    required String uid,
+  }) {
+    final isActive = campaign.status.toLowerCase() == 'active';
+    final earnedFromCampaign =
+        (campaign.clicksCount * ShareRepository.rewardPerClickLkr).toInt();
+
+    IconData platformIcon = Icons.link_rounded;
+    Color platformColor = AppColors.secondary;
+    String platformLabel = 'Direct Link';
+
+    switch (campaign.targetPlatform.toLowerCase()) {
+      case 'whatsapp':
+        platformIcon = Icons.chat_bubble_rounded;
+        platformColor = const Color(0xFF25D366);
+        platformLabel = 'WhatsApp';
+        break;
+      case 'facebook':
+        platformIcon = Icons.facebook_rounded;
+        platformColor = const Color(0xFF1877F2);
+        platformLabel = 'Facebook';
+        break;
+      case 'instagram':
+        platformIcon = Icons.camera_alt_rounded;
+        platformColor = const Color(0xFFE1306C);
+        platformLabel = 'Instagram';
+        break;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFBF9F6),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isActive
+              ? AppColors.primary.withValues(alpha: 0.35)
+              : AppColors.border,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 3,
+                ),
+                decoration: BoxDecoration(
+                  color: (isActive ? Colors.green : Colors.orange)
+                      .withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  isActive ? 'ACTIVE' : 'PAUSED',
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    color: isActive ? Colors.green[800] : Colors.orange[800],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 3,
+                ),
+                decoration: BoxDecoration(
+                  color: platformColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(platformIcon, size: 11, color: platformColor),
+                    const SizedBox(width: 4),
+                    Text(
+                      platformLabel,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: platformColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              // Quick Toggle Active/Paused (UPDATE)
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                constraints: const BoxConstraints(),
+                padding: const EdgeInsets.all(4),
+                tooltip: isActive ? 'Pause Campaign' : 'Activate Campaign',
+                icon: Icon(
+                  isActive
+                      ? Icons.pause_circle_outline
+                      : Icons.play_circle_outline,
+                  size: 19,
+                  color: isActive ? Colors.orange[700] : Colors.green[700],
+                ),
+                onPressed: () async {
+                  final newStatus = isActive ? 'Paused' : 'Active';
+                  await _shareRepo.updateCampaign(
+                    campaignId: campaign.id,
+                    campaignTitle: campaign.campaignTitle,
+                    homestayId: campaign.homestayId,
+                    homestayTitle: campaign.homestayTitle,
+                    homestayLocation: campaign.homestayLocation,
+                    homestayPrice: campaign.homestayPrice,
+                    customCaption: campaign.customCaption,
+                    targetPlatform: campaign.targetPlatform,
+                    status: newStatus,
+                  );
+                },
+              ),
+              const SizedBox(width: 4),
+              // Edit Campaign (UPDATE)
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                constraints: const BoxConstraints(),
+                padding: const EdgeInsets.all(4),
+                tooltip: 'Edit Campaign',
+                icon: const Icon(
+                  Icons.edit_outlined,
+                  size: 18,
+                  color: AppColors.primaryDark,
+                ),
+                onPressed: () => _showCampaignFormDialog(
+                  uid: uid,
+                  existingCampaign: campaign,
+                ),
+              ),
+              const SizedBox(width: 4),
+              // Delete Campaign (DELETE)
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                constraints: const BoxConstraints(),
+                padding: const EdgeInsets.all(4),
+                tooltip: 'Delete Campaign',
+                icon: const Icon(
+                  Icons.delete_outline,
+                  size: 18,
+                  color: AppColors.error,
+                ),
+                onPressed: () => _confirmDeleteCampaign(campaign),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            campaign.campaignTitle,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              color: AppColors.primaryDark,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Row(
+            children: [
+              const Icon(
+                Icons.home_work_outlined,
+                size: 13,
+                color: AppColors.secondary,
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  '${campaign.homestayTitle} • ${campaign.homestayLocation}',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.secondary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.border.withValues(alpha: 0.6)),
+            ),
+            child: Text(
+              '"${campaign.customCaption}"',
+              style: const TextStyle(
+                fontSize: 11,
+                fontStyle: FontStyle.italic,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${campaign.clicksCount} clicks • Rs. ${NumberFormat('#,##0').format(earnedFromCampaign)}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green[800],
+                  ),
+                ),
+              ),
+              const Spacer(),
+              ElevatedButton.icon(
+                onPressed: isActive
+                    ? () => _shareCampaign(campaign: campaign, uid: uid)
+                    : null,
+                icon: const Icon(Icons.share, size: 13, color: Colors.white),
+                label: Text(
+                  isActive ? 'Share Now' : 'Paused',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryDark,
+                  disabledBackgroundColor: Colors.grey.shade300,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  minimumSize: Size.zero,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _shareCampaign({
+    required PromoCampaign campaign,
+    required String uid,
+  }) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final link =
+        'https://villagetour.lk/homestay/${campaign.homestayId}?ref=$uid&cmp=${campaign.id}';
+    final message =
+        '🏡 ${campaign.campaignTitle}\n'
+        '${campaign.customCaption}\n\n'
+        '📍 ${campaign.homestayTitle} – ${campaign.homestayLocation}\n'
+        '💰 From Rs. ${campaign.homestayPrice.toInt()}/night\n\n'
+        'Book via Village Tour SL:\n$link';
+
+    try {
+      await _shareRepo.trackShareClick(
+        sharerId: uid,
+        homestayId: campaign.homestayId,
+        homestayTitle: campaign.homestayTitle,
+        homestayLocation: campaign.homestayLocation,
+        platform: campaign.targetPlatform,
+        campaignId: campaign.id,
+      );
+    } catch (_) {}
+
+    if (campaign.targetPlatform == 'copy') {
+      await Clipboard.setData(ClipboardData(text: message));
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Campaign copied! +1 Click & +Rs. ${ShareRepository.rewardPerClickLkr.toInt()} tracked.',
+          ),
+          backgroundColor: AppColors.primaryDark,
+        ),
+      );
+      return;
+    }
+
+    if (campaign.targetPlatform == 'whatsapp') {
+      final waUrl = Uri.parse(
+        'https://wa.me/?text=${Uri.encodeComponent(message)}',
+      );
+      if (await canLaunchUrl(waUrl)) {
+        await launchUrl(waUrl, mode: LaunchMode.externalApplication);
+        return;
+      }
+    } else if (campaign.targetPlatform == 'facebook') {
+      final fbUrl = Uri.parse(
+        'https://www.facebook.com/sharer/sharer.php?u=${Uri.encodeComponent(link)}&quote=${Uri.encodeComponent(message)}',
+      );
+      if (await canLaunchUrl(fbUrl)) {
+        await launchUrl(fbUrl, mode: LaunchMode.externalApplication);
+        return;
+      }
+    }
+
+    // ignore: deprecated_member_use
+    await Share.share(message);
+  }
+
+  Future<void> _confirmDeleteCampaign(PromoCampaign campaign) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: const Text(
+          'Delete Promotional Campaign?',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 17,
+            color: AppColors.primaryDark,
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to delete "${campaign.campaignTitle}"? This action cannot be undone.',
+          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _shareRepo.deleteCampaign(campaign.id);
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Promotional campaign deleted.'),
+          backgroundColor: AppColors.primaryDark,
+        ),
+      );
+    }
+  }
+
+  Future<void> _showCampaignFormDialog({
+    required String uid,
+    PromoCampaign? existingCampaign,
+  }) async {
+    final isEdit = existingCampaign != null;
+    final formKey = GlobalKey<FormState>();
+    final titleCtrl = TextEditingController(
+      text: existingCampaign?.campaignTitle ?? '',
+    );
+    final captionCtrl = TextEditingController(
+      text: existingCampaign?.customCaption ??
+          'Experience peaceful village life in Sri Lanka! Book using my referral link.',
+    );
+
+    String selectedPlatform = existingCampaign?.targetPlatform ?? 'whatsapp';
+    String selectedStatus = existingCampaign?.status ?? 'Active';
+    String? chosenHomestayId = existingCampaign?.homestayId;
+    String chosenHomestayTitle =
+        existingCampaign?.homestayTitle ?? 'All Village Homestays';
+    String chosenHomestayLoc =
+        existingCampaign?.homestayLocation ?? 'Sri Lanka';
+    double chosenHomestayPrice = existingCampaign?.homestayPrice ?? 4500.0;
+    bool isSaving = false;
+
+    final homestaysSnap = await FirebaseFirestore.instance
+        .collection('homestays')
+        .limit(30)
+        .get();
+    final homestayDocs = homestaysSnap.docs;
+
+    if (chosenHomestayId == null && homestayDocs.isNotEmpty) {
+      final first = homestayDocs.first;
+      final d = first.data();
+      chosenHomestayId = first.id;
+      chosenHomestayTitle = d['title'] as String? ?? 'Village Homestay';
+      chosenHomestayLoc = d['location'] as String? ?? 'Sri Lanka';
+      chosenHomestayPrice =
+          (d['pricePerNight'] as num?)?.toDouble() ?? 4500.0;
+    }
+
+    if (!mounted) return;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: Text(
+                isEdit
+                    ? 'Edit Promotional Campaign'
+                    : 'New Promotional Campaign',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 17,
+                  color: AppColors.primaryDark,
+                ),
+              ),
+              content: SingleChildScrollView(
+                child: Form(
+                  key: formKey,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Campaign Title *',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: titleCtrl,
+                        maxLength: 50,
+                        decoration: InputDecoration(
+                          hintText: 'e.g. Weekend Habarana Promo',
+                          counterText: '',
+                          filled: true,
+                          fillColor: const Color(0xFFFBF9F6),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        validator: (val) {
+                          final v = val?.trim() ?? '';
+                          if (v.isEmpty) {
+                            return 'Campaign title is required';
+                          }
+                          if (v.length < 3) {
+                            return 'Title must be at least 3 characters';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      if (homestayDocs.isNotEmpty) ...[
+                        const Text(
+                          'Select Homestay *',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primaryDark,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        DropdownButtonFormField<String>(
+                          initialValue: homestayDocs.any(
+                                  (d) => d.id == chosenHomestayId)
+                              ? chosenHomestayId
+                              : homestayDocs.first.id,
+                          isExpanded: true,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: const Color(0xFFFBF9F6),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          items: homestayDocs.map((doc) {
+                            final d = doc.data();
+                            final t =
+                                d['title'] as String? ?? 'Village Homestay';
+                            final l = d['location'] as String? ?? '';
+                            return DropdownMenuItem<String>(
+                              value: doc.id,
+                              child: Text(
+                                l.isNotEmpty ? '$t ($l)' : t,
+                                style: const TextStyle(fontSize: 12),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            if (val == null) return;
+                            final doc = homestayDocs.firstWhere(
+                              (d) => d.id == val,
+                            );
+                            final d = doc.data();
+                            setModalState(() {
+                              chosenHomestayId = val;
+                              chosenHomestayTitle =
+                                  d['title'] as String? ?? 'Village Homestay';
+                              chosenHomestayLoc =
+                                  d['location'] as String? ?? 'Sri Lanka';
+                              chosenHomestayPrice =
+                                  (d['pricePerNight'] as num?)?.toDouble() ??
+                                  4500.0;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Platform *',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primaryDark,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                DropdownButtonFormField<String>(
+                                  initialValue: selectedPlatform,
+                                  decoration: InputDecoration(
+                                    filled: true,
+                                    fillColor: const Color(0xFFFBF9F6),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 10,
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  items: const [
+                                    DropdownMenuItem(
+                                      value: 'whatsapp',
+                                      child: Text(
+                                        'WhatsApp',
+                                        style: TextStyle(fontSize: 12),
+                                      ),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: 'facebook',
+                                      child: Text(
+                                        'Facebook',
+                                        style: TextStyle(fontSize: 12),
+                                      ),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: 'instagram',
+                                      child: Text(
+                                        'Instagram',
+                                        style: TextStyle(fontSize: 12),
+                                      ),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: 'copy',
+                                      child: Text(
+                                        'Direct Link',
+                                        style: TextStyle(fontSize: 12),
+                                      ),
+                                    ),
+                                  ],
+                                  onChanged: (val) {
+                                    if (val != null) {
+                                      setModalState(
+                                        () => selectedPlatform = val,
+                                      );
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Status *',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primaryDark,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                DropdownButtonFormField<String>(
+                                  initialValue: selectedStatus,
+                                  decoration: InputDecoration(
+                                    filled: true,
+                                    fillColor: const Color(0xFFFBF9F6),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 10,
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  items: const [
+                                    DropdownMenuItem(
+                                      value: 'Active',
+                                      child: Text(
+                                        'Active',
+                                        style: TextStyle(fontSize: 12),
+                                      ),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: 'Paused',
+                                      child: Text(
+                                        'Paused',
+                                        style: TextStyle(fontSize: 12),
+                                      ),
+                                    ),
+                                  ],
+                                  onChanged: (val) {
+                                    if (val != null) {
+                                      setModalState(() => selectedStatus = val);
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Custom Promotional Caption *',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: captionCtrl,
+                        maxLines: 3,
+                        maxLength: 250,
+                        decoration: InputDecoration(
+                          hintText:
+                              'Write an inviting note for travelers who click your link...',
+                          filled: true,
+                          fillColor: const Color(0xFFFBF9F6),
+                          contentPadding: const EdgeInsets.all(12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        validator: (val) {
+                          final v = val?.trim() ?? '';
+                          if (v.isEmpty) {
+                            return 'Promotional caption is required';
+                          }
+                          if (v.length < 10) {
+                            return 'Caption must be at least 10 characters';
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSaving ? null : () => Navigator.pop(ctx),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: isSaving
+                      ? null
+                      : () async {
+                          if (!formKey.currentState!.validate()) return;
+                          setModalState(() => isSaving = true);
+                          final messenger = ScaffoldMessenger.of(context);
+                          final nav = Navigator.of(ctx);
+
+                          try {
+                            if (isEdit) {
+                              await _shareRepo.updateCampaign(
+                                campaignId: existingCampaign.id,
+                                campaignTitle: titleCtrl.text,
+                                homestayId: chosenHomestayId ?? 'explore',
+                                homestayTitle: chosenHomestayTitle,
+                                homestayLocation: chosenHomestayLoc,
+                                homestayPrice: chosenHomestayPrice,
+                                customCaption: captionCtrl.text,
+                                targetPlatform: selectedPlatform,
+                                status: selectedStatus,
+                              );
+                            } else {
+                              await _shareRepo.createCampaign(
+                                sharerId: uid,
+                                campaignTitle: titleCtrl.text,
+                                homestayId: chosenHomestayId ?? 'explore',
+                                homestayTitle: chosenHomestayTitle,
+                                homestayLocation: chosenHomestayLoc,
+                                homestayPrice: chosenHomestayPrice,
+                                customCaption: captionCtrl.text,
+                                targetPlatform: selectedPlatform,
+                                status: selectedStatus,
+                              );
+                            }
+                            nav.pop();
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  isEdit
+                                      ? 'Promotional campaign updated!'
+                                      : 'New promotional campaign created!',
+                                ),
+                                backgroundColor: AppColors.primaryDark,
+                              ),
+                            );
+                          } catch (e) {
+                            setModalState(() => isSaving = false);
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text('Failed to save campaign: $e'),
+                                backgroundColor: AppColors.error,
+                              ),
+                            );
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryDark,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: Text(
+                    isSaving
+                        ? 'Saving...'
+                        : (isEdit ? 'Update Campaign' : 'Create Campaign'),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 }
+
