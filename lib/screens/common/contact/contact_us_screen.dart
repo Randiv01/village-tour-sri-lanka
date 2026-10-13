@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -523,6 +524,7 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
       ),
       child: Form(
         key: _formKey,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -563,10 +565,21 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
             const SizedBox(height: 8),
             _buildTextField(
               controller: _nameController,
-              hintText: 'Your name',
+              hintText: 'Your full name',
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r"[a-zA-Z\s.'-]")),
+                LengthLimitingTextInputFormatter(60),
+              ],
               validator: (val) {
                 if (val == null || val.trim().isEmpty) {
-                  return 'Please enter your name';
+                  return 'Please enter your full name';
+                }
+                final trimmed = val.trim();
+                if (trimmed.length < 3) {
+                  return 'Name must be at least 3 characters';
+                }
+                if (!RegExp(r"^[a-zA-Z\s.'-]+$").hasMatch(trimmed)) {
+                  return 'Name can only contain letters and spaces';
                 }
                 return null;
               },
@@ -581,12 +594,13 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
               keyboardType: TextInputType.emailAddress,
               validator: (val) {
                 if (val == null || val.trim().isEmpty) {
-                  return 'Please enter your email';
+                  return 'Please enter your email address';
                 }
-                final emailRegex =
-                    RegExp(r'^[\w\.\-]+@([\w\-]+\.)+[\w\-]{2,4}$');
+                final emailRegex = RegExp(
+                  r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+                );
                 if (!emailRegex.hasMatch(val.trim())) {
-                  return 'Please enter a valid email address';
+                  return 'Please enter a valid email address (e.g. name@example.com)';
                 }
                 return null;
               },
@@ -599,6 +613,24 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
               controller: _phoneController,
               hintText: '+94 7X XXX XXXX',
               keyboardType: TextInputType.phone,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9+\-\s()]')),
+                LengthLimitingTextInputFormatter(18),
+              ],
+              validator: (val) {
+                if (val == null || val.trim().isEmpty) {
+                  return null; // Optional field
+                }
+                final trimmed = val.trim();
+                if (!RegExp(r'^[0-9+\-\s()]+$').hasMatch(trimmed)) {
+                  return 'Phone number can only contain digits and + - ( )';
+                }
+                final digitsOnly = trimmed.replaceAll(RegExp(r'[^0-9]'), '');
+                if (digitsOnly.length < 9 || digitsOnly.length > 15) {
+                  return 'Please enter a valid phone number (9–15 digits)';
+                }
+                return null;
+              },
             ),
             const SizedBox(height: AppSpacing.lg),
 
@@ -672,12 +704,15 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
               controller: _messageController,
               hintText: 'Tell us about your trip plans, special requests, or questions...',
               maxLines: 4,
+              inputFormatters: [
+                LengthLimitingTextInputFormatter(1000),
+              ],
               validator: (val) {
                 if (val == null || val.trim().isEmpty) {
                   return 'Please enter your message';
                 }
-                if (val.trim().length < 5) {
-                  return 'Message must be at least 5 characters';
+                if (val.trim().length < 10) {
+                  return 'Message must be at least 10 characters long';
                 }
                 return null;
               },
@@ -758,12 +793,14 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
     required String hintText,
     int maxLines = 1,
     TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
       maxLines: maxLines,
       keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
       style: const TextStyle(
         fontSize: 14,
         color: AppColors.primaryDark,

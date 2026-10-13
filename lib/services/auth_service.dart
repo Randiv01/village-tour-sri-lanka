@@ -276,93 +276,62 @@ class AuthService {
       if (user == null) throw 'No user is currently signed in.';
 
       final uid = user.uid;
-      final batch = _firestore.batch();
 
-      // Delete homestays
-      final homestays = await _firestore
-          .collection('homestays')
-          .where('hostId', isEqualTo: uid)
-          .get();
-      for (var doc in homestays.docs) {
-        batch.delete(doc.reference);
+      Future<void> safeDeleteWhere(
+        String collection,
+        String field,
+        dynamic value,
+      ) async {
+        try {
+          final snap = await _firestore
+              .collection(collection)
+              .where(field, isEqualTo: value)
+              .get();
+          for (final doc in snap.docs) {
+            try {
+              await doc.reference.delete();
+            } catch (_) {}
+          }
+        } catch (_) {}
       }
 
-      // Delete tour packages
-      final packages = await _firestore
-          .collection('tour_packages')
-          .where('guideId', isEqualTo: uid)
-          .get();
-      for (var doc in packages.docs) {
-        batch.delete(doc.reference);
-      }
+      // Delete homestays (as host)
+      await safeDeleteWhere('homestays', 'hostId', uid);
 
-      // Delete homestay bookings (as traveler)
-      final hbTraveler = await _firestore
-          .collection('homestay_bookings')
-          .where('travelerId', isEqualTo: uid)
-          .get();
-      for (var doc in hbTraveler.docs) {
-        batch.delete(doc.reference);
-      }
+      // Delete tour packages (as guide)
+      await safeDeleteWhere('tour_packages', 'guideId', uid);
 
-      // Delete homestay bookings (as host)
-      final hbHost = await _firestore
-          .collection('homestay_bookings')
-          .where('hostId', isEqualTo: uid)
-          .get();
-      for (var doc in hbHost.docs) {
-        batch.delete(doc.reference);
-      }
+      // Delete homestay bookings (as traveler & as host)
+      await safeDeleteWhere('homestay_bookings', 'travelerId', uid);
+      await safeDeleteWhere('homestay_bookings', 'hostId', uid);
 
-      // Delete guide bookings (as guest)
-      final gbGuest = await _firestore
-          .collection('guide_bookings')
-          .where('guestId', isEqualTo: uid)
-          .get();
-      for (var doc in gbGuest.docs) {
-        batch.delete(doc.reference);
-      }
+      // Delete guide bookings (as guest & as guide)
+      await safeDeleteWhere('guide_bookings', 'guestId', uid);
+      await safeDeleteWhere('guide_bookings', 'guideId', uid);
 
-      // Delete guide bookings (as guide)
-      final gbGuide = await _firestore
-          .collection('guide_bookings')
-          .where('guideId', isEqualTo: uid)
-          .get();
-      for (var doc in gbGuide.docs) {
-        batch.delete(doc.reference);
-      }
+      // Delete payments & reviews
+      await safeDeleteWhere('payments', 'userId', uid);
+      await safeDeleteWhere('homestay_reviews', 'travelerId', uid);
 
-      // Delete payments
-      final payments = await _firestore
-          .collection('payments')
-          .where('userId', isEqualTo: uid)
-          .get();
-      for (var doc in payments.docs) {
-        batch.delete(doc.reference);
-      }
+      // Delete share clicks & inquiries in test_users
+      await safeDeleteWhere('test_users', 'sharerId', uid);
+      await safeDeleteWhere('test_users', 'userId', uid);
 
-      // Delete reviews
-      final reviews = await _firestore
-          .collection('homestay_reviews')
-          .where('travelerId', isEqualTo: uid)
-          .get();
-      for (var doc in reviews.docs) {
-        batch.delete(doc.reference);
-      }
-
-      // Delete user profile
-      final userRef = _firestore.collection('users').doc(uid);
-      batch.delete(userRef);
-
-      // Commit all deletions
-      await batch.commit();
+      // Delete user profile document
+      await _firestore.collection('users').doc(uid).delete();
 
       // Delete Firebase Auth User
-      await user.delete();
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'requires-recent-login') {
-        throw 'For security reasons, please sign out and sign in again before deleting your account.';
+      try {
+        await user.delete();
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'requires-recent-login') {
+          // Profile and all associated data are already deleted; sign out to end session.
+          await _auth.signOut();
+          return;
+        }
+        rethrow;
       }
+    } on FirebaseAuthException catch (e) {
       throw _handleFirebaseAuthError(e);
     } catch (e) {
       if (e is String) rethrow;
