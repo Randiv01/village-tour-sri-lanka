@@ -17,6 +17,8 @@ import 'saved_homestays_screen.dart';
 import 'saved_cards_screen.dart';
 import '../../../../models/payment_card.dart';
 import '../../../../repositories/payment_card_repository.dart';
+import '../../../../repositories/share_repository.dart';
+import 'package:intl/intl.dart';
 
 class TravelerProfileScreen extends StatelessWidget {
   final VoidCallback? onBackTap;
@@ -244,16 +246,26 @@ class TravelerProfileScreen extends StatelessWidget {
                 },
               ),
               const Divider(height: 1, color: AppColors.border),
-              _buildPreferenceRow(
-                Icons.show_chart,
-                'Promoter & Referral Analytics',
-                'Track clicks, rewards & Rs. 4,500 available credit',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const MyPromotionsScreen(),
-                    ),
+              StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                stream: ShareRepository().getClicksStream(user.uid),
+                builder: (context, clickSnap) {
+                  final clickCount = clickSnap.data?.docs.length ?? 0;
+                  final rewardCredit =
+                      (clickCount * ShareRepository.rewardPerClickLkr).toInt();
+                  final formattedCredit =
+                      NumberFormat('#,##0').format(rewardCredit);
+                  return _buildPreferenceRow(
+                    Icons.show_chart,
+                    'Promoter & Referral Analytics',
+                    '$clickCount clicks • Rs. $formattedCredit earned credit',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const MyPromotionsScreen(),
+                        ),
+                      );
+                    },
                   );
                 },
               ),

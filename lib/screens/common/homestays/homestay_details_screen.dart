@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -13,6 +14,7 @@ import '../../../../models/homestay.dart';
 import '../../../../models/homestay_booking.dart';
 import '../../../../repositories/homestay_repository.dart';
 import '../../../../repositories/homestay_booking_repository.dart';
+import '../../../../repositories/share_repository.dart';
 import '../auth/sign_in_screen.dart';
 import '../../traveler/chat/traveler_host_chat_screen.dart';
 import 'homestay_reviews_screen.dart';
@@ -33,6 +35,7 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
   int _currentImageIndex = 0;
   final _homestayRepo = HomestayRepository();
   final _bookingRepo = HomestayBookingRepository();
+  final _shareRepo = ShareRepository();
 
   Homestay? _homestay;
   Map<String, dynamic>? _hostData;
@@ -161,11 +164,260 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
     );
   }
 
+  String _getReferralLink() {
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? 'guest';
+    final id = _homestay?.id ?? widget.homestayId;
+    return 'https://villagetour.lk/homestay/$id?ref=$uid';
+  }
+
+  String _getShareMessage() {
+    final link = _getReferralLink();
+    return '🏡 Check out this amazing village homestay!\n\n'
+        '${_homestay!.title} – ${_homestay!.location}\n'
+        '⭐ Authentic rural experience in Sri Lanka\n'
+        '💰 From Rs. ${_homestay!.pricePerNight}/night\n\n'
+        'Book via Village Tour SL:\n$link';
+  }
+
+  Future<void> _shareViaPlatform(String platform) async {
+    if (_homestay == null) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final user = FirebaseAuth.instance.currentUser;
+    final link = _getReferralLink();
+    final message = _getShareMessage();
+
+    // Track click/share in Firestore if user is logged in
+    if (user != null) {
+      try {
+        await _shareRepo.trackShareClick(
+          sharerId: user.uid,
+          homestayId: _homestay!.id,
+          homestayTitle: _homestay!.title,
+          homestayLocation: _homestay!.location,
+          platform: platform,
+        );
+      } catch (_) {}
+    }
+
+    if (platform == 'copy') {
+      await Clipboard.setData(ClipboardData(text: link));
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Referral link copied & click tracked in Promotion Dashboard!'),
+          backgroundColor: AppColors.primaryDark,
+        ),
+      );
+      return;
+    }
+
+    if (platform == 'whatsapp') {
+      final waUrl = Uri.parse(
+        'https://wa.me/?text=${Uri.encodeComponent(message)}',
+      );
+      if (await canLaunchUrl(waUrl)) {
+        await launchUrl(waUrl, mode: LaunchMode.externalApplication);
+        return;
+      }
+    } else if (platform == 'facebook') {
+      final fbUrl = Uri.parse(
+        'https://www.facebook.com/sharer/sharer.php?u=${Uri.encodeComponent(link)}&quote=${Uri.encodeComponent(message)}',
+      );
+      if (await canLaunchUrl(fbUrl)) {
+        await launchUrl(fbUrl, mode: LaunchMode.externalApplication);
+        return;
+      }
+    }
+
+    // Fallback or 'instagram' / 'other' -> native share sheet
+    // ignore: deprecated_member_use
+    await Share.share(message);
+  }
+
   void _shareHomestay() {
     if (_homestay == null) return;
-    // ignore: deprecated_member_use
-    Share.share(
-      'Village Tour Sri Lanka\n\nHomestay:\n${_homestay!.title}\n\nLocation:\n${_homestay!.location}\n\nPrice:\nRs. ${_homestay!.pricePerNight} / night\n\nExplore this homestay on Village Tour Sri Lanka.',
+    final link = _getReferralLink();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetCtx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  'Share Homestay & Earn Rewards',
+                  style: AppTextStyles.sectionHeading.copyWith(
+                    color: AppColors.primaryDark,
+                    fontSize: 18,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Share via social media below. Every click is tracked in your Promoter Dashboard!',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildSharePlatformOption(
+                      sheetCtx,
+                      icon: Icons.chat_bubble_rounded,
+                      label: 'WhatsApp',
+                      color: const Color(0xFF25D366),
+                      platform: 'whatsapp',
+                    ),
+                    _buildSharePlatformOption(
+                      sheetCtx,
+                      icon: Icons.facebook_rounded,
+                      label: 'Facebook',
+                      color: const Color(0xFF1877F2),
+                      platform: 'facebook',
+                    ),
+                    _buildSharePlatformOption(
+                      sheetCtx,
+                      icon: Icons.camera_alt_rounded,
+                      label: 'Instagram',
+                      color: const Color(0xFFE1306C),
+                      platform: 'instagram',
+                    ),
+                    _buildSharePlatformOption(
+                      sheetCtx,
+                      icon: Icons.link_rounded,
+                      label: 'Copy Link',
+                      color: AppColors.secondary,
+                      platform: 'copy',
+                    ),
+                    _buildSharePlatformOption(
+                      sheetCtx,
+                      icon: Icons.more_horiz_rounded,
+                      label: 'More',
+                      color: AppColors.primaryDark,
+                      platform: 'other',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF4F0E8),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.link,
+                        size: 16,
+                        color: AppColors.primaryDark,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          link,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textSecondary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.pop(sheetCtx);
+                          _shareViaPlatform('copy');
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryDark,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Text(
+                            'Copy',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSharePlatformOption(
+    BuildContext sheetCtx, {
+    required IconData icon,
+    required String label,
+    required Color color,
+    required String platform,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.pop(sheetCtx);
+        _shareViaPlatform(platform);
+      },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -512,13 +764,16 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
                           ],
                           _buildGuestsSection(),
                           const SizedBox(height: AppSpacing.xl),
-                          if (nights > 0)
+                          if (nights > 0) ...[
                             _buildPaymentSummary(
                               nights,
                               accommodationAmount,
                               addOnAmount,
                               totalAmount,
                             ),
+                            const SizedBox(height: AppSpacing.xl),
+                          ],
+                          _buildSocialShareSection(),
                         ],
                         const SizedBox(height: AppSpacing.xxl),
                       ],
@@ -526,6 +781,225 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
                   ),
                 ],
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSocialShareSection() {
+    final user = FirebaseAuth.instance.currentUser;
+    final link = _getReferralLink();
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.secondary.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.share_rounded,
+                      size: 18,
+                      color: AppColors.secondary,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Share Homestay Link',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                      Text(
+                        'Earn Rs. ${ShareRepository.rewardPerClickLkr.toInt()} credit per referral click',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              if (user != null)
+                StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                  stream: _shareRepo.getClicksStream(user.uid),
+                  builder: (context, snapshot) {
+                    int homestayClicks = 0;
+                    if (snapshot.hasData) {
+                      for (final doc in snapshot.data!.docs) {
+                        if (doc.data()['homestayId'] == _homestay!.id) {
+                          homestayClicks++;
+                        }
+                      }
+                    }
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.ads_click_rounded,
+                            size: 13,
+                            color: Colors.green,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '$homestayClicks Clicks',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green[800],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF4F0E8),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.link_rounded,
+                  size: 16,
+                  color: AppColors.primaryDark,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    link,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => _shareViaPlatform('copy'),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryDark,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      'Copy',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildInlineShareButton(
+                icon: Icons.chat_bubble_rounded,
+                label: 'WhatsApp',
+                color: const Color(0xFF25D366),
+                platform: 'whatsapp',
+              ),
+              _buildInlineShareButton(
+                icon: Icons.facebook_rounded,
+                label: 'Facebook',
+                color: const Color(0xFF1877F2),
+                platform: 'facebook',
+              ),
+              _buildInlineShareButton(
+                icon: Icons.camera_alt_rounded,
+                label: 'Instagram',
+                color: const Color(0xFFE1306C),
+                platform: 'instagram',
+              ),
+              _buildInlineShareButton(
+                icon: Icons.more_horiz_rounded,
+                label: 'More',
+                color: AppColors.primaryDark,
+                platform: 'other',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInlineShareButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required String platform,
+  }) {
+    return GestureDetector(
+      onTap: () => _shareViaPlatform(platform),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
             ),
           ),
         ],
