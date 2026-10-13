@@ -18,6 +18,7 @@ import '../../../../repositories/share_repository.dart';
 import '../auth/sign_in_screen.dart';
 import '../../traveler/chat/traveler_host_chat_screen.dart';
 import 'homestay_reviews_screen.dart';
+import '../../../widgets/common/app_status_dialog.dart';
 
 enum DateState { available, booked, pending, unavailable, past }
 
@@ -616,21 +617,29 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
       await _bookingRepo.createBooking(booking);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Booking request sent to host!'),
-            backgroundColor: Colors.green,
-          ),
+        await AppStatusDialog.showSuccess(
+          context: context,
+          title: 'Booking Request Sent!',
+          message:
+              'Thank you for choosing Village Tour Sri Lanka. Your request has been sent to the host.',
+          details: [
+            'Homestay: ${_homestay!.title}',
+            'Nights: $nights night${nights > 1 ? 's' : ''}',
+            'Total: Rs. ${NumberFormat('#,##0').format(totalAmount)}',
+          ],
+          buttonText: 'Done',
         );
-        Navigator.pop(context);
+        if (mounted) {
+          Navigator.pop(context);
+        }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: AppColors.error,
-          ),
+        AppStatusDialog.showError(
+          context: context,
+          title: 'Booking Failed',
+          message: 'Unable to submit homestay booking request: $e',
+          buttonText: 'Close',
         );
       }
     } finally {

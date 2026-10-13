@@ -9,6 +9,7 @@ import '../../../../theme/app_spacing.dart';
 import '../../../../theme/app_radius.dart';
 import '../../../../models/contact_inquiry.dart';
 import '../../../../repositories/contact_inquiry_repository.dart';
+import '../../../../widgets/common/app_status_dialog.dart';
 
 class ContactUsScreen extends StatefulWidget {
   const ContactUsScreen({super.key});
@@ -124,79 +125,20 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
 
       _messageController.clear();
 
-      showDialog(
+      await AppStatusDialog.showSuccess(
         context: context,
-        builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE8F5E9),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.check_circle_outline,
-                  color: Color(0xFF2E7D32),
-                  size: 48,
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Inquiry Received!',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primaryDark,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Thank you for contacting Village Tour Sri Lanka. Our support team will get in touch with you shortly.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textSecondary,
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E4F42),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  child: const Text(
-                    'Done',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+        title: 'Inquiry Received!',
+        message:
+            'Thank you for contacting Village Tour Sri Lanka. Our support team will get in touch with you shortly.',
+        buttonText: 'Done',
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to submit inquiry: $e'),
-          backgroundColor: Colors.red,
-        ),
+      AppStatusDialog.showError(
+        context: context,
+        title: 'Submission Failed',
+        message: 'Failed to submit inquiry: $e',
+        buttonText: 'Close',
       );
     } finally {
       if (mounted) {

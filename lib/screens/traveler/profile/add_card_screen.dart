@@ -9,6 +9,7 @@ import '../../../models/payment_card.dart';
 import '../../../repositories/payment_card_repository.dart';
 import '../../../utils/card_validator.dart';
 import 'widgets/card_visual_widget.dart';
+import '../../../widgets/common/app_status_dialog.dart';
 
 class AddCardScreen extends StatefulWidget {
   const AddCardScreen({super.key});
@@ -201,21 +202,27 @@ class _AddCardScreenState extends State<AddCardScreen> {
       await _cardRepo.addCard(newCard);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Card saved successfully!'),
-            backgroundColor: Color(0xFF1F4D3A),
-          ),
+        await AppStatusDialog.showSuccess(
+          context: context,
+          title: 'Card Saved!',
+          message: 'Your payment card has been securely saved to your account.',
+          details: [
+            'Bank: $_selectedBank',
+            'Card: •••• ${cleanNumber.substring(cleanNumber.length - 4)}',
+          ],
+          buttonText: 'Done',
         );
-        Navigator.pop(context, true);
+        if (mounted) {
+          Navigator.pop(context, true);
+        }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to save card: $e'),
-            backgroundColor: AppColors.error,
-          ),
+        AppStatusDialog.showError(
+          context: context,
+          title: 'Failed to Save Card',
+          message: 'Could not save payment card: $e',
+          buttonText: 'Close',
         );
       }
     } finally {

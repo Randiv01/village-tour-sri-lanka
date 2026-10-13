@@ -20,7 +20,6 @@ import '../bookings/host_bookings_screen.dart';
 import '../notifications/host_notifications_screen.dart';
 import '../../../../repositories/notification_repository.dart';
 import '../../../../services/host_language_service.dart';
-import '../../../../repositories/notification_repository.dart';
 import 'widgets/host_language_toggle_button.dart';
 
 class HostHomeScreen extends StatelessWidget {

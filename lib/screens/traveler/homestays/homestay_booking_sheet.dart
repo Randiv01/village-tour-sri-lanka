@@ -9,6 +9,7 @@ import '../../../../models/homestay.dart';
 import '../../../../models/homestay_booking.dart';
 import '../../../../repositories/homestay_booking_repository.dart';
 import '../../../../services/email_service.dart';
+import '../../../../widgets/common/app_status_dialog.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -606,22 +607,30 @@ class _HomestayBookingSheetState extends State<HomestayBookingSheet> {
       });
 
       if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Booking request sent to host!'),
-            backgroundColor: Colors.green,
-          ),
+        await AppStatusDialog.showSuccess(
+          context: context,
+          title: 'Booking Request Sent!',
+          message:
+              'Thank you for choosing Village Tour Sri Lanka. Your request has been sent to the host.',
+          details: [
+            'Homestay: ${widget.homestay.title}',
+            'Nights: $nights night${nights > 1 ? 's' : ''}',
+            'Total: Rs. ${NumberFormat('#,##0').format(totalAmount)}',
+          ],
+          buttonText: 'Done',
         );
+        if (mounted) {
+          Navigator.pop(context);
+        }
       }
     } catch (e) {
       debugPrint('Error creating booking: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: AppColors.error,
-          ),
+        AppStatusDialog.showError(
+          context: context,
+          title: 'Booking Failed',
+          message: 'Unable to submit homestay booking request. Please try again: $e',
+          buttonText: 'Close',
         );
       }
     } finally {

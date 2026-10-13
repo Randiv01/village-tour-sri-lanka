@@ -12,6 +12,7 @@ import '../../../../models/guide_booking.dart';
 import '../../../../models/homestay_booking.dart';
 import '../../../../services/payment_service.dart';
 import '../../../../services/email_service.dart';
+import '../../../../widgets/common/app_status_dialog.dart';
 
 class UnifiedBooking {
   final String id;
@@ -550,13 +551,7 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
       description:
           '${booking.type == 'guide' ? 'Tour Package' : 'Homestay'}: ${booking.title}',
       onComplete: (success, transactionId) {
-        if (success && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Payment successful! Booking confirmed.'),
-            ),
-          );
-        }
+        // AppStatusDialog is displayed by PaymentService with full details
       },
     );
   }
@@ -621,8 +616,11 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
         }
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Booking request cancelled.')),
+        AppStatusDialog.showSuccess(
+          context: context,
+          title: 'Booking Cancelled',
+          message: 'Your booking request for "${booking.title}" has been successfully cancelled.',
+          buttonText: 'Done',
         );
       }
     }

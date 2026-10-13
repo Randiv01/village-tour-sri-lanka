@@ -8,6 +8,7 @@ import '../../../theme/app_radius.dart';
 import '../../../models/guide_booking.dart';
 import '../../../repositories/guide_booking_repository.dart';
 import '../../../services/email_service.dart';
+import '../../../widgets/common/app_status_dialog.dart';
 import '../chat/guide_chat_screen.dart';
 
 class GuideBookingDetailScreen extends StatefulWidget {
@@ -64,17 +65,37 @@ class _GuideBookingDetailScreenState extends State<GuideBookingDetailScreen> {
       final updated = await _repo.getBooking(_booking.id);
       if (updated != null && mounted) {
         setState(() => _booking = updated);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Booking $newStatus successfully.')),
-        );
+        if (newStatus == 'accepted') {
+          AppStatusDialog.showSuccess(
+            context: context,
+            title: 'Booking Accepted!',
+            message:
+                'Tour booking for ${_booking.guestName} has been accepted. The guest has been notified.',
+            buttonText: 'Done',
+          );
+        } else if (newStatus == 'rejected') {
+          AppStatusDialog.showInfo(
+            context: context,
+            title: 'Booking Declined',
+            message: 'Tour booking has been declined.',
+            buttonText: 'Done',
+          );
+        } else {
+          AppStatusDialog.showSuccess(
+            context: context,
+            title: 'Booking Updated',
+            message: 'Booking status has been updated to $newStatus.',
+            buttonText: 'Done',
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: AppColors.error,
-          ),
+        AppStatusDialog.showError(
+          context: context,
+          title: 'Update Failed',
+          message: 'Error updating booking: $e',
+          buttonText: 'Close',
         );
       }
     } finally {
