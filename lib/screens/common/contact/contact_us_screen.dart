@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
@@ -9,6 +10,7 @@ import '../../../../theme/app_spacing.dart';
 import '../../../../theme/app_radius.dart';
 import '../../../../models/contact_inquiry.dart';
 import '../../../../repositories/contact_inquiry_repository.dart';
+import '../auth/sign_in_screen.dart';
 import '../../../../widgets/common/app_status_dialog.dart';
 
 class ContactUsScreen extends StatefulWidget {
@@ -82,8 +84,201 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
     }
   }
 
+  Future<void> _launchPhoneCall() async {
+    final Uri phoneUri = Uri(scheme: 'tel', path: '+94714226176');
+    try {
+      final launched = await launchUrl(
+        phoneUri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not open the phone dialer app.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not open the phone dialer app.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _launchEmail() async {
+    final Uri emailUri = Uri(
+      scheme: 'mailto',
+      path: 'info@villagetoursrilanka.com',
+      query:
+          'subject=${Uri.encodeComponent('Inquiry - Village Tour Sri Lanka')}',
+    );
+    try {
+      final launched = await launchUrl(
+        emailUri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not open the email app.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not open the email app.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _launchMap() async {
+    final Uri mapUri = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('Nilagama, Bambaragaswewa, Galewela, Sri Lanka')}',
+    );
+    try {
+      final launched = await launchUrl(
+        mapUri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not open Google Maps.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not open Google Maps.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _launchWhatsApp() async {
+    final Uri whatsappUri = Uri.parse(
+      'https://wa.me/94714226176?text=${Uri.encodeComponent('Hello Village Tour Sri Lanka! I would like to inquire about your village experiences and homestays.')}',
+    );
+    try {
+      final launched = await launchUrl(
+        whatsappUri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not open WhatsApp.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not open WhatsApp.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showRegisteredUserRequiredDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Row(
+          children: const [
+            Icon(Icons.lock_outline, color: AppColors.primaryDark, size: 24),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Registered Users Only',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryDark,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Only registered users can submit an inquiry form. Please sign in to your account or register first.',
+          style: TextStyle(
+            fontSize: 14,
+            color: AppColors.textSecondary,
+            height: 1.4,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SignInScreen()),
+              );
+              if (mounted) {
+                await _prefillUserInfo();
+                setState(() {});
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryDark,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text(
+              'Sign In / Register',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _submitInquiry() async {
-    // Check country
+    // 1. Ensure user is a registered & signed-in user
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.isAnonymous) {
+      _showRegisteredUserRequiredDialog();
+      return;
+    }
+
+    // 2. Check country
     if (_selectedCountry == null || _selectedCountry == 'Select') {
       setState(() {
         _countryError = true;
@@ -103,7 +298,6 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
     });
 
     try {
-      final user = FirebaseAuth.instance.currentUser;
       final inquiry = ContactInquiry(
         id: '',
         name: _nameController.text.trim(),
@@ -114,7 +308,7 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
         country: _selectedCountry ?? 'Sri Lanka',
         message: _messageController.text.trim(),
         status: 'pending',
-        userId: user?.uid,
+        userId: user.uid,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -275,6 +469,7 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
           title: 'PHONE',
           details: '+94 71 422 6176\n+94 66 312 4564',
           actionText: 'Call',
+          onTapAction: _launchPhoneCall,
         ),
         const SizedBox(height: AppSpacing.sm),
         _buildInfoCard(
@@ -284,6 +479,7 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
           title: 'EMAIL',
           details: 'info@villagetoursrilanka.com\nvillagetoursrilanka.com',
           actionText: 'Write',
+          onTapAction: _launchEmail,
         ),
         const SizedBox(height: AppSpacing.sm),
         _buildInfoCard(
@@ -293,6 +489,7 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
           title: 'ADDRESS',
           details: 'Nilagama, Bambaragaswewa\nGalewela, Sri Lanka',
           actionText: 'Map',
+          onTapAction: _launchMap,
         ),
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 4),
@@ -317,139 +514,173 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
     required String title,
     required String details,
     required String actionText,
+    required VoidCallback onTapAction,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.white,
+      borderRadius: AppRadius.cardRadius,
+      child: InkWell(
+        onTap: onTapAction,
         borderRadius: AppRadius.cardRadius,
-        border: Border.all(color: const Color(0xFFEAE2CD), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: iconBgColor,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: iconColor, size: 24),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  title,
-                  style: AppTextStyles.caption.copyWith(
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.0,
-                    color: AppColors.textSecondary,
-                    fontSize: 10,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  details,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    height: 1.5,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF4EFE6), // light beige action bg
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              actionText,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                color: AppColors.primaryDark,
-                fontSize: 12,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          decoration: BoxDecoration(
+            borderRadius: AppRadius.cardRadius,
+            border: Border.all(color: const Color(0xFFEAE2CD), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
-            ),
+            ],
           ),
-        ],
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: iconBgColor,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: iconColor, size: 24),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      title,
+                      style: AppTextStyles.caption.copyWith(
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.0,
+                        color: AppColors.textSecondary,
+                        fontSize: 10,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      details,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        height: 1.5,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              InkWell(
+                onTap: onTapAction,
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF4EFE6), // light beige action bg
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    actionText,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primaryDark,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildWhatsAppCard() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.white,
+      borderRadius: AppRadius.cardRadius,
+      child: InkWell(
+        onTap: _launchWhatsApp,
         borderRadius: AppRadius.cardRadius,
-        border: Border.all(color: AppColors.primaryDark, width: 2), // Bold dark green/black border
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          decoration: BoxDecoration(
+            borderRadius: AppRadius.cardRadius,
+            border: Border.all(color: AppColors.primaryDark, width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: const BoxDecoration(
-              color: Color(0xFF25D366), // WhatsApp exact green
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.chat_bubble_outline, color: Colors.white, size: 24),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  'Chat on WhatsApp',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 14,
-                    color: AppColors.primaryDark,
-                  ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF25D366), // WhatsApp exact green
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  '+94 71 422 6176 (Fast Reply)',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary.withValues(alpha: 0.8),
-                  ),
+                child: const Icon(
+                  Icons.chat_bubble_outline,
+                  color: Colors.white,
+                  size: 24,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'Chat on WhatsApp',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
+                        color: AppColors.primaryDark,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '+94 71 422 6176 (Fast Reply)',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textSecondary.withValues(alpha: 0.8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.arrow_right_alt,
+                color: AppColors.primaryDark,
+                size: 24,
+              ),
+            ],
           ),
-          const Icon(Icons.arrow_right_alt, color: AppColors.primaryDark, size: 24),
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildInquiryForm() {
+    final isRegisteredUser =
+        FirebaseAuth.instance.currentUser != null &&
+        !FirebaseAuth.instance.currentUser!.isAnonymous;
+
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
@@ -499,6 +730,58 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
                 color: AppColors.textSecondary,
               ),
             ),
+            if (!isRegisteredUser) ...[
+              const SizedBox(height: AppSpacing.md),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF8E1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFFFCC80)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.lock_outline,
+                      color: Color(0xFFE65100),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Text(
+                        'Only registered users can submit inquiries. Please sign in first.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFE65100),
+                        ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const SignInScreen(),
+                          ),
+                        );
+                        if (mounted) {
+                          await _prefillUserInfo();
+                          setState(() {});
+                        }
+                      },
+                      child: const Text(
+                        'Sign In',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: AppSpacing.lg),
             const Divider(color: Color(0xFFEAE2CD), height: 1.5),
             const SizedBox(height: AppSpacing.lg),
