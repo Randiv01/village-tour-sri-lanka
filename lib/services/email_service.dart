@@ -170,4 +170,35 @@ class EmailService {
     ''';
     await _sendMail(hostEmail, 'Booking Confirmed (Paid) - $bookingId', _getHtmlTemplate('Payment Received', content));
   }
+
+  // ==========================================
+  // 3. INQUIRY RESPONSE NOTIFICATIONS
+  // ==========================================
+
+  static Future<bool> notifyInquiryReply({
+    required String toEmail,
+    required String customerName,
+    required String userMessage,
+    required String adminReply,
+  }) async {
+    String content = '''
+      <p>Dear <b>$customerName</b>,</p>
+      <p>Thank you for contacting <b>$_companyName</b>. Our support team has reviewed your inquiry and replied:</p>
+      <div style="background-color: #f7f5ee; border-left: 4px solid #1F4D3A; padding: 16px; margin: 20px 0; border-radius: 8px;">
+        <p style="margin: 0 0 6px 0; color: #5B6459; font-size: 13px;"><strong>Your Inquiry:</strong></p>
+        <p style="margin: 0 0 14px 0; color: #1E2A1F; font-style: italic;">"$userMessage"</p>
+        <hr style="border: 0; border-top: 1px dashed #DDD5C0; margin: 12px 0;">
+        <p style="margin: 0 0 6px 0; color: #1F4D3A; font-size: 13px;"><strong>Admin Response:</strong></p>
+        <p style="margin: 0; color: #1E2A1F; font-weight: 500;">"$adminReply"</p>
+      </div>
+      <p>If you have any further questions, feel free to reply or reach out via our mobile app.</p>
+      <br/>
+      <p>Warm regards,<br><b>$_companyName Support Team</b></p>
+    ''';
+    return await _sendMail(
+      toEmail,
+      'Response to Your Inquiry - $_companyName',
+      _getHtmlTemplate('Inquiry Response', content),
+    );
+  }
 }

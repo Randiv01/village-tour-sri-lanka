@@ -9,6 +9,8 @@ class ContactInquiry {
   final String message;
   final String status; // 'pending', 'in_progress', 'resolved', 'closed'
   final String? adminNotes;
+  final String? adminReply;
+  final DateTime? repliedAt;
   final String? userId;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -22,6 +24,8 @@ class ContactInquiry {
     required this.message,
     this.status = 'pending',
     this.adminNotes,
+    this.adminReply,
+    this.repliedAt,
     this.userId,
     required this.createdAt,
     required this.updatedAt,
@@ -37,6 +41,10 @@ class ContactInquiry {
       message: data['message']?.toString() ?? '',
       status: data['status']?.toString() ?? 'pending',
       adminNotes: data['adminNotes']?.toString(),
+      adminReply: data['adminReply']?.toString(),
+      repliedAt: (data['repliedAt'] is Timestamp)
+          ? (data['repliedAt'] as Timestamp).toDate()
+          : null,
       userId: data['userId']?.toString(),
       createdAt: (data['createdAt'] is Timestamp)
           ? (data['createdAt'] as Timestamp).toDate()
@@ -57,6 +65,8 @@ class ContactInquiry {
       'message': message,
       'status': status,
       'adminNotes': adminNotes,
+      'adminReply': adminReply,
+      'repliedAt': repliedAt != null ? Timestamp.fromDate(repliedAt!) : null,
       'userId': userId,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
@@ -72,6 +82,8 @@ class ContactInquiry {
     String? message,
     String? status,
     String? adminNotes,
+    String? adminReply,
+    DateTime? repliedAt,
     String? userId,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -85,6 +97,8 @@ class ContactInquiry {
       message: message ?? this.message,
       status: status ?? this.status,
       adminNotes: adminNotes ?? this.adminNotes,
+      adminReply: adminReply ?? this.adminReply,
+      repliedAt: repliedAt ?? this.repliedAt,
       userId: userId ?? this.userId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
