@@ -7,6 +7,7 @@ import '../../../theme/app_colors.dart';
 import '../../../theme/app_text_styles.dart';
 import '../../../theme/app_spacing.dart';
 import 'admin_inquiry_dialog.dart';
+import 'admin_inquiry_reply_dialog.dart';
 
 class AdminManageInquiriesScreen extends StatefulWidget {
   const AdminManageInquiriesScreen({super.key});
@@ -83,6 +84,13 @@ class _AdminManageInquiriesScreenState extends State<AdminManageInquiriesScreen>
     showDialog(
       context: context,
       builder: (ctx) => AdminInquiryDialog(inquiry: inquiry),
+    );
+  }
+
+  void _showReplyDialog(ContactInquiry inquiry) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AdminInquiryReplyDialog(inquiry: inquiry),
     );
   }
 
@@ -271,6 +279,60 @@ class _AdminManageInquiriesScreenState extends State<AdminManageInquiriesScreen>
                     ),
                   ),
 
+                  if (inquiry.adminReply != null &&
+                      inquiry.adminReply!.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.lg),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Admin Response', style: AppTextStyles.labelLarge),
+                        if (inquiry.repliedAt != null)
+                          Text(
+                            DateFormat('MMM d, yyyy • h:mm a')
+                                .format(inquiry.repliedAt!),
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.textSecondary,
+                              fontSize: 11,
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E6B52).withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFF1E6B52).withValues(alpha: 0.3),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
+                            Icons.mark_chat_read_outlined,
+                            size: 20,
+                            color: Color(0xFF1E6B52),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              inquiry.adminReply!,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: AppColors.primaryDark,
+                                height: 1.4,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
                   if (inquiry.adminNotes != null &&
                       inquiry.adminNotes!.isNotEmpty) ...[
                     const SizedBox(height: AppSpacing.lg),
@@ -312,14 +374,39 @@ class _AdminManageInquiriesScreenState extends State<AdminManageInquiriesScreen>
                   ],
 
                   const SizedBox(height: AppSpacing.xl),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.reply_rounded, size: 18),
+                      label: Text(
+                        inquiry.adminReply != null
+                            ? 'Update Reply to Customer'
+                            : 'Reply to Customer',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1E6B52),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _showReplyDialog(inquiry);
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
                   Row(
                     children: [
                       Expanded(
                         child: OutlinedButton.icon(
-                          icon: const Icon(Icons.edit, size: 18),
+                          icon: const Icon(Icons.edit, size: 16),
                           label: const Text('Edit / Notes'),
                           style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
@@ -332,19 +419,23 @@ class _AdminManageInquiriesScreenState extends State<AdminManageInquiriesScreen>
                       ),
                       const SizedBox(width: AppSpacing.md),
                       Expanded(
-                        child: ElevatedButton.icon(
-                          icon: const Icon(Icons.check_circle_outline, size: 18),
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.check_circle_outline, size: 16),
                           label: Text(
                             inquiry.status == 'resolved'
                                 ? 'Mark Pending'
                                 : 'Mark Resolved',
                           ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: inquiry.status == 'resolved'
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: inquiry.status == 'resolved'
                                 ? Colors.amber.shade800
                                 : Colors.green.shade700,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            side: BorderSide(
+                              color: inquiry.status == 'resolved'
+                                  ? Colors.amber.shade800
+                                  : Colors.green.shade700,
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
@@ -538,13 +629,31 @@ class _AdminManageInquiriesScreenState extends State<AdminManageInquiriesScreen>
             ),
           ),
         ),
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: AppColors.primaryDark,
-          unselectedLabelColor: AppColors.textSecondary,
-          indicatorColor: AppColors.primary,
-          isScrollable: true,
-          tabs: _tabs.map((tab) => Tab(text: tab)).toList(),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(44),
+          child: TabBar(
+            controller: _tabController,
+            isScrollable: true,
+            tabAlignment: TabAlignment.center,
+            labelColor: AppColors.primaryDark,
+            unselectedLabelColor: AppColors.textSecondary,
+            labelStyle: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+            ),
+            unselectedLabelStyle: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+            indicatorColor: AppColors.primary,
+            indicatorWeight: 3.0,
+            indicatorSize: TabBarIndicatorSize.label,
+            dividerColor: AppColors.border.withValues(alpha: 0.35),
+            dividerHeight: 1.0,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            labelPadding: const EdgeInsets.symmetric(horizontal: 10),
+            tabs: _tabs.map((tab) => Tab(text: tab, height: 40)).toList(),
+          ),
         ),
       ),
       body: Column(
@@ -597,23 +706,6 @@ class _AdminManageInquiriesScreenState extends State<AdminManageInquiriesScreen>
                       side: BorderSide(
                         color: AppColors.border.withValues(alpha: 0.5),
                       ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                ElevatedButton.icon(
-                  onPressed: () => _showAddEditDialog(null),
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Add'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
                     ),
                   ),
                 ),
@@ -855,6 +947,68 @@ class _AdminManageInquiriesScreenState extends State<AdminManageInquiriesScreen>
                 ),
               ),
 
+              // Admin reply preview if available
+              if (inquiry.adminReply != null &&
+                  inquiry.adminReply!.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E6B52).withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: const Color(0xFF1E6B52).withValues(alpha: 0.25),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.reply_rounded,
+                            size: 14,
+                            color: Color(0xFF1E6B52),
+                          ),
+                          const SizedBox(width: 4),
+                          const Text(
+                            'Admin Reply',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1E6B52),
+                            ),
+                          ),
+                          if (inquiry.repliedAt != null) ...[
+                            const Spacer(),
+                            Text(
+                              DateFormat('MMM d, h:mm a')
+                                  .format(inquiry.repliedAt!),
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        inquiry.adminReply!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.primaryDark,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
               // Admin notes banner if present
               if (inquiry.adminNotes != null &&
                   inquiry.adminNotes!.isNotEmpty) ...[
@@ -968,24 +1122,55 @@ class _AdminManageInquiriesScreenState extends State<AdminManageInquiriesScreen>
                     }).toList(),
                   ),
 
-                  // Edit and Delete
+                  // Reply, Edit, and Delete actions
                   Row(
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit_outlined, size: 18),
-                        color: AppColors.primary,
-                        tooltip: 'Edit / Add Notes',
-                        constraints: const BoxConstraints(),
-                        padding: const EdgeInsets.all(8),
-                        onPressed: () => _showAddEditDialog(inquiry),
+                      ElevatedButton.icon(
+                        icon: Icon(
+                          inquiry.adminReply != null
+                              ? Icons.edit_note
+                              : Icons.reply_rounded,
+                          size: 15,
+                        ),
+                        label: Text(
+                          inquiry.adminReply != null ? 'Edit Reply' : 'Reply',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1E6B52),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        onPressed: () => _showReplyDialog(inquiry),
                       ),
                       const SizedBox(width: 6),
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined, size: 18),
+                        color: AppColors.textSecondary,
+                        tooltip: 'Edit / Internal Notes',
+                        constraints: const BoxConstraints(),
+                        padding: const EdgeInsets.all(6),
+                        onPressed: () => _showAddEditDialog(inquiry),
+                      ),
+                      const SizedBox(width: 4),
                       IconButton(
                         icon: const Icon(Icons.delete_outline, size: 18),
                         color: AppColors.error,
                         tooltip: 'Delete Inquiry',
                         constraints: const BoxConstraints(),
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(6),
                         onPressed: () => _deleteInquiry(inquiry),
                       ),
                     ],

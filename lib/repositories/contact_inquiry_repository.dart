@@ -73,6 +73,27 @@ class ContactInquiryRepository {
     await _inquiriesCollection.doc(id).update(updateData);
   }
 
+  /// Reply to an inquiry (Admin use)
+  Future<void> replyToInquiry(
+    String id,
+    String replyMessage, {
+    String newStatus = 'resolved',
+    String? adminNotes,
+  }) async {
+    final Map<String, dynamic> updateData = {
+      'adminReply': replyMessage.trim(),
+      'repliedAt': FieldValue.serverTimestamp(),
+      'status': newStatus.toLowerCase(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+
+    if (adminNotes != null && adminNotes.trim().isNotEmpty) {
+      updateData['adminNotes'] = adminNotes.trim();
+    }
+
+    await _inquiriesCollection.doc(id).update(updateData);
+  }
+
   /// Delete an inquiry
   Future<void> deleteInquiry(String id) async {
     await _inquiriesCollection.doc(id).delete();

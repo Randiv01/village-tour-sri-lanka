@@ -7,6 +7,7 @@ import '../../../../repositories/homestay_booking_repository.dart';
 import '../../../../repositories/guide_booking_repository.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
+import '../../../../theme/app_spacing.dart';
 import '../../../../models/notification_model.dart';
 import '../../../../repositories/notification_repository.dart';
 import '../chat/traveler_host_chat_screen.dart';
@@ -1300,6 +1301,9 @@ class _TravelerOthersTab extends StatelessWidget {
             } else if (notif.type == 'promotion') {
               icon = Icons.local_offer;
               iconColor = Colors.orange;
+            } else if (notif.type == 'inquiry_reply') {
+              icon = Icons.support_agent_rounded;
+              iconColor = const Color(0xFF1E6B52);
             }
 
             return Dismissible(
@@ -1390,10 +1394,176 @@ class _TravelerOthersTab extends StatelessWidget {
                   if (!notif.read) {
                     repo.markAsRead(notif.id);
                   }
+                  if (notif.type == 'inquiry_reply') {
+                    _showInquiryReplyModal(context, notif);
+                  }
                 },
               ),
             );
           },
+        );
+      },
+    );
+  }
+
+  void _showInquiryReplyModal(BuildContext context, NotificationModel notif) {
+    final meta = notif.metadata ?? {};
+    final originalMessage = meta['originalMessage'] as String?;
+    final timeStr = DateFormat('MMMM d, yyyy • h:mm a').format(notif.createdAt);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: AppSpacing.lg,
+            right: AppSpacing.lg,
+            top: AppSpacing.lg,
+            bottom: MediaQuery.of(ctx).padding.bottom + AppSpacing.lg,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E6B52).withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.support_agent_rounded,
+                      color: Color(0xFF1E6B52),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          notif.title.isNotEmpty
+                              ? notif.title
+                              : 'Support Team Response',
+                          style: AppTextStyles.sectionHeading.copyWith(
+                            color: AppColors.primaryDark,
+                            fontSize: 18,
+                          ),
+                        ),
+                        Text(
+                          'Village Tour Sri Lanka • $timeStr',
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.textSecondary,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              const Divider(),
+              const SizedBox(height: AppSpacing.md),
+
+              if (originalMessage != null && originalMessage.isNotEmpty) ...[
+                Text(
+                  'Your Inquiry',
+                  style: AppTextStyles.caption.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: AppColors.border.withValues(alpha: 0.7),
+                    ),
+                  ),
+                  child: Text(
+                    originalMessage,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.primaryDark.withValues(alpha: 0.85),
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+              ],
+
+              Text(
+                'Response from Support',
+                style: AppTextStyles.caption.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF1E6B52),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E6B52).withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFF1E6B52).withValues(alpha: 0.3),
+                    width: 1.5,
+                  ),
+                ),
+                child: Text(
+                  notif.message,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.primaryDark,
+                    fontWeight: FontWeight.w500,
+                    height: 1.45,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: AppSpacing.xl),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1E6B52),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Close'),
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
