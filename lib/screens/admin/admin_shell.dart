@@ -8,6 +8,7 @@ import 'homestays/admin_manage_homestays_screen.dart';
 import 'users/manage_users_screen.dart';
 import 'bookings/admin_manage_bookings_screen.dart';
 import 'gallery/admin_manage_gallery_screen.dart';
+import 'inquiries/admin_manage_inquiries_screen.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -31,6 +32,7 @@ class _AdminShellState extends State<AdminShell> {
     const AdminManageBookingsScreen(),
     const ManageUsersScreen(),
     const AdminManageGalleryScreen(),
+    const AdminManageInquiriesScreen(),
   ];
 
   @override
@@ -165,6 +167,7 @@ class _AdminShellState extends State<AdminShell> {
           _buildDrawerItem(Icons.book, 'Bookings', 3),
           _buildDrawerItem(Icons.people, 'Users', 4),
           _buildDrawerItem(Icons.image, 'Gallery', 5),
+          _buildDrawerItem(Icons.mail_outline, 'Inquiries', 6),
         ],
       ),
     );
