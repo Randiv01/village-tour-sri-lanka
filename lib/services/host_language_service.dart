@@ -53,6 +53,11 @@ class HostTranslation {
   static String get signOut => isSi ? 'ගිණුමෙන් ඉවත් වන්න' : 'Sign Out';
 
   // Analytics Stat Cards
+  static String get activeHomestays => isSi ? 'සක්‍රිය\nහෝම්ස්ටේ' : 'Active\nHomestays';
+  static String get pendingBookings => isSi ? 'පොරොත්තු\nවෙන්කිරීම්' : 'Pending\nBookings';
+  static String get upcomingBookingsStat => isSi ? 'ඉදිරි\nවෙන්කිරීම්' : 'Upcoming\nBookings';
+  static String get totalEarnings => isSi ? 'මුළු ආදායම' : 'Total Earnings';
+  static String get pendingPayments => isSi ? 'ලැබීමට ඇති ගෙවීම්' : 'Pending Payments';
   static String get thisMonthRevenue => isSi ? 'මෙම මස ආදායම' : "This Month's Revenue";
   static String get vsLastMonth => isSi ? 'පසුගිය මසට සාපේක්ෂව' : 'vs last month';
   static String get upcomingGuests => isSi ? 'පැමිණෙන අමුත්තන්' : 'Upcoming Guests';

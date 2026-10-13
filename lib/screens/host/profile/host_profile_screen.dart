@@ -80,8 +80,6 @@ class HostProfileScreen extends StatelessWidget {
         children: [
           _HostIdentityCard(userModel: userModel, firebaseAuthUser: currentUser),
           const SizedBox(height: AppSpacing.xxl),
-          _buildEarningsSection(),
-          const SizedBox(height: AppSpacing.xl),
           _buildSupportSection(context, userModel, currentUser),
           const SizedBox(height: AppSpacing.xxl),
           _buildSignOutSection(context),
@@ -90,76 +88,6 @@ class HostProfileScreen extends StatelessWidget {
           const SizedBox(height: AppSpacing.xxl),
         ],
       ),
-    );
-  }
-
-  Widget _buildEarningsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          HostTranslation.earningsAndPayouts,
-          style: AppTextStyles.sectionHeading.copyWith(
-            color: AppColors.primaryDark,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          decoration: BoxDecoration(
-            color: AppColors.primaryDark,
-            borderRadius: AppRadius.cardRadius,
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x20000000),
-                blurRadius: 10,
-                offset: Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                HostTranslation.availableBalance,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: Colors.white70,
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Rs. 45,000.00',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.handshake_outlined, color: Colors.white, size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        HostTranslation.cashDeliveryNote,
-                        style: AppTextStyles.caption.copyWith(color: Colors.white),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 

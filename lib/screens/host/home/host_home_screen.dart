@@ -3,10 +3,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
-
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../theme/app_spacing.dart';
+import '../../../../theme/app_radius.dart';
 import 'widgets/host_homestay_card.dart';
 import 'widgets/upcoming_booking_tile.dart';
 import '../homestays/add_homestay_screen.dart';
@@ -14,11 +14,12 @@ import '../homestays/update_homestay_screen.dart';
 import '../../common/homestays/homestay_details_screen.dart';
 import '../../../../models/homestay.dart';
 import '../../../../models/homestay_booking.dart';
+import '../../../../repositories/homestay_repository.dart';
+import '../../../../repositories/homestay_booking_repository.dart';
 import '../bookings/host_bookings_screen.dart';
 import '../notifications/host_notifications_screen.dart';
 import '../../../../services/host_language_service.dart';
 import '../../../../repositories/notification_repository.dart';
-import 'widgets/analytics_stat_card.dart';
 import 'widgets/host_language_toggle_button.dart';
 
 class HostHomeScreen extends StatelessWidget {
@@ -34,23 +35,36 @@ class HostHomeScreen extends StatelessWidget {
       body: SafeArea(
         bottom: false,
         child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildTopBanner(context),
-            _buildAnalyticsRow(),
-            const SizedBox(height: AppSpacing.xl),
-            _buildAddNewHomestayButton(context),
-            const SizedBox(height: AppSpacing.xxl),
-            _buildMyHomestaysSection(),
-            const SizedBox(height: AppSpacing.xxl),
-            _buildUpcomingBookingsSection(context),
-            const SizedBox(height: AppSpacing.xxl),
-          ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildTopBanner(context),
+              _buildAnalyticsRow(),
+              const SizedBox(height: AppSpacing.xl),
+              _buildAddNewHomestayButton(context),
+              const SizedBox(height: AppSpacing.xxl),
+              _buildMyHomestaysSection(),
+              const SizedBox(height: AppSpacing.xxl),
+              _buildUpcomingBookingsSection(context),
+              const SizedBox(height: AppSpacing.xxl),
+            ],
+          ),
         ),
       ),
-      ),
     );
+  }
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) {
+      return HostTranslation.goodMorning;
+    } else if (hour < 17) {
+      return HostTranslation.goodAfternoon;
+    } else if (hour < 21) {
+      return HostTranslation.goodEvening;
+    } else {
+      return HostTranslation.goodNight;
+    }
   }
 
   Widget _buildTopBanner(BuildContext context) {
@@ -59,30 +73,30 @@ class HostHomeScreen extends StatelessWidget {
         // Background landscape image with fade
         Positioned.fill(
           child: Container(
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage(
-                'assets/images/sign-in/auth_rural_landscape.png',
-              ),
-              fit: BoxFit.cover,
-              alignment: Alignment.topCenter,
-            ),
-          ),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  AppColors.background.withValues(alpha: 0.1),
-                  AppColors.background.withValues(alpha: 0.8),
-                  AppColors.background,
-                ],
-                stops: const [0.0, 0.6, 1.0],
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage(
+                  'assets/images/sign-in/auth_rural_landscape.png',
+                ),
+                fit: BoxFit.cover,
+                alignment: Alignment.topCenter,
               ),
             ),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    AppColors.background.withValues(alpha: 0.1),
+                    AppColors.background.withValues(alpha: 0.8),
+                    AppColors.background,
+                  ],
+                  stops: const [0.0, 0.6, 1.0],
+                ),
+              ),
+            ),
           ),
-        ),
         ),
 
         // SafeArea content
@@ -114,34 +128,10 @@ class HostHomeScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Top Row: Menu, Language Toggle, Notification, Profile
+                    // Top Row: Language Toggle, Notification, Profile
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        Builder(
-                          builder: (ctx) => InkWell(
-                            onTap: () => Scaffold.of(ctx).openDrawer(),
-                            borderRadius: BorderRadius.circular(20),
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: const BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black12,
-                                    blurRadius: 4,
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.arrow_back_ios_new,
-                                size: 16,
-                                color: AppColors.primaryDark,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const Spacer(),
                         const HostLanguageToggleButton(),
                         const SizedBox(width: AppSpacing.sm),
                         GestureDetector(
@@ -224,7 +214,7 @@ class HostHomeScreen extends StatelessWidget {
                         GestureDetector(
                           onTap: onGoToProfile,
                           child: CircleAvatar(
-                            radius: 18,
+                            radius: 20,
                             backgroundImage:
                                 avatarUrl != null && avatarUrl.isNotEmpty
                                 ? NetworkImage(avatarUrl)
@@ -234,7 +224,6 @@ class HostHomeScreen extends StatelessWidget {
                                 ? const Icon(
                                     Icons.person,
                                     color: AppColors.textSecondary,
-                                    size: 18,
                                   )
                                 : null,
                           ),
@@ -246,7 +235,7 @@ class HostHomeScreen extends StatelessWidget {
 
                     // Welcome Text
                     Text(
-                      HostTranslation.ayubowan,
+                      _getGreeting(),
                       style: AppTextStyles.bodyMedium.copyWith(
                         color: AppColors.textSecondary,
                         fontSize: 16,
@@ -270,35 +259,16 @@ class HostHomeScreen extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 4),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            HostTranslation.homestayHost,
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: AppColors.secondary,
-                              fontWeight: FontWeight.bold,
-                            ),
+                    Row(
+                      children: [
+                        Text(
+                          HostTranslation.homestayHost,
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.secondary,
+                            fontWeight: FontWeight.bold,
                           ),
-                          const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 8.0),
-                            child: Icon(
-                              Icons.circle,
-                              size: 4,
-                              color: AppColors.secondary,
-                            ),
-                          ),
-                          Text(
-                            'Nilagama Cluster • ${HostTranslation.superhost}',
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: AppColors.secondary,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -311,225 +281,89 @@ class HostHomeScreen extends StatelessWidget {
   }
 
   Widget _buildAnalyticsRow() {
-    final user = FirebaseAuth.instance.currentUser;
-    return StreamBuilder<QuerySnapshot>(
-      stream: user != null
-          ? FirebaseFirestore.instance
-                .collection('homestay_bookings')
-                .where('hostId', isEqualTo: user.uid)
-                .snapshots()
-          : null,
-      builder: (context, bookingSnapshot) {
-        return StreamBuilder<QuerySnapshot>(
-          stream: user != null
-              ? FirebaseFirestore.instance
-                    .collection('homestays')
-                    .where('hostId', isEqualTo: user.uid)
-                    .snapshots()
-              : null,
-          builder: (context, homestaySnapshot) {
-            final now = DateTime.now();
-            final currentYear = now.year;
-            final currentMonth = now.month;
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    if (uid.isEmpty) return const SizedBox.shrink();
 
-            final prevMonthDate = DateTime(currentYear, currentMonth - 1);
-            final prevYear = prevMonthDate.year;
-            final prevMonth = prevMonthDate.month;
+    final homestayRepo = HomestayRepository();
+    final bookingRepo = HomestayBookingRepository();
 
-            final allBookings = (bookingSnapshot.hasData)
-                ? bookingSnapshot.data!.docs.map((doc) {
-                    return HomestayBooking.fromMap(
-                      doc.data() as Map<String, dynamic>,
-                      doc.id,
-                    );
-                  }).toList()
-                : <HomestayBooking>[];
-
-            final validBookings = allBookings
-                .where((b) =>
-                    b.bookingStatus != 'cancelled' &&
-                    b.bookingStatus != 'rejected')
-                .toList();
-
-            // 1. This Month's Revenue
-            double thisMonthRevenue = 0.0;
-            double lastMonthRevenue = 0.0;
-
-            for (final b in validBookings) {
-              if (b.checkInDate.year == currentYear &&
-                  b.checkInDate.month == currentMonth) {
-                thisMonthRevenue += b.totalAmount;
-              } else if (b.checkInDate.year == prevYear &&
-                  b.checkInDate.month == prevMonth) {
-                lastMonthRevenue += b.totalAmount;
-              }
-            }
-
-            String growthText;
-            Color growthColor;
-            IconData growthIcon;
-
-            if (lastMonthRevenue > 0) {
-              final growth =
-                  ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) *
-                  100;
-              if (growth >= 0) {
-                growthText = "+${growth.toStringAsFixed(1)}%";
-                growthColor = Colors.green[700]!;
-                growthIcon = Icons.trending_up;
-              } else {
-                growthText = "${growth.toStringAsFixed(1)}%";
-                growthColor = Colors.red[700]!;
-                growthIcon = Icons.trending_down;
-              }
-            } else {
-              if (thisMonthRevenue > 0) {
-                growthText = "+100%";
-                growthColor = Colors.green[700]!;
-                growthIcon = Icons.trending_up;
-              } else {
-                growthText = "0%";
-                growthColor = AppColors.textSecondary;
-                growthIcon = Icons.trending_flat;
-              }
-            }
-
-            final formattedRevenue =
-                NumberFormat('#,##0').format(thisMonthRevenue.toInt());
-
-            // 2. Upcoming Guests (next 7 days)
-            final sevenDaysLater = now.add(const Duration(days: 7));
-            int upcomingGuestsCount = 0;
-
-            for (final b in validBookings) {
-              final arrivesSoon =
-                  b.checkInDate.isAfter(now.subtract(const Duration(days: 1))) &&
-                  b.checkInDate.isBefore(sevenDaysLater);
-              final isStaying =
-                  b.checkInDate.isBefore(now) && b.checkOutDate.isAfter(now);
-              if (arrivesSoon || isStaying) {
-                upcomingGuestsCount += b.guestCount;
-              }
-            }
-
-            // 3. Occupancy Rate
-            final totalHomestays =
-                homestaySnapshot.hasData ? homestaySnapshot.data!.docs.length : 0;
-            final daysInMonth = DateTime(currentYear, currentMonth + 1, 0).day;
-            final totalAvailableNights = totalHomestays * daysInMonth;
-
-            final firstDayOfMonth = DateTime(currentYear, currentMonth, 1);
-            final lastDayOfMonth =
-                DateTime(currentYear, currentMonth, daysInMonth, 23, 59, 59);
-
-            int bookedNightsThisMonth = 0;
-            for (final b in validBookings) {
-              if (b.checkOutDate.isAfter(firstDayOfMonth) &&
-                  b.checkInDate.isBefore(lastDayOfMonth)) {
-                final start = b.checkInDate.isBefore(firstDayOfMonth)
-                    ? firstDayOfMonth
-                    : b.checkInDate;
-                final end = b.checkOutDate.isAfter(lastDayOfMonth)
-                    ? lastDayOfMonth
-                    : b.checkOutDate;
-                final diff = end.difference(start).inDays;
-                bookedNightsThisMonth += (diff <= 0 ? 1 : diff);
-              }
-            }
-
-            double occupancyFraction = 0.0;
-            if (totalAvailableNights > 0) {
-              occupancyFraction =
-                  (bookedNightsThisMonth / totalAvailableNights).clamp(0.0, 1.0);
-            }
-            final occupancyPercent = (occupancyFraction * 100).toInt();
-
-            return Padding(
-              padding: const EdgeInsets.only(left: AppSpacing.lg),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                clipBehavior: Clip.none,
-                child: Row(
-                  children: [
-                    AnalyticsStatCard(
-                      topIcon: Icons.payments_outlined,
-                      title: HostTranslation.thisMonthRevenue,
-                      value: "Rs. $formattedRevenue",
-                      width: 195,
-                      bottomWidget: Row(
-                        children: [
-                          Icon(growthIcon, size: 14, color: growthColor),
-                          const SizedBox(width: 4),
-                          Text(
-                            growthText,
-                            style: TextStyle(
-                              color: growthColor,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              HostTranslation.vsLastMonth,
-                              style: const TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 10,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    AnalyticsStatCard(
-                      topIcon: Icons.calendar_today_outlined,
-                      title: HostTranslation.upcomingGuests,
-                      value: "$upcomingGuestsCount",
-                      width: 145,
-                      bottomWidget: Text(
-                        HostTranslation.next7Days,
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 12,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    AnalyticsStatCard(
-                      topIcon: Icons.king_bed_outlined,
-                      title: HostTranslation.occupancyRate,
-                      value: "$occupancyPercent%",
-                      width: 155,
-                      bottomWidget: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: occupancyFraction,
-                              backgroundColor: AppColors.softSecondarySurface,
-                              valueColor: const AlwaysStoppedAnimation<Color>(
-                                Colors.green,
-                              ),
-                              minHeight: 6,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.lg), // right padding
-                  ],
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: Row(
+            children: [
+              Expanded(
+                child: _OverviewStat(
+                  title: HostTranslation.activeHomestays,
+                  stream: homestayRepo
+                      .getHostHomestays(uid)
+                      .map((l) => l.where((h) => h.status == 'Active').length),
+                  icon: Icons.home_work_outlined,
                 ),
               ),
-            );
-          },
-        );
-      },
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: _OverviewStat(
+                  title: HostTranslation.pendingBookings,
+                  stream: bookingRepo
+                      .getHostBookings(uid)
+                      .map((l) => l.where((b) => b.bookingStatus == 'pending').length),
+                  icon: Icons.pending_actions,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: _OverviewStat(
+                  title: HostTranslation.upcomingBookingsStat,
+                  stream: bookingRepo
+                      .getHostBookings(uid)
+                      .map((l) => l
+                          .where((b) =>
+                              b.bookingStatus == 'accepted' ||
+                              b.bookingStatus == 'confirmed')
+                          .length),
+                  icon: Icons.calendar_month_outlined,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: Row(
+            children: [
+              Expanded(
+                child: _CurrencyOverviewStat(
+                  title: HostTranslation.totalEarnings,
+                  stream: bookingRepo.getHostBookings(uid).map((bookings) =>
+                      bookings
+                          .where((b) => b.paymentStatus == 'paid')
+                          .fold(0.0, (total, b) => total + b.totalAmount)),
+                  icon: Icons.account_balance_wallet,
+                  iconColor: Colors.green,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: _CurrencyOverviewStat(
+                  title: HostTranslation.pendingPayments,
+                  stream: bookingRepo.getHostBookings(uid).map((bookings) =>
+                      bookings
+                          .where((b) =>
+                              b.paymentStatus != 'paid' &&
+                              b.bookingStatus != 'rejected' &&
+                              b.bookingStatus != 'cancelled')
+                          .fold(0.0, (total, b) => total + b.totalAmount)),
+                  icon: Icons.pending,
+                  iconColor: Colors.orange,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -972,14 +806,112 @@ class HostHomeScreen extends StatelessWidget {
   }
 }
 
+class _OverviewStat extends StatelessWidget {
+  final String title;
+  final Stream<int> stream;
+  final IconData icon;
+  const _OverviewStat({
+    required this.title,
+    required this.stream,
+    required this.icon,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppRadius.cardRadius,
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: AppColors.secondary, size: 24),
+          const SizedBox(height: AppSpacing.sm),
+          StreamBuilder<int>(
+            stream: stream,
+            builder: (context, snapshot) {
+              final count = snapshot.data ?? 0;
+              return Text(
+                '$count',
+                style: AppTextStyles.screenHeading.copyWith(
+                  color: AppColors.primaryDark,
+                  height: 1.1,
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-
-
-
-
-
-
-
-
-
-
+class _CurrencyOverviewStat extends StatelessWidget {
+  final String title;
+  final Stream<double> stream;
+  final IconData icon;
+  final Color iconColor;
+  const _CurrencyOverviewStat({
+    required this.title,
+    required this.stream,
+    required this.icon,
+    this.iconColor = AppColors.secondary,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppRadius.cardRadius,
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: iconColor, size: 24),
+          const SizedBox(height: AppSpacing.sm),
+          StreamBuilder<double>(
+            stream: stream,
+            builder: (context, snapshot) {
+              final amount = snapshot.data ?? 0.0;
+              return FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Rs. ${NumberFormat('#,##0').format(amount)}',
+                  style: AppTextStyles.labelLarge.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primaryDark,
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+}
