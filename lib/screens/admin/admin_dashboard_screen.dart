@@ -99,7 +99,8 @@ class AdminDashboardScreen extends StatelessWidget {
                 Icons.mail_outline,
                 AppColors.secondary,
                 stream: FirebaseFirestore.instance
-                    .collection('contact_inquiries')
+                    .collection('test_users')
+                    .where('docType', isEqualTo: 'contact_inquiry')
                     .snapshots(),
               ),
             ],

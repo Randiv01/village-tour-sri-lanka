@@ -49,6 +49,7 @@ class ContactInquiry {
 
   Map<String, dynamic> toMap() {
     return {
+      'docType': 'contact_inquiry',
       'name': name,
       'email': email,
       'phoneNumber': phoneNumber,

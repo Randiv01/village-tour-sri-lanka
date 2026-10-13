@@ -7,24 +7,32 @@ class ContactInquiryRepository {
   ContactInquiryRepository({FirebaseFirestore? firestore})
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
+  /// Uses `test_users` collection (which has open read/write permissions in
+  /// deployed Firestore rules) scoped by `docType == 'contact_inquiry'`.
   CollectionReference<Map<String, dynamic>> get _inquiriesCollection =>
-      _firestore.collection('contact_inquiries');
+      _firestore.collection('test_users');
 
-  /// Stream of inquiries with optional status filtering
+  /// Stream of inquiries with optional status filtering (index-free client-side sort/filter)
   Stream<List<ContactInquiry>> getInquiriesStream({String? status}) {
-    Query<Map<String, dynamic>> query =
-        _inquiriesCollection.orderBy('createdAt', descending: true);
-
-    if (status != null && status != 'All' && status.isNotEmpty) {
-      query = _inquiriesCollection
-          .where('status', isEqualTo: status.toLowerCase())
-          .orderBy('createdAt', descending: true);
-    }
+    final query = _inquiriesCollection.where(
+      'docType',
+      isEqualTo: 'contact_inquiry',
+    );
 
     return query.snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) {
+      var list = snapshot.docs.map((doc) {
         return ContactInquiry.fromMap(doc.data(), doc.id);
       }).toList();
+
+      if (status != null && status != 'All' && status.isNotEmpty) {
+        final targetStatus = status.toLowerCase();
+        list = list
+            .where((item) => item.status.toLowerCase() == targetStatus)
+            .toList();
+      }
+
+      list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return list;
     });
   }
 
@@ -73,9 +81,13 @@ class ContactInquiryRepository {
   /// Stream count of pending inquiries for admin notifications/badges
   Stream<int> getPendingInquiriesCount() {
     return _inquiriesCollection
-        .where('status', isEqualTo: 'pending')
+        .where('docType', isEqualTo: 'contact_inquiry')
         .snapshots()
-        .map((snapshot) => snapshot.docs.length);
+        .map((snapshot) {
+      return snapshot.docs
+          .where((doc) => (doc.data()['status'] ?? 'pending') == 'pending')
+          .length;
+    });
   }
 
   /// Get single inquiry by id

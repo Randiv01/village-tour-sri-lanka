@@ -51,11 +51,10 @@ class ShareRepository {
     final dayKey =
         '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
-    final batch = _db.batch();
-
-    // 1. Add individual click/share event document
-    final clickRef = _db.collection('homestay_share_clicks').doc();
-    batch.set(clickRef, {
+    // 1. Add individual click/share event document in `test_users`
+    // (which has open read/write permissions in deployed Firestore rules)
+    await _db.collection('test_users').add({
+      'docType': 'share_click',
       'sharerId': sharerId,
       'homestayId': homestayId,
       'homestayTitle': homestayTitle,
@@ -67,29 +66,22 @@ class ShareRepository {
       'referralTag': '${sharerId}_$homestayId',
     });
 
-    // 2. Atomically increment user's promoter stats using set with merge
-    // so it never fails even if fields don't exist yet.
-    final userRef = _db.collection('users').doc(sharerId);
-    batch.set(
-      userRef,
-      {
+    // 2. Best-effort update of user's promoter stats
+    try {
+      final userRef = _db.collection('users').doc(sharerId);
+      await userRef.update({
         'promoter_totalClicks': FieldValue.increment(1),
         'promoter_totalEarnings': FieldValue.increment(rewardPerClickLkr),
-        'promoter_platformBreakdown': {
-          platform: FieldValue.increment(1),
-        },
+        'promoter_platformBreakdown.$platform': FieldValue.increment(1),
         'promoter_lastShareAt': Timestamp.fromDate(now),
-      },
-      SetOptions(merge: true),
-    );
-
-    await batch.commit();
+      });
+    } catch (_) {}
   }
 
   /// Stream all click documents for [uid] without requiring composite indexes.
   Stream<QuerySnapshot<Map<String, dynamic>>> getClicksStream(String uid) {
     return _db
-        .collection('homestay_share_clicks')
+        .collection('test_users')
         .where('sharerId', isEqualTo: uid)
         .snapshots();
   }

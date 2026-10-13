@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../models/contact_inquiry.dart';
 import '../../../repositories/contact_inquiry_repository.dart';
 import '../../../theme/app_colors.dart';
@@ -228,6 +229,7 @@ class _AdminInquiryDialogState extends State<AdminInquiryDialog> {
                 child: SingleChildScrollView(
                   child: Form(
                     key: _formKey,
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -272,9 +274,18 @@ class _AdminInquiryDialogState extends State<AdminInquiryDialog> {
                           controller: _nameController,
                           label: 'Full Name *',
                           icon: Icons.person_outline,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                              RegExp(r"[a-zA-Z\s.'-]"),
+                            ),
+                            LengthLimitingTextInputFormatter(60),
+                          ],
                           validator: (val) {
                             if (val == null || val.trim().isEmpty) {
-                              return 'Please enter name';
+                              return 'Please enter full name';
+                            }
+                            if (val.trim().length < 3) {
+                              return 'Name must be at least 3 characters';
                             }
                             return null;
                           },
@@ -291,8 +302,11 @@ class _AdminInquiryDialogState extends State<AdminInquiryDialog> {
                             if (val == null || val.trim().isEmpty) {
                               return 'Please enter email';
                             }
-                            if (!val.contains('@')) {
-                              return 'Please enter a valid email';
+                            final emailRegex = RegExp(
+                              r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+                            );
+                            if (!emailRegex.hasMatch(val.trim())) {
+                              return 'Please enter a valid email address';
                             }
                             return null;
                           },
@@ -301,6 +315,7 @@ class _AdminInquiryDialogState extends State<AdminInquiryDialog> {
 
                         // Phone and Country Row
                         Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Expanded(
                               child: _buildTextField(
@@ -308,14 +323,39 @@ class _AdminInquiryDialogState extends State<AdminInquiryDialog> {
                                 label: 'Phone',
                                 icon: Icons.phone_outlined,
                                 keyboardType: TextInputType.phone,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(
+                                    RegExp(r'[0-9+\-\s()]'),
+                                  ),
+                                  LengthLimitingTextInputFormatter(18),
+                                ],
+                                validator: (val) {
+                                  if (val == null || val.trim().isEmpty) {
+                                    return null;
+                                  }
+                                  final digits = val.replaceAll(
+                                    RegExp(r'[^0-9]'),
+                                    '',
+                                  );
+                                  if (digits.length < 9 || digits.length > 15) {
+                                    return 'Enter 9–15 digits';
+                                  }
+                                  return null;
+                                },
                               ),
                             ),
                             const SizedBox(width: AppSpacing.md),
                             Expanded(
                               child: _buildTextField(
                                 controller: _countryController,
-                                label: 'Country',
+                                label: 'Country *',
                                 icon: Icons.public_outlined,
+                                validator: (val) {
+                                  if (val == null || val.trim().isEmpty) {
+                                    return 'Please enter country';
+                                  }
+                                  return null;
+                                },
                               ),
                             ),
                           ],
@@ -331,6 +371,9 @@ class _AdminInquiryDialogState extends State<AdminInquiryDialog> {
                           validator: (val) {
                             if (val == null || val.trim().isEmpty) {
                               return 'Please enter inquiry message';
+                            }
+                            if (val.trim().length < 5) {
+                              return 'Message must be at least 5 characters';
                             }
                             return null;
                           },
@@ -413,6 +456,7 @@ class _AdminInquiryDialogState extends State<AdminInquiryDialog> {
     String? hintText,
     int maxLines = 1,
     TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
   }) {
     return Column(
@@ -430,6 +474,7 @@ class _AdminInquiryDialogState extends State<AdminInquiryDialog> {
           controller: controller,
           maxLines: maxLines,
           keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
           style: AppTextStyles.bodyMedium,
           decoration: InputDecoration(
             hintText: hintText,
