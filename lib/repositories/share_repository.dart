@@ -162,7 +162,133 @@ class ShareRepository {
     return campaigns;
   }
 
-  /// Track that [sharerId] shared [homestayId] via [platform], or a shared link was clicked.
+  /// Build a shareable referral URL containing metadata so clicks can be tracked
+  /// when the shared link is opened from social media.
+  static String buildReferralLink({
+    required String sharerId,
+    required String homestayId,
+    String platform = 'whatsapp',
+    String? homestayTitle,
+    String? homestayLocation,
+    double? homestayPrice,
+    String? campaignId,
+  }) {
+    final safeHomestayId = homestayId.isEmpty ? 'explore' : homestayId;
+    final queryParams = <String, String>{
+      'ref': sharerId,
+      'p': platform,
+      if (homestayTitle != null && homestayTitle.isNotEmpty)
+        'title': homestayTitle,
+      if (homestayLocation != null && homestayLocation.isNotEmpty)
+        'loc': homestayLocation,
+      if (homestayPrice != null) 'price': homestayPrice.toInt().toString(),
+      if (campaignId != null && campaignId.isNotEmpty) 'cmp': campaignId,
+    };
+    final uri = Uri(
+      scheme: 'https',
+      host: 'villagetour.lk',
+      pathSegments: ['homestay', safeHomestayId],
+      queryParameters: queryParams,
+    );
+    return uri.toString();
+  }
+
+  /// Parse an incoming referral URL (or social media post containing a referral URL),
+  /// record the click in Firestore if valid, and return the parsed referral target.
+  Future<Map<String, String>?> handleIncomingReferralLink(
+    String rawInput,
+  ) async {
+    final trimmed = rawInput.trim();
+    if (trimmed.isEmpty) return null;
+
+    // Extract URL if the user pasted a full multi-line social media caption
+    final urlMatch = RegExp(
+      r'(https?:\/\/[^\s]+|villagetour:\/\/[^\s]+)',
+      caseSensitive: false,
+    ).firstMatch(trimmed);
+
+    final candidate = urlMatch != null ? urlMatch.group(0)! : trimmed;
+    final uri = Uri.tryParse(candidate);
+    if (uri == null) return null;
+
+    final isSupportedHost = uri.scheme == 'villagetour' ||
+        uri.host.contains('villagetour.lk') ||
+        uri.host.contains('village-tour-sri-lanka.web.app') ||
+        uri.host.contains('githack.com');
+
+    if (!isSupportedHost) return null;
+
+    final sharerId = uri.queryParameters['ref'] ?? '';
+    if (sharerId.isEmpty || sharerId == 'guest') return null;
+
+    String homestayId = uri.queryParameters['h'] ?? '';
+    if (homestayId.isEmpty) {
+      if (uri.scheme == 'villagetour') {
+        if (uri.host == 'homestay' && uri.pathSegments.isNotEmpty) {
+          homestayId = uri.pathSegments.first;
+        } else if (uri.pathSegments.length >= 2 &&
+            uri.pathSegments.first == 'homestay') {
+          homestayId = uri.pathSegments[1];
+        }
+      } else if (uri.pathSegments.length >= 2 &&
+          uri.pathSegments.first == 'homestay') {
+        homestayId = uri.pathSegments[1];
+      } else if (uri.pathSegments.isNotEmpty) {
+        homestayId = uri.pathSegments.last;
+      }
+    }
+    if (homestayId.isEmpty) homestayId = 'explore';
+
+    final platform = (uri.queryParameters['p'] ?? 'other').toLowerCase();
+    final campaignId = uri.queryParameters['cmp'];
+    final alreadyTrackedByWeb = uri.queryParameters['tracked'] == '1';
+
+    String homestayTitle = uri.queryParameters['title'] ?? '';
+    String homestayLocation = uri.queryParameters['loc'] ?? '';
+
+    if ((homestayTitle.isEmpty || homestayLocation.isEmpty) &&
+        homestayId != 'explore' &&
+        homestayId != 'general_referral') {
+      try {
+        final hDoc = await _db.collection('homestays').doc(homestayId).get();
+        if (hDoc.exists) {
+          final d = hDoc.data() ?? {};
+          if (homestayTitle.isEmpty) {
+            homestayTitle = d['title'] as String? ?? 'Village Homestay';
+          }
+          if (homestayLocation.isEmpty) {
+            homestayLocation = d['location'] as String? ?? 'Sri Lanka';
+          }
+        }
+      } catch (_) {}
+    }
+    if (homestayTitle.isEmpty) homestayTitle = 'Village Homestay';
+    if (homestayLocation.isEmpty) homestayLocation = 'Sri Lanka';
+
+    if (!alreadyTrackedByWeb) {
+      await trackShareClick(
+        sharerId: sharerId,
+        homestayId: homestayId,
+        homestayTitle: homestayTitle,
+        homestayLocation: homestayLocation,
+        platform: platform,
+        campaignId: (campaignId != null && campaignId.isNotEmpty)
+            ? campaignId
+            : null,
+      );
+    }
+
+    return {
+      'sharerId': sharerId,
+      'homestayId': homestayId,
+      'homestayTitle': homestayTitle,
+      'homestayLocation': homestayLocation,
+      'platform': platform,
+      'campaignId': ?campaignId,
+    };
+  }
+
+  /// Track when a shared referral link for [homestayId] by [sharerId] is clicked.
   /// Platform values: 'whatsapp', 'facebook', 'instagram', 'copy', 'other'
   Future<void> trackShareClick({
     required String sharerId,

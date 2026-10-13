@@ -29,9 +29,16 @@ class _MyPromotionsScreenState extends State<MyPromotionsScreen> {
   String _selectedHomestayLocation = 'Sri Lanka';
   double _selectedHomestayPrice = 4500;
 
-  String _getReferralLink(String uid) {
+  String _getReferralLink(String uid, {String platform = 'copy'}) {
     final targetId = _selectedHomestayId ?? 'explore';
-    return 'https://villagetour.lk/homestay/$targetId?ref=$uid';
+    return ShareRepository.buildReferralLink(
+      sharerId: uid,
+      homestayId: targetId,
+      platform: platform,
+      homestayTitle: _selectedHomestayTitle,
+      homestayLocation: _selectedHomestayLocation,
+      homestayPrice: _selectedHomestayPrice,
+    );
   }
 
   Future<void> _shareHomestayViaPlatform({
@@ -47,7 +54,14 @@ class _MyPromotionsScreenState extends State<MyPromotionsScreen> {
     final hTitle = homestayTitle ?? _selectedHomestayTitle;
     final hLoc = homestayLocation ?? _selectedHomestayLocation;
     final hPrice = pricePerNight ?? _selectedHomestayPrice;
-    final link = 'https://villagetour.lk/homestay/$hId?ref=$uid';
+    final link = ShareRepository.buildReferralLink(
+      sharerId: uid,
+      homestayId: hId,
+      platform: platform,
+      homestayTitle: hTitle,
+      homestayLocation: hLoc,
+      homestayPrice: hPrice,
+    );
 
     final message =
         '🏡 Check out this amazing village homestay!\n\n'
@@ -56,22 +70,15 @@ class _MyPromotionsScreenState extends State<MyPromotionsScreen> {
         '💰 From Rs. ${hPrice.toInt()}/night\n\n'
         'Book via Village Tour SL:\n$link';
 
-    try {
-      await _shareRepo.trackShareClick(
-        sharerId: uid,
-        homestayId: hId,
-        homestayTitle: hTitle,
-        homestayLocation: hLoc,
-        platform: platform,
-      );
-    } catch (_) {}
+    // NOTE: Click count is NOT incremented when pressing Share or Copy.
+    // Clicks are only tracked when the shared referral link is opened/clicked.
 
     if (platform == 'copy') {
       await Clipboard.setData(ClipboardData(text: link));
       messenger.showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text(
-            'Referral link copied! +1 Click & +Rs. ${ShareRepository.rewardPerClickLkr.toInt()} tracked.',
+            'Referral link copied! Share it on social media — clicks are counted when people click your link.',
           ),
           backgroundColor: AppColors.primaryDark,
         ),
@@ -99,6 +106,170 @@ class _MyPromotionsScreenState extends State<MyPromotionsScreen> {
 
     // ignore: deprecated_member_use
     await Share.share(message);
+  }
+
+  Future<void> _showOpenSharedLinkDialog() async {
+    final linkCtrl = TextEditingController();
+    final clipData = await Clipboard.getData(Clipboard.kTextPlain);
+    if (clipData?.text != null &&
+        (clipData!.text!.contains('villagetour.lk') ||
+            clipData.text!.contains('villagetour://'))) {
+      linkCtrl.text = clipData.text!.trim();
+    }
+
+    if (!mounted) return;
+    bool isOpening = false;
+    String? errorMsg;
+
+    await showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: const Row(
+                children: [
+                  Icon(
+                    Icons.open_in_new_rounded,
+                    color: AppColors.secondary,
+                    size: 20,
+                  ),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Open Shared Referral Link',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: AppColors.primaryDark,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Paste or click a referral link shared on WhatsApp, Facebook, or Instagram to open the homestay and record the link click:',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: linkCtrl,
+                    maxLines: 3,
+                    style: const TextStyle(fontSize: 12),
+                    decoration: InputDecoration(
+                      hintText:
+                          'https://villagetour.lk/homestay/...?ref=...&p=whatsapp',
+                      errorText: errorMsg,
+                      filled: true,
+                      fillColor: const Color(0xFFFBF9F6),
+                      contentPadding: const EdgeInsets.all(12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isOpening ? null : () => Navigator.pop(ctx),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                ),
+                ElevatedButton.icon(
+                  onPressed: isOpening
+                      ? null
+                      : () async {
+                          final raw = linkCtrl.text.trim();
+                          if (raw.isEmpty) {
+                            setModalState(
+                              () => errorMsg = 'Please paste a referral link',
+                            );
+                            return;
+                          }
+                          setModalState(() {
+                            isOpening = true;
+                            errorMsg = null;
+                          });
+                          final messenger = ScaffoldMessenger.of(context);
+                          final nav = Navigator.of(context);
+                          final dialogNav = Navigator.of(ctx);
+
+                          final result = await _shareRepo
+                              .handleIncomingReferralLink(raw);
+                          if (result == null) {
+                            setModalState(() {
+                              isOpening = false;
+                              errorMsg =
+                                  'Invalid referral link. Must contain a valid Village Tour referral URL.';
+                            });
+                            return;
+                          }
+
+                          dialogNav.pop();
+                          final title =
+                              result['homestayTitle'] ?? 'Village Homestay';
+                          final hId = result['homestayId'] ?? 'explore';
+
+                          messenger.showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Shared link clicked! +1 click & +Rs. ${ShareRepository.rewardPerClickLkr.toInt()} recorded for "$title".',
+                              ),
+                              backgroundColor: Colors.green[800],
+                            ),
+                          );
+
+                          if (hId.isNotEmpty &&
+                              hId != 'explore' &&
+                              hId != 'general_referral') {
+                            nav.push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    HomestayDetailsScreen(homestayId: hId),
+                              ),
+                            );
+                          }
+                        },
+                  icon: const Icon(
+                    Icons.ads_click_rounded,
+                    size: 16,
+                    color: Colors.white,
+                  ),
+                  label: Text(
+                    isOpening ? 'Opening...' : 'Click & Open Link',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryDark,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -1082,7 +1253,7 @@ class _MyPromotionsScreenState extends State<MyPromotionsScreen> {
                       ),
                     ),
                     const Text(
-                      'Select a homestay below & share to track real-time clicks',
+                      'Share link on social media — clicks count when your link is opened',
                       style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 11,
@@ -1245,6 +1416,34 @@ class _MyPromotionsScreenState extends State<MyPromotionsScreen> {
                 platform: 'other',
               ),
             ],
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _showOpenSharedLinkDialog,
+              icon: const Icon(
+                Icons.ads_click_rounded,
+                size: 16,
+                color: AppColors.primaryDark,
+              ),
+              label: const Text(
+                'Open / Click Shared Social Media Link',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryDark,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                backgroundColor: Colors.white,
+                side: const BorderSide(color: AppColors.border),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -1671,8 +1870,15 @@ class _MyPromotionsScreenState extends State<MyPromotionsScreen> {
     required String uid,
   }) async {
     final messenger = ScaffoldMessenger.of(context);
-    final link =
-        'https://villagetour.lk/homestay/${campaign.homestayId}?ref=$uid&cmp=${campaign.id}';
+    final link = ShareRepository.buildReferralLink(
+      sharerId: uid,
+      homestayId: campaign.homestayId,
+      platform: campaign.targetPlatform,
+      homestayTitle: campaign.homestayTitle,
+      homestayLocation: campaign.homestayLocation,
+      homestayPrice: campaign.homestayPrice,
+      campaignId: campaign.id,
+    );
     final message =
         '🏡 ${campaign.campaignTitle}\n'
         '${campaign.customCaption}\n\n'
@@ -1680,23 +1886,15 @@ class _MyPromotionsScreenState extends State<MyPromotionsScreen> {
         '💰 From Rs. ${campaign.homestayPrice.toInt()}/night\n\n'
         'Book via Village Tour SL:\n$link';
 
-    try {
-      await _shareRepo.trackShareClick(
-        sharerId: uid,
-        homestayId: campaign.homestayId,
-        homestayTitle: campaign.homestayTitle,
-        homestayLocation: campaign.homestayLocation,
-        platform: campaign.targetPlatform,
-        campaignId: campaign.id,
-      );
-    } catch (_) {}
+    // NOTE: Click count is NOT incremented when pressing Share Now.
+    // Campaign clicks are only counted when the shared referral link is opened.
 
     if (campaign.targetPlatform == 'copy') {
       await Clipboard.setData(ClipboardData(text: message));
       messenger.showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text(
-            'Campaign copied! +1 Click & +Rs. ${ShareRepository.rewardPerClickLkr.toInt()} tracked.',
+            'Campaign link copied! Share on social media — clicks are counted when people open your link.',
           ),
           backgroundColor: AppColors.primaryDark,
         ),
