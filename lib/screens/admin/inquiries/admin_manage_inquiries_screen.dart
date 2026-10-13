@@ -463,19 +463,24 @@ class _AdminManageInquiriesScreenState extends State<AdminManageInquiriesScreen>
                     ],
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  ...['Newest', 'Oldest', 'Name A-Z', 'Name Z-A'].map((opt) {
-                    return RadioListTile<String>(
-                      title: Text(opt, style: AppTextStyles.bodyMedium),
-                      value: opt,
-                      groupValue: tempSort,
-                      activeColor: AppColors.primary,
-                      onChanged: (val) {
-                        if (val != null) {
-                          setSheetState(() => tempSort = val);
-                        }
-                      },
-                    );
-                  }),
+                  RadioGroup<String>(
+                    groupValue: tempSort,
+                    onChanged: (val) {
+                      if (val != null) {
+                        setSheetState(() => tempSort = val);
+                      }
+                    },
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: ['Newest', 'Oldest', 'Name A-Z', 'Name Z-A'].map((opt) {
+                        return RadioListTile<String>(
+                          title: Text(opt, style: AppTextStyles.bodyMedium),
+                          value: opt,
+                          activeColor: AppColors.primary,
+                        );
+                      }).toList(),
+                    ),
+                  ),
                   const SizedBox(height: AppSpacing.lg),
                   Row(
                     children: [
