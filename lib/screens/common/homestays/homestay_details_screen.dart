@@ -165,14 +165,21 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
     );
   }
 
-  String _getReferralLink() {
+  String _getReferralLink({String platform = 'whatsapp'}) {
     final uid = FirebaseAuth.instance.currentUser?.uid ?? 'guest';
     final id = _homestay?.id ?? widget.homestayId;
-    return 'https://villagetour.lk/homestay/$id?ref=$uid';
+    return ShareRepository.buildReferralLink(
+      sharerId: uid,
+      homestayId: id,
+      platform: platform,
+      homestayTitle: _homestay?.title,
+      homestayLocation: _homestay?.location,
+      homestayPrice: _homestay?.pricePerNight,
+    );
   }
 
-  String _getShareMessage() {
-    final link = _getReferralLink();
+  String _getShareMessage({String platform = 'whatsapp'}) {
+    final link = _getReferralLink(platform: platform);
     return '🏡 Check out this amazing village homestay!\n\n'
         '${_homestay!.title} – ${_homestay!.location}\n'
         '⭐ Authentic rural experience in Sri Lanka\n'
@@ -183,28 +190,19 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
   Future<void> _shareViaPlatform(String platform) async {
     if (_homestay == null) return;
     final messenger = ScaffoldMessenger.of(context);
-    final user = FirebaseAuth.instance.currentUser;
-    final link = _getReferralLink();
-    final message = _getShareMessage();
+    final link = _getReferralLink(platform: platform);
+    final message = _getShareMessage(platform: platform);
 
-    // Track click/share in Firestore if user is logged in
-    if (user != null) {
-      try {
-        await _shareRepo.trackShareClick(
-          sharerId: user.uid,
-          homestayId: _homestay!.id,
-          homestayTitle: _homestay!.title,
-          homestayLocation: _homestay!.location,
-          platform: platform,
-        );
-      } catch (_) {}
-    }
+    // NOTE: Click count is NOT incremented when pressing Share or Copy.
+    // Clicks are only tracked when the shared referral link is opened/clicked.
 
     if (platform == 'copy') {
       await Clipboard.setData(ClipboardData(text: link));
       messenger.showSnackBar(
         const SnackBar(
-          content: Text('Referral link copied & click tracked in Promotion Dashboard!'),
+          content: Text(
+            'Referral link copied! Share on social media — clicks are counted when people open your link.',
+          ),
           backgroundColor: AppColors.primaryDark,
         ),
       );
@@ -236,7 +234,7 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
 
   void _shareHomestay() {
     if (_homestay == null) return;
-    final link = _getReferralLink();
+    final link = _getReferralLink(platform: 'copy');
 
     showModalBottomSheet(
       context: context,
@@ -272,7 +270,7 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
                 ),
                 const SizedBox(height: 4),
                 const Text(
-                  'Share via social media below. Every click is tracked in your Promoter Dashboard!',
+                  'Share via social media below. Clicks & rewards are counted when visitors click your shared link!',
                   style: TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 12,
@@ -858,7 +856,9 @@ class _HomestayDetailsScreenState extends State<HomestayDetailsScreen> {
                     int homestayClicks = 0;
                     if (snapshot.hasData) {
                       for (final doc in snapshot.data!.docs) {
-                        if (doc.data()['homestayId'] == _homestay!.id) {
+                        final d = doc.data();
+                        if (d['docType'] != 'promo_campaign' &&
+                            d['homestayId'] == _homestay!.id) {
                           homestayClicks++;
                         }
                       }
