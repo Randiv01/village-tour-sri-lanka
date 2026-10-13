@@ -288,13 +288,6 @@ class TravelerProfileScreen extends StatelessWidget {
                 },
               ),
               const Divider(height: 1, color: AppColors.border),
-              _buildPreferenceRow(
-                Icons.map_outlined,
-                'Downloaded Offline Guides',
-                'Galewela, Knuckles & Sigiriya trails (Active)',
-                onTap: () {},
-              ),
-              const Divider(height: 1, color: AppColors.border),
               StreamBuilder<List<PaymentCardModel>>(
                 stream: PaymentCardRepository().streamCards(user.uid),
                 builder: (context, cardSnap) {

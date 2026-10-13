@@ -10,7 +10,9 @@ import '../../../../theme/app_spacing.dart';
 import '../../../../theme/app_radius.dart';
 import '../../../../models/contact_inquiry.dart';
 import '../../../../repositories/contact_inquiry_repository.dart';
+import '../../../../repositories/notification_repository.dart';
 import '../auth/sign_in_screen.dart';
+import '../../traveler/notifications/traveler_notifications_screen.dart';
 import '../../../../widgets/common/app_status_dialog.dart';
 
 class ContactUsScreen extends StatefulWidget {
@@ -29,6 +31,7 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
 
   String? _selectedCountry = 'Select';
   bool _countryError = false;
+  bool _autoValidate = false;
   bool _isSubmitting = false;
   final ContactInquiryRepository _repository = ContactInquiryRepository();
 
@@ -278,16 +281,15 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
       return;
     }
 
-    // 2. Check country
-    if (_selectedCountry == null || _selectedCountry == 'Select') {
-      setState(() {
+    // 2. Enable autovalidation upon submit attempt and check country
+    setState(() {
+      _autoValidate = true;
+      if (_selectedCountry == null || _selectedCountry == 'Select') {
         _countryError = true;
-      });
-    } else {
-      setState(() {
+      } else {
         _countryError = false;
-      });
-    }
+      }
+    });
 
     if (!_formKey.currentState!.validate() || _countryError) {
       return;
@@ -318,6 +320,10 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
       if (!mounted) return;
 
       _messageController.clear();
+      setState(() {
+        _autoValidate = false;
+        _countryError = false;
+      });
 
       await AppStatusDialog.showSuccess(
         context: context,
@@ -416,21 +422,86 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
       actions: [
         Padding(
           padding: const EdgeInsets.only(right: AppSpacing.sm),
-          child: IconButton(
-            icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.border),
-                color: Colors.white,
-              ),
-              child: const Icon(
-                Icons.notifications_none,
-                size: 18,
-                color: AppColors.primaryDark,
-              ),
-            ),
-            onPressed: () {},
+          child: Builder(
+            builder: (context) {
+              final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+              return StreamBuilder<int>(
+                stream: currentUserId != null
+                    ? NotificationRepository()
+                        .getTotalUnreadCountForTraveler(currentUserId)
+                    : const Stream.empty(),
+                builder: (context, snapshot) {
+                  final unreadCount = snapshot.data ?? 0;
+                  return IconButton(
+                    icon: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.border),
+                        color: Colors.white,
+                      ),
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          const Icon(
+                            Icons.notifications_none,
+                            size: 18,
+                            color: AppColors.primaryDark,
+                          ),
+                          if (unreadCount > 0)
+                            Positioned(
+                              right: -2,
+                              top: -2,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 1,
+                                ),
+                                constraints: const BoxConstraints(
+                                  minWidth: 14,
+                                  minHeight: 14,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF1E6B52),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 1.5,
+                                  ),
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  unreadCount > 99
+                                      ? '99+'
+                                      : unreadCount.toString(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.bold,
+                                    height: 1,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    onPressed: () {
+                      if (currentUserId == null) {
+                        _showRegisteredUserRequiredDialog();
+                      } else {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const TravelerNotificationsScreen(),
+                          ),
+                        );
+                      }
+                    },
+                  );
+                },
+              );
+            },
           ),
         ),
       ],
@@ -491,17 +562,7 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
           actionText: 'Map',
           onTapAction: _launchMap,
         ),
-        const Padding(
-          padding: EdgeInsets.symmetric(vertical: 4),
-          child: SizedBox(
-            height: 16,
-            child: VerticalDivider(
-              color: Color(0xFFE0D8C3), // A darker connector visually present in design
-              thickness: 4,
-              width: 10,
-            ),
-          ),
-        ),
+        const SizedBox(height: AppSpacing.sm),
         _buildWhatsAppCard(),
       ],
     );
@@ -697,7 +758,9 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
       ),
       child: Form(
         key: _formKey,
-        autovalidateMode: AutovalidateMode.onUserInteraction,
+        autovalidateMode: _autoValidate
+            ? AutovalidateMode.onUserInteraction
+            : AutovalidateMode.disabled,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

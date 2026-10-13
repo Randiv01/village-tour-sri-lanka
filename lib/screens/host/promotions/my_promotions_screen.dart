@@ -11,6 +11,8 @@ import '../../../../theme/app_text_styles.dart';
 import '../../../../theme/app_spacing.dart';
 import '../../../../repositories/share_repository.dart';
 import '../../common/homestays/homestay_details_screen.dart';
+import '../../traveler/profile/traveler_profile_screen.dart';
+import '../profile/host_profile_screen.dart';
 
 class MyPromotionsScreen extends StatefulWidget {
   const MyPromotionsScreen({super.key});
@@ -294,13 +296,12 @@ class _MyPromotionsScreenState extends State<MyPromotionsScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(
-          'VILLAGE SANCTUARY',
-          style: TextStyle(
-            color: AppColors.secondary,
-            fontSize: 10,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.5,
+        title: Text(
+          'Promoter Dashboard',
+          style: AppTextStyles.screenHeading.copyWith(
+            color: AppColors.primaryDark,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
           ),
         ),
         centerTitle: true,
@@ -326,31 +327,64 @@ class _MyPromotionsScreenState extends State<MyPromotionsScreen> {
           ),
         ),
         actions: [
-          Container(
-            margin: const EdgeInsets.symmetric(vertical: 8),
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.border),
-            ),
-            child: const Icon(
-              Icons.notifications_none,
-              color: AppColors.primaryDark,
-              size: 20,
-            ),
+          // Real Host Profile Avatar Button with Image & Navigation
+          StreamBuilder<DocumentSnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('users')
+                .doc(currentUser.uid)
+                .snapshots(),
+            builder: (context, userSnap) {
+              String? avatarUrl;
+              String userRole = 'traveler';
+              if (userSnap.hasData && userSnap.data!.data() != null) {
+                final data = userSnap.data!.data() as Map<String, dynamic>;
+                avatarUrl = data['profileImageUrl'] as String?;
+                userRole =
+                    (data['role'] as String? ?? 'traveler').toLowerCase();
+              }
+              avatarUrl ??= currentUser.photoURL;
+
+              return GestureDetector(
+                onTap: () {
+                  if (userRole == 'host') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const HostProfileScreen(),
+                      ),
+                    );
+                  } else {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => TravelerProfileScreen(
+                          onBackTap: () => Navigator.pop(context),
+                        ),
+                      ),
+                    );
+                  }
+                },
+                child: Container(
+                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  child: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: AppColors.primaryDark,
+                    backgroundImage: (avatarUrl != null && avatarUrl.isNotEmpty)
+                        ? NetworkImage(avatarUrl)
+                        : null,
+                    child: (avatarUrl == null || avatarUrl.isEmpty)
+                        ? const Icon(
+                            Icons.person,
+                            color: Colors.white,
+                            size: 20,
+                          )
+                        : null,
+                  ),
+                ),
+              );
+            },
           ),
-          const SizedBox(width: AppSpacing.sm),
-          Container(
-            margin: const EdgeInsets.symmetric(vertical: 8),
-            padding: const EdgeInsets.all(8),
-            decoration: const BoxDecoration(
-              color: AppColors.primaryDark,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.person, color: Colors.white, size: 20),
-          ),
-          const SizedBox(width: AppSpacing.lg),
+          const SizedBox(width: AppSpacing.md),
         ],
       ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
