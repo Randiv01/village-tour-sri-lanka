@@ -14,6 +14,7 @@ import '../services/email_service.dart';
 import '../utils/card_validator.dart';
 import '../screens/traveler/profile/widgets/card_visual_widget.dart';
 import '../theme/app_colors.dart';
+import '../widgets/common/app_status_dialog.dart';
 
 class PaymentService {
   final PaymentRepository _paymentRepo = PaymentRepository();
@@ -73,6 +74,14 @@ class PaymentService {
       await _paymentRepo.createPayment(payment);
     } catch (e) {
       debugPrint('Error creating payment record: $e');
+      if (context.mounted) {
+        await AppStatusDialog.showError(
+          context: context,
+          title: 'Payment Error',
+          message: 'An unexpected error occurred while saving the payment record: $e',
+          buttonText: 'Close',
+        );
+      }
       onComplete(false, null);
       return;
     }
@@ -91,6 +100,21 @@ class PaymentService {
           paymentStatus: 'failed',
         );
       }
+
+      if (context.mounted) {
+        await AppStatusDialog.showError(
+          context: context,
+          title: 'Payment Failed',
+          message:
+              'Unable to process payment for $description. Please check your card balance or try a different payment method.',
+          details: [
+            'Amount: $currency ${NumberFormat('#,##0').format(amount)}',
+            'Status: Declined / Incomplete',
+          ],
+          buttonText: 'Try Again',
+        );
+      }
+
       onComplete(false, null);
     } else {
       if (bookingType == 'tour_package') {
@@ -161,6 +185,22 @@ class PaymentService {
           });
         }
       }
+
+      if (context.mounted) {
+        await AppStatusDialog.showSuccess(
+          context: context,
+          title: 'Payment Successful!',
+          message:
+              'Thank you! Your payment of $currency ${NumberFormat('#,##0').format(amount)} has been received and your booking is confirmed.',
+          details: [
+            if (mockTxId != null) 'Transaction ID: $mockTxId',
+            'Booking: $description',
+            'Status: Paid & Confirmed',
+          ],
+          buttonText: 'Done',
+        );
+      }
+
       onComplete(true, mockTxId);
     }
   }
@@ -419,6 +459,17 @@ class _MockPaymentScreenState extends State<MockPaymentScreen> {
     Navigator.pop(context, true);
   }
 
+  Future<void> _simulatePaymentFailure() async {
+    setState(() {
+      _isProcessing = true;
+      _errorMessage = null;
+    });
+
+    await Future.delayed(const Duration(milliseconds: 1500));
+    if (!mounted) return;
+    Navigator.pop(context, false);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -532,6 +583,33 @@ class _MockPaymentScreenState extends State<MockPaymentScreen> {
                           letterSpacing: 0.5,
                         ),
                       ),
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            // Simulate Bank Decline / Failed Payment Option for testing
+            SizedBox(
+              height: 42,
+              child: OutlinedButton.icon(
+                onPressed: _isProcessing ? null : _simulatePaymentFailure,
+                icon: const Icon(Icons.error_outline, size: 16, color: AppColors.error),
+                label: const Text(
+                  'Simulate Payment Failure (Test Decline)',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.error,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(
+                    color: AppColors.error.withValues(alpha: 0.35),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
               ),
             ),
 

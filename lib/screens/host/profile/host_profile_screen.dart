@@ -10,6 +10,7 @@ import '../../../../theme/app_radius.dart';
 import '../../../../models/user_model.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../services/cloudinary_service.dart';
+import '../../../../services/host_language_service.dart';
 import '../../traveler/profile/edit_profile_screen.dart';
 
 class HostProfileScreen extends StatelessWidget {
@@ -44,7 +45,7 @@ class HostProfileScreen extends StatelessWidget {
           backgroundColor: AppColors.background,
           appBar: AppBar(
             title: Text(
-              'Host Profile',
+              HostTranslation.hostProfileTitle,
               style: AppTextStyles.screenHeading.copyWith(
                 color: AppColors.primaryDark,
               ),
@@ -79,84 +80,14 @@ class HostProfileScreen extends StatelessWidget {
         children: [
           _HostIdentityCard(userModel: userModel, firebaseAuthUser: currentUser),
           const SizedBox(height: AppSpacing.xxl),
-          _buildEarningsSection(),
-          const SizedBox(height: AppSpacing.xl),
           _buildSupportSection(context, userModel, currentUser),
           const SizedBox(height: AppSpacing.xxl),
           _buildSignOutSection(context),
+          const SizedBox(height: AppSpacing.md),
+          _buildDeleteAccountSection(context),
           const SizedBox(height: AppSpacing.xxl),
         ],
       ),
-    );
-  }
-
-  Widget _buildEarningsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Earnings & Payouts',
-          style: AppTextStyles.sectionHeading.copyWith(
-            color: AppColors.primaryDark,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          decoration: BoxDecoration(
-            color: AppColors.primaryDark,
-            borderRadius: AppRadius.cardRadius,
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x20000000),
-                blurRadius: 10,
-                offset: Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Available Balance',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: Colors.white70,
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Rs. 45,000.00',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.handshake_outlined, color: Colors.white, size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Cash Hand-Delivery Enabled. Your earnings will be delivered to your location.',
-                        style: AppTextStyles.caption.copyWith(color: Colors.white),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 
@@ -176,7 +107,7 @@ class HostProfileScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Account & Preferences',
+          HostTranslation.accountAndPrefs,
           style: AppTextStyles.sectionHeading.copyWith(
             color: AppColors.primaryDark,
           ),
@@ -192,7 +123,7 @@ class HostProfileScreen extends StatelessWidget {
             children: [
               _buildPreferenceRow(
                 Icons.person_outline,
-                'Personal Information',
+                HostTranslation.personalInfo,
                 '$email • $phone',
                 onTap: () {
                   Navigator.push(
@@ -262,7 +193,7 @@ class HostProfileScreen extends StatelessWidget {
         },
         icon: const Icon(Icons.logout, color: AppColors.error, size: 20),
         label: Text(
-          'Sign Out',
+          HostTranslation.signOut,
           style: AppTextStyles.buttonText.copyWith(color: AppColors.error),
         ),
         style: OutlinedButton.styleFrom(
@@ -276,6 +207,126 @@ class HostProfileScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildDeleteAccountSection(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: () {
+          _showDeleteAccountConfirmation(context);
+        },
+        icon: const Icon(Icons.delete_forever, color: Colors.white, size: 20),
+        label: Text(
+          HostTranslation.deleteAccount,
+          style: AppTextStyles.buttonText.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.error,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteAccountConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.cardRadius),
+        title: Row(
+          children: [
+            const Icon(
+              Icons.warning_amber_rounded,
+              color: AppColors.error,
+              size: 24,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                HostTranslation.deleteAccountConfirmTitle,
+                style: AppTextStyles.labelLarge.copyWith(
+                  fontSize: 18,
+                  color: AppColors.error,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          HostTranslation.deleteAccountConfirmMsg,
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
+            height: 1.4,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              HostTranslation.cancel,
+              style: AppTextStyles.buttonText.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          ElevatedButton.icon(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final navigator = Navigator.of(context, rootNavigator: true);
+              final messenger = ScaffoldMessenger.of(context);
+
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                useRootNavigator: true,
+                builder: (_) => const Center(
+                  child: CircularProgressIndicator(color: AppColors.error),
+                ),
+              );
+
+              try {
+                await AuthService().deleteAccount();
+                navigator.pop();
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text(HostTranslation.deleteAccountSuccess),
+                    backgroundColor: AppColors.primaryDark,
+                  ),
+                );
+              } catch (e) {
+                navigator.pop();
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text(e.toString()),
+                    backgroundColor: AppColors.error,
+                  ),
+                );
+              }
+            },
+            icon: const Icon(Icons.delete_forever, size: 18),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            label: Text(HostTranslation.deleteBtn),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showSignOutConfirmation(BuildContext context) {
     showDialog(
       context: context,
@@ -283,14 +334,14 @@ class HostProfileScreen extends StatelessWidget {
         backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(borderRadius: AppRadius.cardRadius),
         title: Text(
-          'Sign out?',
+          HostTranslation.signOutConfirmTitle,
           style: AppTextStyles.labelLarge.copyWith(
             fontSize: 18,
             color: AppColors.primaryDark,
           ),
         ),
         content: Text(
-          'Are you sure you want to sign out of your account?',
+          HostTranslation.signOutConfirmMsg,
           style: AppTextStyles.bodyMedium.copyWith(
             color: AppColors.textSecondary,
           ),
@@ -299,7 +350,7 @@ class HostProfileScreen extends StatelessWidget {
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: Text(
-              'Cancel',
+              HostTranslation.cancel,
               style: AppTextStyles.buttonText.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -317,7 +368,7 @@ class HostProfileScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text('Sign Out'),
+            child: Text(HostTranslation.signOut),
           ),
         ],
       ),
@@ -588,7 +639,7 @@ class _HostIdentityCardState extends State<_HostIdentityCard> {
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
-                                  'Homestay Host',
+                                  HostTranslation.homestayHost,
                                   style: AppTextStyles.bodyMedium.copyWith(
                                     color: AppColors.textSecondary,
                                     fontWeight: FontWeight.bold,

@@ -13,6 +13,7 @@ import '../main/traveler_main_screen.dart';
 import 'edit_profile_screen.dart';
 import '../../common/contact/contact_us_screen.dart';
 import '../notifications/traveler_notifications_screen.dart';
+import '../../common/auth/auth_guard.dart';
 
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -29,12 +30,111 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _selectedCurrency = 'LKR (Rs.)';
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (FirebaseAuth.instance.currentUser == null && mounted) {
+        AuthGuard.requireAuth(
+          context: context,
+          onAuthenticated: () {
+            if (mounted) setState(() {});
+          },
+        );
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
 
     if (currentUser == null) {
-      return const Scaffold(
-        body: Center(child: Text('Please sign in to view settings')),
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          backgroundColor: AppColors.background,
+          elevation: 0,
+          centerTitle: true,
+          leading: Padding(
+            padding: const EdgeInsets.only(left: AppSpacing.sm),
+            child: IconButton(
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: const Icon(
+                  Icons.arrow_back_ios_new,
+                  size: 16,
+                  color: AppColors.primaryDark,
+                ),
+              ),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ),
+          title: Text(
+            'Settings',
+            style: AppTextStyles.screenHeading.copyWith(
+              color: AppColors.primaryDark,
+            ),
+          ),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.lock_outline,
+                  size: 56,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  'Sign in to continue',
+                  style: AppTextStyles.sectionHeading.copyWith(
+                    color: AppColors.primaryDark,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  'Create an account or sign in to view and manage your settings.',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      AuthGuard.requireAuth(
+                        context: context,
+                        onAuthenticated: () {
+                          if (mounted) setState(() {});
+                        },
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Sign In / Create Account',
+                      style: TextStyle(color: Colors.white, fontSize: 16),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       );
     }
 

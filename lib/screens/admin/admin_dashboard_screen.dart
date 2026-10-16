@@ -94,6 +94,15 @@ class AdminDashboardScreen extends StatelessWidget {
                     .collection('guide_bookings')
                     .snapshots(),
               ),
+              _buildCountCard(
+                'Inquiries',
+                Icons.mail_outline,
+                AppColors.secondary,
+                stream: FirebaseFirestore.instance
+                    .collection('test_users')
+                    .where('docType', isEqualTo: 'contact_inquiry')
+                    .snapshots(),
+              ),
             ],
           ),
 

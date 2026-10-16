@@ -7,6 +7,7 @@ import '../../../../theme/app_spacing.dart';
 import '../../../../models/homestay_booking.dart';
 import '../../../../repositories/homestay_booking_repository.dart';
 import '../../../../services/email_service.dart';
+import '../../../../widgets/common/app_status_dialog.dart';
 
 class HostBookingDetailsScreen extends StatefulWidget {
   final HomestayBooking booking;
@@ -36,21 +37,27 @@ class _HostBookingDetailsScreenState extends State<HostBookingDetailsScreen> {
       );
 
       if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Booking accepted. Awaiting payment.'),
-            backgroundColor: Colors.green,
-          ),
+        await AppStatusDialog.showSuccess(
+          context: context,
+          title: 'Booking Accepted!',
+          message:
+              'The booking request has been accepted. The traveler will now be notified to complete payment.',
+          details: [
+            'Guest: ${widget.booking.travelerName}',
+            'Homestay: ${widget.booking.homestayTitle}',
+            'Total: Rs. ${NumberFormat('#,##0').format(widget.booking.totalAmount)}',
+          ],
+          buttonText: 'Done',
         );
+        if (mounted) Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: AppColors.error,
-          ),
+        AppStatusDialog.showError(
+          context: context,
+          title: 'Accept Failed',
+          message: 'Error accepting booking: $e',
+          buttonText: 'Close',
         );
       }
     } finally {
@@ -158,21 +165,27 @@ class _HostBookingDetailsScreenState extends State<HostBookingDetailsScreen> {
           status: 'rejected',
         );
         if (mounted) {
-          Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Booking rejected.'),
-              backgroundColor: Colors.orange,
-            ),
+          await AppStatusDialog.showInfo(
+            context: context,
+            title: 'Booking Declined',
+            message:
+                'The booking request has been declined and the traveler has been notified.',
+            details: [
+              'Guest: ${widget.booking.travelerName}',
+              if (reasonController.text.trim().isNotEmpty)
+                'Reason: ${reasonController.text.trim()}',
+            ],
+            buttonText: 'Done',
           );
+          if (mounted) Navigator.pop(context);
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error: $e'),
-              backgroundColor: AppColors.error,
-            ),
+          AppStatusDialog.showError(
+            context: context,
+            title: 'Decline Failed',
+            message: 'Error declining booking: $e',
+            buttonText: 'Close',
           );
         }
       } finally {

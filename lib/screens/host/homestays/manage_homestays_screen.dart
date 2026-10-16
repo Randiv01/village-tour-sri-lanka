@@ -6,6 +6,7 @@ import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_spacing.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../models/homestay.dart';
+import '../../../../services/host_language_service.dart';
 import 'add_homestay_screen.dart';
 import 'update_homestay_screen.dart';
 
@@ -95,7 +96,7 @@ class _ManageHomestaysScreenState extends State<ManageHomestaysScreen> {
               ),
               child: Center(
                 child: Text(
-                  'Manage Homestays',
+                  HostTranslation.manageHomestaysTitle,
                   style: AppTextStyles.screenHeading.copyWith(
                     color: AppColors.primaryDark,
                   ),
@@ -122,7 +123,7 @@ class _ManageHomestaysScreenState extends State<ManageHomestaysScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Search homestays...',
+                hintText: HostTranslation.searchHomestays,
                 prefixIcon: const Icon(
                   Icons.search,
                   color: AppColors.textSecondary,

@@ -7,6 +7,7 @@ import '../../../../theme/app_text_styles.dart';
 import '../../../../theme/app_spacing.dart';
 import '../../../../models/homestay_booking.dart';
 import '../../../../repositories/homestay_booking_repository.dart';
+import '../../../../services/host_language_service.dart';
 import 'host_booking_details_screen.dart';
 
 class HostBookingsScreen extends StatefulWidget {
@@ -42,8 +43,8 @@ class _HostBookingsScreenState extends State<HostBookingsScreen>
         backgroundColor: AppColors.background,
         elevation: 0,
         title: Text(
-          'Manage Bookings',
-          style: AppTextStyles.screenHeading.copyWith(
+          HostTranslation.hostBookingsTitle,
+          style: AppTextStyles.sectionHeading.copyWith(
             color: AppColors.primaryDark,
           ),
         ),
@@ -55,11 +56,11 @@ class _HostBookingsScreenState extends State<HostBookingsScreen>
           indicatorColor: AppColors.primary,
           isScrollable: true,
           tabAlignment: TabAlignment.center,
-          tabs: const [
-            Tab(text: 'Pending'),
-            Tab(text: 'Accepted'),
-            Tab(text: 'Confirmed'),
-            Tab(text: 'Rejected'),
+          tabs: [
+            Tab(text: HostTranslation.tabPending),
+            Tab(text: HostTranslation.tabAccepted),
+            Tab(text: HostTranslation.tabConfirmed),
+            Tab(text: HostTranslation.rejectBtn),
           ],
         ),
       ),

@@ -17,6 +17,8 @@ import 'saved_homestays_screen.dart';
 import 'saved_cards_screen.dart';
 import '../../../../models/payment_card.dart';
 import '../../../../repositories/payment_card_repository.dart';
+import '../../../../repositories/share_repository.dart';
+import 'package:intl/intl.dart';
 
 class TravelerProfileScreen extends StatelessWidget {
   final VoidCallback? onBackTap;
@@ -244,16 +246,32 @@ class TravelerProfileScreen extends StatelessWidget {
                 },
               ),
               const Divider(height: 1, color: AppColors.border),
-              _buildPreferenceRow(
-                Icons.show_chart,
-                'Promoter & Referral Analytics',
-                'Track clicks, rewards & Rs. 4,500 available credit',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const MyPromotionsScreen(),
-                    ),
+              StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                stream: ShareRepository().getClicksStream(user.uid),
+                builder: (context, clickSnap) {
+                  final allDocs = clickSnap.data?.docs ?? [];
+                  final clickCount = allDocs
+                      .where((d) => d.data()['docType'] != 'promo_campaign')
+                      .length;
+                  final campaignCount = allDocs
+                      .where((d) => d.data()['docType'] == 'promo_campaign')
+                      .length;
+                  final rewardCredit =
+                      (clickCount * ShareRepository.rewardPerClickLkr).toInt();
+                  final formattedCredit =
+                      NumberFormat('#,##0').format(rewardCredit);
+                  return _buildPreferenceRow(
+                    Icons.show_chart,
+                    'Promoter & Referral Analytics',
+                    '$campaignCount campaigns • $clickCount clicks • Rs. $formattedCredit',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const MyPromotionsScreen(),
+                        ),
+                      );
+                    },
                   );
                 },
               ),
@@ -268,13 +286,6 @@ class TravelerProfileScreen extends StatelessWidget {
                     MaterialPageRoute(builder: (_) => const SavedItemsScreen()),
                   );
                 },
-              ),
-              const Divider(height: 1, color: AppColors.border),
-              _buildPreferenceRow(
-                Icons.map_outlined,
-                'Downloaded Offline Guides',
-                'Galewela, Knuckles & Sigiriya trails (Active)',
-                onTap: () {},
               ),
               const Divider(height: 1, color: AppColors.border),
               StreamBuilder<List<PaymentCardModel>>(

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
+import 'package:intl/intl.dart';
 
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../theme/app_spacing.dart';
+import '../../../../theme/app_radius.dart';
 import 'widgets/host_homestay_card.dart';
 import 'widgets/upcoming_booking_tile.dart';
 import '../homestays/add_homestay_screen.dart';
@@ -18,8 +19,8 @@ import '../../../../repositories/homestay_booking_repository.dart';
 import '../bookings/host_bookings_screen.dart';
 import '../notifications/host_notifications_screen.dart';
 import '../../../../repositories/notification_repository.dart';
-import 'package:intl/intl.dart';
-import '../../../../theme/app_radius.dart';
+import '../../../../services/host_language_service.dart';
+import 'widgets/host_language_toggle_button.dart';
 
 class HostHomeScreen extends StatelessWidget {
   final VoidCallback? onGoToBookings;
@@ -34,21 +35,21 @@ class HostHomeScreen extends StatelessWidget {
       body: SafeArea(
         bottom: false,
         child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildTopBanner(context),
-            _buildAnalyticsRow(),
-            const SizedBox(height: AppSpacing.xl),
-            _buildAddNewHomestayButton(context),
-            const SizedBox(height: AppSpacing.xxl),
-            _buildMyHomestaysSection(),
-            const SizedBox(height: AppSpacing.xxl),
-            _buildUpcomingBookingsSection(context),
-            const SizedBox(height: AppSpacing.xxl),
-          ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildTopBanner(context),
+              _buildAnalyticsRow(),
+              const SizedBox(height: AppSpacing.xl),
+              _buildAddNewHomestayButton(context),
+              const SizedBox(height: AppSpacing.xxl),
+              _buildMyHomestaysSection(),
+              const SizedBox(height: AppSpacing.xxl),
+              _buildUpcomingBookingsSection(context),
+              const SizedBox(height: AppSpacing.xxl),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -56,13 +57,13 @@ class HostHomeScreen extends StatelessWidget {
   String _getGreeting() {
     final hour = DateTime.now().hour;
     if (hour < 12) {
-      return 'Good morning,';
+      return HostTranslation.goodMorning;
     } else if (hour < 17) {
-      return 'Good afternoon,';
+      return HostTranslation.goodAfternoon;
     } else if (hour < 21) {
-      return 'Good evening,';
+      return HostTranslation.goodEvening;
     } else {
-      return 'Good night,';
+      return HostTranslation.goodNight;
     }
   }
 
@@ -72,30 +73,30 @@ class HostHomeScreen extends StatelessWidget {
         // Background landscape image with fade
         Positioned.fill(
           child: Container(
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage(
-                'assets/images/sign-in/auth_rural_landscape.png',
-              ),
-              fit: BoxFit.cover,
-              alignment: Alignment.topCenter,
-            ),
-          ),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  AppColors.background.withValues(alpha: 0.1),
-                  AppColors.background.withValues(alpha: 0.8),
-                  AppColors.background,
-                ],
-                stops: const [0.0, 0.6, 1.0],
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage(
+                  'assets/images/sign-in/auth_rural_landscape.png',
+                ),
+                fit: BoxFit.cover,
+                alignment: Alignment.topCenter,
               ),
             ),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    AppColors.background.withValues(alpha: 0.1),
+                    AppColors.background.withValues(alpha: 0.8),
+                    AppColors.background,
+                  ],
+                  stops: const [0.0, 0.6, 1.0],
+                ),
+              ),
+            ),
           ),
-        ),
         ),
 
         // SafeArea content
@@ -127,10 +128,12 @@ class HostHomeScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Top Row: Notification and Profile Profile
+                    // Top Row: Language Toggle, Notification, Profile
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
+                        const HostLanguageToggleButton(),
+                        const SizedBox(width: AppSpacing.sm),
                         GestureDetector(
                           onTap: () {
                             Navigator.push(
@@ -259,13 +262,12 @@ class HostHomeScreen extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          'Homestay Host',
+                          HostTranslation.homestayHost,
                           style: AppTextStyles.bodyMedium.copyWith(
                             color: AppColors.secondary,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-
                       ],
                     ),
                   ],
@@ -293,7 +295,7 @@ class HostHomeScreen extends StatelessWidget {
             children: [
               Expanded(
                 child: _OverviewStat(
-                  title: 'Active\nHomestays',
+                  title: HostTranslation.activeHomestays,
                   stream: homestayRepo
                       .getHostHomestays(uid)
                       .map((l) => l.where((h) => h.status == 'Active').length),
@@ -303,7 +305,7 @@ class HostHomeScreen extends StatelessWidget {
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: _OverviewStat(
-                  title: 'Pending\nBookings',
+                  title: HostTranslation.pendingBookings,
                   stream: bookingRepo
                       .getHostBookings(uid)
                       .map((l) => l.where((b) => b.bookingStatus == 'pending').length),
@@ -313,10 +315,14 @@ class HostHomeScreen extends StatelessWidget {
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: _OverviewStat(
-                  title: 'Upcoming\nBookings',
+                  title: HostTranslation.upcomingBookingsStat,
                   stream: bookingRepo
                       .getHostBookings(uid)
-                      .map((l) => l.where((b) => b.bookingStatus == 'accepted' || b.bookingStatus == 'confirmed').length),
+                      .map((l) => l
+                          .where((b) =>
+                              b.bookingStatus == 'accepted' ||
+                              b.bookingStatus == 'confirmed')
+                          .length),
                   icon: Icons.calendar_month_outlined,
                 ),
               ),
@@ -330,7 +336,7 @@ class HostHomeScreen extends StatelessWidget {
             children: [
               Expanded(
                 child: _CurrencyOverviewStat(
-                  title: 'Total Earnings',
+                  title: HostTranslation.totalEarnings,
                   stream: bookingRepo.getHostBookings(uid).map((bookings) =>
                       bookings
                           .where((b) => b.paymentStatus == 'paid')
@@ -342,7 +348,7 @@ class HostHomeScreen extends StatelessWidget {
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: _CurrencyOverviewStat(
-                  title: 'Pending Payments',
+                  title: HostTranslation.pendingPayments,
                   stream: bookingRepo.getHostBookings(uid).map((bookings) =>
                       bookings
                           .where((b) =>
@@ -408,7 +414,7 @@ class HostHomeScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Add New Homestay',
+                          HostTranslation.addNewHomestay,
                           style: AppTextStyles.bodyMedium.copyWith(
                             fontWeight: FontWeight.bold,
                             color: AppColors.primaryDark,
@@ -417,7 +423,7 @@ class HostHomeScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'List your village stay for travelers',
+                          HostTranslation.listYourVillageStay,
                           style: AppTextStyles.caption.copyWith(
                             color: AppColors.textSecondary,
                           ),
@@ -448,62 +454,116 @@ class HostHomeScreen extends StatelessWidget {
                 .snapshots()
           : null,
       builder: (context, snapshot) {
-        int listedCount = 0;
-        List<Widget> homestayCards = [];
+        return StreamBuilder<QuerySnapshot>(
+          stream: user != null
+              ? FirebaseFirestore.instance
+                    .collection('homestay_bookings')
+                    .where('hostId', isEqualTo: user.uid)
+                    .snapshots()
+              : null,
+          builder: (context, bookingSnapshot) {
+            int listedCount = 0;
+            List<Widget> homestayCards = [];
 
-        if (snapshot.hasData) {
-          final docs = snapshot.data!.docs;
-          listedCount = docs.length;
+            final allBookings = (bookingSnapshot.hasData)
+                ? bookingSnapshot.data!.docs.map((doc) {
+                    return HomestayBooking.fromMap(
+                      doc.data() as Map<String, dynamic>,
+                      doc.id,
+                    );
+                  }).toList()
+                : <HomestayBooking>[];
 
-          for (var doc in docs) {
-            final data = doc.data() as Map<String, dynamic>;
-            final images = List<String>.from(data['images'] ?? []);
-            final imageUrl = images.isNotEmpty
-                ? images.first
-                : 'assets/images/onboarding/onboarding_01.png';
+            final validBookings = allBookings
+                .where((b) =>
+                    b.bookingStatus != 'cancelled' &&
+                    b.bookingStatus != 'rejected')
+                .toList();
 
-            homestayCards.add(
-              HostHomestayCard(
-                title: data['title'] ?? 'Unnamed Homestay',
-                location: data['location'] ?? 'Unknown Location',
-                roomsInfo:
-                    '${data['roomsCount'] ?? 1} Rooms  |  Up to ${data['maxGuests'] ?? 2} Guests',
-                priceInfo:
-                    'Rs. ${data['pricePerNight']?.toString() ?? '0'}/night',
-                occupancyInfo: '0% Booked', // placeholder logic
-                status: data['status'] ?? 'Active',
-                imageUrl: imageUrl,
-                onTapManage: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => UpdateHomestayScreen(
-                        homestay: Homestay.fromMap(data, doc.id),
-                      ),
-                    ),
-                  );
-                },
-                onTapCard: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          HomestayDetailsScreen(homestayId: doc.id),
-                    ),
-                  );
-                },
-              ),
-            );
-          }
-        }
+            final now = DateTime.now();
+            final currentYear = now.year;
+            final currentMonth = now.month;
+            final daysInMonth = DateTime(currentYear, currentMonth + 1, 0).day;
+            final firstDayOfMonth = DateTime(currentYear, currentMonth, 1);
+            final lastDayOfMonth =
+                DateTime(currentYear, currentMonth, daysInMonth, 23, 59, 59);
+
+            if (snapshot.hasData) {
+              final docs = snapshot.data!.docs;
+              listedCount = docs.length;
+
+              for (var doc in docs) {
+                final data = doc.data() as Map<String, dynamic>;
+                final images = List<String>.from(data['images'] ?? []);
+                final imageUrl = images.isNotEmpty
+                    ? images.first
+                    : 'assets/images/onboarding/onboarding_01.png';
+
+                int bookedNightsForHomestay = 0;
+                for (final b in validBookings) {
+                  if (b.homestayId == doc.id &&
+                      b.checkOutDate.isAfter(firstDayOfMonth) &&
+                      b.checkInDate.isBefore(lastDayOfMonth)) {
+                    final start = b.checkInDate.isBefore(firstDayOfMonth)
+                        ? firstDayOfMonth
+                        : b.checkInDate;
+                    final end = b.checkOutDate.isAfter(lastDayOfMonth)
+                        ? lastDayOfMonth
+                        : b.checkOutDate;
+                    final diff = end.difference(start).inDays;
+                    bookedNightsForHomestay += (diff <= 0 ? 1 : diff);
+                  }
+                }
+
+                final homestayOccupancy = daysInMonth > 0
+                    ? ((bookedNightsForHomestay / daysInMonth) * 100)
+                        .toInt()
+                        .clamp(0, 100)
+                    : 0;
+
+                homestayCards.add(
+                  HostHomestayCard(
+                    title: data['title'] ?? 'Unnamed Homestay',
+                    location: data['location'] ?? 'Unknown Location',
+                    roomsInfo:
+                        '${data['roomsCount'] ?? 1} ${HostTranslation.rooms}  |  ${HostTranslation.upTo} ${data['maxGuests'] ?? 2} ${HostTranslation.guests}',
+                    priceInfo:
+                        'Rs. ${data['pricePerNight']?.toString() ?? '0'}${HostTranslation.perNight}',
+                    occupancyInfo:
+                        '$homestayOccupancy% ${HostTranslation.booked}',
+                    status: data['status'] ?? 'Active',
+                    imageUrl: imageUrl,
+                    onTapManage: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => UpdateHomestayScreen(
+                            homestay: Homestay.fromMap(data, doc.id),
+                          ),
+                        ),
+                      );
+                    },
+                    onTapCard: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              HomestayDetailsScreen(homestayId: doc.id),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              }
+            }
 
         if (homestayCards.isEmpty) {
           homestayCards.add(
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               child: Text(
-                'No homestays listed yet.',
-                style: TextStyle(color: AppColors.textSecondary),
+                HostTranslation.noHomestaysYet,
+                style: const TextStyle(color: AppColors.textSecondary),
               ),
             ),
           );
@@ -518,44 +578,53 @@ class HostHomeScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Text(
-                        'My Homestays',
-                        style: AppTextStyles.sectionHeading.copyWith(
-                          color: AppColors.primaryDark,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          '$listedCount Listed',
-                          style: AppTextStyles.caption.copyWith(
-                            color: AppColors.primaryDark,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 10,
+                  Expanded(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            HostTranslation.myHomestays,
+                            style: AppTextStyles.sectionHeading.copyWith(
+                              color: AppColors.primaryDark,
+                              fontSize: HostTranslation.isSi ? 18 : 22,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: AppSpacing.sm),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '$listedCount ${HostTranslation.listed}',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.primaryDark,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: 8),
                   InkWell(
                     onTap: onGoToBookings ?? () {},
                     child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'Manage All ',
+                          HostTranslation.manageAll,
                           style: AppTextStyles.caption.copyWith(
                             color: AppColors.secondary,
                             fontWeight: FontWeight.bold,
@@ -582,11 +651,13 @@ class HostHomeScreen extends StatelessWidget {
               )
             else
               ...homestayCards,
-          ],
-        );
-      },
-    );
-  }
+            ],
+          );
+        },
+      );
+    },
+  );
+}
 
   String _getMonth(int month) {
     const months = [
@@ -615,14 +686,20 @@ class HostHomeScreen extends StatelessWidget {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
-                'Upcoming Bookings',
-                style: AppTextStyles.sectionHeading.copyWith(
-                  color: AppColors.primaryDark,
+              Expanded(
+                child: Text(
+                  HostTranslation.upcomingBookings,
+                  style: AppTextStyles.sectionHeading.copyWith(
+                    color: AppColors.primaryDark,
+                    fontSize: HostTranslation.isSi ? 18 : 22,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+              const SizedBox(width: 8),
               InkWell(
                 onTap: () {
                   Navigator.push(
@@ -633,9 +710,10 @@ class HostHomeScreen extends StatelessWidget {
                   );
                 },
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'View All ',
+                      HostTranslation.viewAll,
                       style: AppTextStyles.caption.copyWith(
                         color: AppColors.secondary,
                         fontWeight: FontWeight.bold,
@@ -669,9 +747,9 @@ class HostHomeScreen extends StatelessWidget {
                 );
               }
               if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return const Text(
-                  'No upcoming bookings at the moment.',
-                  style: TextStyle(color: AppColors.textSecondary),
+                return Text(
+                  HostTranslation.noUpcomingBookings,
+                  style: const TextStyle(color: AppColors.textSecondary),
                 );
               }
 
@@ -694,9 +772,9 @@ class HostHomeScreen extends StatelessWidget {
               bookings.sort((a, b) => a.checkInDate.compareTo(b.checkInDate));
 
               if (bookings.isEmpty) {
-                return const Text(
-                  'No upcoming bookings at the moment.',
-                  style: TextStyle(color: AppColors.textSecondary),
+                return Text(
+                  HostTranslation.noUpcomingBookings,
+                  style: const TextStyle(color: AppColors.textSecondary),
                 );
               }
 
@@ -710,7 +788,7 @@ class HostHomeScreen extends StatelessWidget {
                   return UpcomingBookingTile(
                     guestName: booking.travelerName,
                     dateRange: '$inDate - $outDate',
-                    guestsInfo: '${booking.guestCount} Guests',
+                    guestsInfo: '${booking.guestCount} ${HostTranslation.guests}',
                     propertyName: booking.homestayTitle,
                     status:
                         booking.bookingStatus[0].toUpperCase() +
@@ -771,6 +849,8 @@ class _OverviewStat extends StatelessWidget {
               color: AppColors.textSecondary,
               fontWeight: FontWeight.w500,
             ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -807,11 +887,15 @@ class _CurrencyOverviewStat extends StatelessWidget {
             stream: stream,
             builder: (context, snapshot) {
               final amount = snapshot.data ?? 0.0;
-              return Text(
-                'Rs. ${NumberFormat('#,##0').format(amount)}',
-                style: AppTextStyles.labelLarge.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primaryDark,
+              return FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Rs. ${NumberFormat('#,##0').format(amount)}',
+                  style: AppTextStyles.labelLarge.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primaryDark,
+                  ),
                 ),
               );
             },
@@ -823,20 +907,11 @@ class _CurrencyOverviewStat extends StatelessWidget {
               color: AppColors.textSecondary,
               fontWeight: FontWeight.w500,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-

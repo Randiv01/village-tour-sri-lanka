@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../../theme/app_colors.dart';
 import '../../../../../theme/app_text_styles.dart';
+import '../../../../../services/host_language_service.dart';
 
 class HostHomestayCard extends StatelessWidget {
   final String title;
@@ -101,8 +102,10 @@ class HostHomestayCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          status,
-                          style: TextStyle(
+                          isActive
+                              ? HostTranslation.statusActive
+                              : HostTranslation.statusInactive,
+                          style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             color: AppColors.textPrimary,
@@ -157,10 +160,14 @@ class HostHomestayCard extends StatelessWidget {
                         color: AppColors.textSecondary,
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        location,
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.textSecondary,
+                      Expanded(
+                        child: Text(
+                          location,
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -174,10 +181,14 @@ class HostHomestayCard extends StatelessWidget {
                         color: AppColors.textSecondary,
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        roomsInfo,
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.textSecondary,
+                      Expanded(
+                        child: Text(
+                          roomsInfo,
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -192,10 +203,14 @@ class HostHomestayCard extends StatelessWidget {
                           fontSize: 18,
                         ),
                       ),
-                      Text(
-                        ' /${priceInfo.split('/')[1]}',
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.textSecondary,
+                      Flexible(
+                        child: Text(
+                          ' /${priceInfo.split('/')[1]}',
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -221,25 +236,33 @@ class HostHomestayCard extends StatelessWidget {
                                 color: Colors.green,
                               ),
                               const SizedBox(width: 8),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    occupancyInfo,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.green[800],
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      occupancyInfo,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.green[800],
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                  ),
-                                  const Text(
-                                    'This month',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      color: Colors.green,
+                                    Text(
+                                      HostTranslation.isSi
+                                          ? 'මෙම මස'
+                                          : 'This month',
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.green,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ],
                           ),
@@ -253,23 +276,23 @@ class HostHomestayCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
+                            horizontal: 14,
                             vertical: 12,
                           ),
                         ),
                         onPressed: onTapManage,
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
-                          children: const [
+                          children: [
                             Text(
-                              'Manage',
-                              style: TextStyle(
+                              HostTranslation.manageAction,
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 13,
                               ),
                             ),
-                            SizedBox(width: 4),
-                            Icon(
+                            const SizedBox(width: 4),
+                            const Icon(
                               Icons.chevron_right,
                               size: 16,
                               color: Colors.white,

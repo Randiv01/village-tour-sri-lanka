@@ -10,6 +10,7 @@ import '../../../models/tour_package.dart';
 import '../../../models/guide_booking.dart';
 import '../../../repositories/guide_booking_repository.dart';
 import '../../../services/email_service.dart';
+import '../../../widgets/common/app_status_dialog.dart';
 
 class TravelerTourBookingScreen extends StatefulWidget {
   final TourPackage package;
@@ -210,9 +211,12 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
 
     final user = _auth.currentUser;
     if (user == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please log in to book.')));
+      AppStatusDialog.showWarning(
+        context: context,
+        title: 'Sign In Required',
+        message: 'Please sign in to your account before booking this tour package.',
+        buttonText: 'OK',
+      );
       return;
     }
 
@@ -229,8 +233,11 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
       );
       if (isOverlap) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Dates are no longer available.')),
+          AppStatusDialog.showWarning(
+            context: context,
+            title: 'Dates Unavailable',
+            message: 'These dates are no longer available. Please select different dates for your tour.',
+            buttonText: 'Choose Other Dates',
           );
           setState(() => _isSubmitting = false);
         }
@@ -289,16 +296,31 @@ class _TravelerTourBookingScreenState extends State<TravelerTourBookingScreen> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Booking request sent!')));
-        Navigator.pop(context); // Go back to details
+        await AppStatusDialog.showSuccess(
+          context: context,
+          title: 'Booking Request Sent!',
+          message:
+              'Thank you for booking with Village Tour Sri Lanka. Your request has been sent to the guide.',
+          details: [
+            'Tour: ${widget.package.title}',
+            'Guests: $_guestCount',
+            'Dates: ${DateFormat('MMM dd').format(_selectedDate!)} - ${DateFormat('MMM dd, yyyy').format(_calculatedEndDate!)}',
+            'Total: Rs. ${NumberFormat('#,##0').format(widget.package.pricePerGuest * _guestCount)}',
+          ],
+          buttonText: 'Done',
+        );
+        if (mounted) {
+          Navigator.pop(context); // Go back to details
+        }
       }
     } catch (e) {
       debugPrint('Booking error: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to submit booking.')),
+        AppStatusDialog.showError(
+          context: context,
+          title: 'Booking Failed',
+          message: 'Unable to submit your tour booking request. Please check your network and try again.',
+          buttonText: 'Close',
         );
       }
     } finally {

@@ -11,6 +11,7 @@ import '../../screens/traveler/packages/traveler_tour_packages_screen.dart';
 import '../../screens/traveler/gallery/village_gallery_screen.dart';
 import '../../screens/common/contact/contact_us_screen.dart';
 import '../../screens/common/about/about_us_screen.dart';
+import '../../screens/common/auth/auth_guard.dart';
 
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -211,11 +212,16 @@ class AppSideMenu extends StatelessWidget {
                     '',
                     onTap: () {
                       Navigator.of(context).pop();
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const SettingsScreen(),
-                        ),
+                      AuthGuard.requireAuth(
+                        context: context,
+                        onAuthenticated: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const SettingsScreen(),
+                            ),
+                          );
+                        },
                       );
                     },
                   ),

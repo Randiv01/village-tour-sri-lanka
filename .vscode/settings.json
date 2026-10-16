@@ -1,0 +1,14 @@
+{
+  "java.import.gradle.enabled": false,
+  "java.import.maven.enabled": false,
+  "java.autobuild.enabled": false,
+  "java.configuration.updateBuildConfiguration": "disabled",
+  "java.configuration.checkProjectSettingsExclusions": false,
+  "java.jdt.ls.java.home": "C:\\Program Files\\Android\\Android Studio\\jbr",
+  "files.watcherExclude": {
+    "**/.gradle/**": true,
+    "**/android/.gradle/**": true,
+    "**/android/build/**": true,
+    "**/build/**": true
+  }
+}

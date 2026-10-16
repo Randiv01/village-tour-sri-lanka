@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import '../../../../services/host_language_service.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../theme/app_spacing.dart';
@@ -36,10 +36,10 @@ class HostBottomNavigation extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildNavItem(Icons.home, 'Home', 0),
-              _buildNavItem(Icons.home_work_outlined, 'Homestays', 1),
-              _buildNavItem(Icons.calendar_today_outlined, 'Bookings', 2),
-              _buildNavItem(Icons.person_outline, 'Profile', 3),
+              _buildNavItem(Icons.home, HostTranslation.navHome, 0),
+              _buildNavItem(Icons.home_work_outlined, HostTranslation.navHomestays, 1),
+              _buildNavItem(Icons.calendar_today_outlined, HostTranslation.navBookings, 2),
+              _buildNavItem(Icons.person_outline, HostTranslation.navProfile, 3),
             ],
           ),
         ),
