@@ -12,6 +12,7 @@ import '../../../../services/auth_service.dart';
 import '../main/traveler_main_screen.dart';
 import 'edit_profile_screen.dart';
 import '../../common/contact/contact_us_screen.dart';
+import '../notifications/traveler_notifications_screen.dart';
 
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -96,7 +97,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   color: AppColors.primaryDark,
                 ),
               ),
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const TravelerNotificationsScreen(),
+                  ),
+                );
+              },
             ),
           ),
         ],
