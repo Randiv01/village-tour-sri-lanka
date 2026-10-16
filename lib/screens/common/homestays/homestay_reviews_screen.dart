@@ -51,6 +51,7 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
   String? _currentUserId;
   final ScrollController _scrollController = ScrollController();
   bool _isEditing = false;
+  String? _editingReviewId;
 
   @override
   void initState() {
@@ -160,12 +161,16 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
             FieldValue.serverTimestamp(), // Always update timestamp on edit
       };
 
-      await FirebaseFirestore.instance
-          .collection('homestay_reviews')
-          .doc(
-            '${widget.homestayId}_$_currentUserId',
-          ) // User can only have one review per homestay
-          .set(reviewData, SetOptions(merge: true));
+      if (_isEditing && _editingReviewId != null) {
+        await FirebaseFirestore.instance
+            .collection('homestay_reviews')
+            .doc(_editingReviewId)
+            .set(reviewData, SetOptions(merge: true));
+      } else {
+        await FirebaseFirestore.instance
+            .collection('homestay_reviews')
+            .add(reviewData);
+      }
 
       // Notify the host about the review
       try {
@@ -193,6 +198,7 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
       } catch (_) {}
 
       if (!mounted) return;
+      final wasEditing = _isEditing;
       setState(() {
         _rating = 0;
         _selectedTags = [];
@@ -200,11 +206,12 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
         _selectedPhotos = [];
         _existingPhotoUrls = [];
         _isEditing = false;
+        _editingReviewId = null;
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            _isEditing
+            wasEditing
                 ? 'Review updated successfully!'
                 : 'Review submitted successfully!',
           ),
@@ -223,22 +230,25 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
     }
   }
 
-  Future<void> _deleteReview() async {
+  Future<void> _deleteReview(String reviewId) async {
     if (_currentUserId == null) return;
     try {
       await FirebaseFirestore.instance
           .collection('homestay_reviews')
-          .doc('${widget.homestayId}_$_currentUserId')
+          .doc(reviewId)
           .delete();
       if (!mounted) return;
-      setState(() {
-        _isEditing = false;
-        _rating = 0;
-        _selectedTags = [];
-        _reviewController.clear();
-        _selectedPhotos = [];
-        _existingPhotoUrls = [];
-      });
+      if (_editingReviewId == reviewId) {
+        setState(() {
+          _isEditing = false;
+          _editingReviewId = null;
+          _rating = 0;
+          _selectedTags = [];
+          _reviewController.clear();
+          _selectedPhotos = [];
+          _existingPhotoUrls = [];
+        });
+      }
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('Review deleted.')));
     } catch (e) {
@@ -248,10 +258,11 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
     }
   }
 
-  void _editReview(Map<String, dynamic> data) {
+  void _editReview(String reviewId, Map<String, dynamic> data) {
     setState(() {
       _isEditing = true;
-      _rating = data['rating'] ?? 0;
+      _editingReviewId = reviewId;
+      _rating = (data['rating'] as num?)?.toInt() ?? 0;
       _selectedTags = List<String>.from(data['tags'] ?? []);
       _reviewController.text = data['reviewText'] ?? '';
       _existingPhotoUrls = List<String>.from(data['images'] ?? []);
@@ -897,6 +908,7 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
               onPressed: () {
                 setState(() {
                   _isEditing = false;
+                  _editingReviewId = null;
                   _rating = 0;
                   _selectedTags = [];
                   _reviewController.clear();
@@ -1222,7 +1234,7 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
                   if (isMyReview) ...[
                     const SizedBox(width: 8),
                     GestureDetector(
-                      onTap: () => _editReview(data),
+                      onTap: () => _editReview(doc.id, data),
                       child: const Icon(
                         Icons.edit_outlined,
                         color: Color(0xFF1E6B52),
@@ -1231,7 +1243,7 @@ class _HomestayReviewsScreenState extends State<HomestayReviewsScreen> {
                     ),
                     const SizedBox(width: 8),
                     GestureDetector(
-                      onTap: _deleteReview,
+                      onTap: () => _deleteReview(doc.id),
                       child: const Icon(
                         Icons.delete_outline,
                         color: Colors.red,
