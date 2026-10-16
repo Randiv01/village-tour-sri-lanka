@@ -25,6 +25,7 @@ class _SavedCardsScreenState extends State<SavedCardsScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => _EditCardBottomSheet(
         card: card,
@@ -522,57 +523,115 @@ class _EditCardBottomSheetState extends State<_EditCardBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      padding: EdgeInsets.only(
-        top: 20,
-        left: 20,
-        right: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-      ),
-      child: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Edit Card Details',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primaryDark,
+    final topPadding = MediaQuery.of(context).padding.top;
+
+    return Padding(
+      // Keep comfortable clearance below the status/notification bar
+      padding: EdgeInsets.only(top: topPadding > 0 ? topPadding + 16 : 48),
+      child: Container(
+        decoration: const BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 16,
+              offset: Offset(0, -4),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 12),
+                // Drag handle pill (consistent with other modal sheets)
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 4.5,
+                    decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(3),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
+                ),
+                const SizedBox(height: 8),
+
+                // Header
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 8,
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Edit Card Details',
+                        style: AppTextStyles.screenHeading.copyWith(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        icon: Container(
+                          padding: const EdgeInsets.all(7),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
+                            border: Border.all(
+                              color: AppColors.border.withValues(alpha: 0.8),
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.close,
+                            size: 16,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(
+                  height: 1,
+                  thickness: 0.5,
+                  color: AppColors.border,
+                ),
 
-              // Card Preview
-              CardVisualWidget(
-                bankName: _selectedBank,
-                cardHolderName: _nameController.text,
-                cardNumber: widget.card.cardNumberMasked,
-                expiry: _expiryController.text,
-                cardBrand: widget.card.cardBrand,
-                cardType: _cardType,
-                themeIndex: _selectedThemeIndex,
-                isDefault: _isDefault,
-              ),
-
-              const SizedBox(height: 16),
+                // Scrollable Form content
+                Flexible(
+                  child: Form(
+                    key: _formKey,
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Card Preview
+                          CardVisualWidget(
+                            bankName: _selectedBank,
+                            cardHolderName: _nameController.text,
+                            cardNumber: widget.card.cardNumberMasked,
+                            expiry: _expiryController.text,
+                            cardBrand: widget.card.cardBrand,
+                            cardType: _cardType,
+                            themeIndex: _selectedThemeIndex,
+                            isDefault: _isDefault,
+                          ),
+                          const SizedBox(height: 16),
 
               // Bank Name Selector
               const Text(
@@ -801,7 +860,13 @@ class _EditCardBottomSheetState extends State<_EditCardBottomSheet> {
                   ),
                 ),
               ],
-            ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
