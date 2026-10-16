@@ -625,6 +625,9 @@ class _TravelerHostChatScreenState extends State<TravelerHostChatScreen> {
     required String timeStr,
     String? imageUrl,
   }) {
+    final primaryText = isMe ? text : translatedText;
+    final secondaryText = isMe ? translatedText : text;
+
     return GestureDetector(
       onLongPress: () {
         if (!isMe) return;
@@ -731,9 +734,9 @@ class _TravelerHostChatScreenState extends State<TravelerHostChatScreen> {
                               ),
                             ),
                           ),
-                        if (text.isNotEmpty)
+                        if (primaryText.isNotEmpty)
                           Text(
-                            text,
+                            primaryText,
                             style: AppTextStyles.bodyMedium.copyWith(
                               color: isMe
                                   ? Colors.white
@@ -761,7 +764,7 @@ class _TravelerHostChatScreenState extends State<TravelerHostChatScreen> {
                                 ),
                               ),
                               TextSpan(
-                                text: translatedText,
+                                text: secondaryText,
                                 style: AppTextStyles.bodyMedium.copyWith(
                                   color: isMe
                                       ? Colors.white
