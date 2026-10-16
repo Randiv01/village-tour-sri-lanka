@@ -485,7 +485,7 @@ class _HostChatScreenState extends State<HostChatScreen> {
                           border: Border.all(color: const Color(0xFFFFD1B3)),
                         ),
                         child: Text(
-                          'GUIDE',
+                          'GUEST',
                           style: AppTextStyles.caption.copyWith(
                             color: const Color(0xFFD97706),
                             fontSize: 9,
