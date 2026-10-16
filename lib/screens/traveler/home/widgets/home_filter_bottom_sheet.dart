@@ -488,57 +488,66 @@ class _HomeFilterBottomSheetState extends State<HomeFilterBottomSheet> {
                 AppSpacing.xl,
                 AppSpacing.xl,
               ),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    offset: const Offset(0, -4),
-                    blurRadius: 16,
-                  ),
-                ],
-              ),
+              // Same background as the sheet — no visual break between scroll area and buttons
+              color: AppColors.background,
               child: Row(
                 children: [
-                  TextButton(
-                    onPressed: _hasAnyFilter ? _clearFilters : null,
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.lg,
-                        vertical: AppSpacing.md,
+                  // Clear button — bordered, equal width
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _hasAnyFilter ? _clearFilters : null,
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(
+                          color: _hasAnyFilter
+                              ? AppColors.primaryDark
+                              : AppColors.border,
+                          width: 1.5,
+                        ),
+                        foregroundColor: _hasAnyFilter
+                            ? AppColors.primaryDark
+                            : AppColors.textSecondary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.md,
+                        ),
+                        minimumSize: const Size(0, 50),
                       ),
-                      minimumSize: const Size(0, 44),
-                    ),
-                    child: Text(
-                      'Clear All',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: _hasAnyFilter
-                            ? AppColors.textSecondary
-                            : AppColors.textSecondary.withValues(alpha: 0.4),
-                        fontWeight: FontWeight.bold,
+                      child: Text(
+                        'Clear',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: _hasAnyFilter
+                              ? AppColors.primaryDark
+                              : AppColors.textSecondary.withValues(alpha: 0.5),
+                        ),
                       ),
                     ),
                   ),
-                  const Spacer(),
-                  ElevatedButton(
-                    onPressed: _applyFilters,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: AppColors.surface,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                  const SizedBox(width: AppSpacing.md),
+                  // Apply button — filled, equal width
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _applyFilters,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.surface,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.md,
+                        ),
+                        minimumSize: const Size(0, 50),
                       ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.xl,
-                        vertical: AppSpacing.md,
-                      ),
-                      minimumSize: const Size(0, 44),
-                    ),
-                    child: Text(
-                      'Apply Filters',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.surface,
-                        fontWeight: FontWeight.bold,
+                      child: Text(
+                        'Apply Filters',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),

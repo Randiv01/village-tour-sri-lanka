@@ -202,7 +202,7 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
   int get _activeFilterCount {
     int c = 0;
     if (_typeFilter != 'all') c++;
-    if (_statusFilter != 'all') c++;
+    // _statusFilter is handled by the always-visible tab bar, not the badge
     if (_sortOrder != 'newest') c++;
     if (_dateRange != null) c++;
     return c;
@@ -761,8 +761,12 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
                 ),
               ),
 
-              // Active filter chips row
-              if (_activeFilterCount > 0)
+              // ── Status tab bar ──────────────────────────────────
+              _buildStatusTabBar(allBookings),
+              const SizedBox(height: AppSpacing.sm),
+
+              // Active filter chips row (type/sort/date — not status)
+              if (_typeFilter != 'all' || _sortOrder != 'newest' || _dateRange != null)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
                     AppSpacing.lg,
@@ -789,8 +793,6 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
                                       ? '🗺️ Tour Package'
                                       : '🏠 Homestay',
                                 ),
-                              if (_statusFilter != 'all')
-                                _activeChip(_statusLabel(_statusFilter)),
                               if (_sortOrder != 'newest')
                                 _activeChip(_sortLabel(_sortOrder)),
                               if (_dateRange != null)
@@ -871,6 +873,98 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
       ),
     );
   }
+  /// Horizontally scrollable status chip tabs shown permanently above the list.
+  /// Each chip shows a live count and directly sets [_statusFilter].
+  Widget _buildStatusTabBar(List<UnifiedBooking> allBookings) {
+    final tabs = <Map<String, String>>[
+      {'label': 'All',         'value': 'all',       'icon': ''},
+      {'label': 'Pending',     'value': 'pending',   'icon': '⏳'},
+      {'label': 'Payment Due', 'value': 'accepted',  'icon': '💳'},
+      {'label': 'Confirmed',   'value': 'confirmed', 'icon': '✅'},
+      {'label': 'Rejected',    'value': 'rejected',  'icon': '❌'},
+      {'label': 'Cancelled',   'value': 'cancelled', 'icon': '🚫'},
+    ];
+
+    return SizedBox(
+      height: 38,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        itemCount: tabs.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final tab = tabs[index];
+          final value = tab['value']!;
+          final isSelected = _statusFilter == value;
+
+          // Live count per tab
+          final count = value == 'all'
+              ? allBookings.length
+              : allBookings.where((b) => b.status == value).length;
+          final showCount = count > 0;
+
+          return GestureDetector(
+            onTap: () => setState(() => _statusFilter = value),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.primaryDark : Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isSelected ? AppColors.primaryDark : AppColors.border,
+                  width: isSelected ? 1.5 : 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (tab['icon']!.isNotEmpty) ...[
+                    Text(tab['icon']!, style: const TextStyle(fontSize: 12)),
+                    const SizedBox(width: 4),
+                  ],
+                  Text(
+                    tab['label']!,
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : AppColors.textPrimary,
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontSize: 13,
+                    ),
+                  ),
+                  if (showCount) ...[
+                    const SizedBox(width: 5),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? Colors.white.withValues(alpha: 0.25)
+                            : AppColors.primaryDark.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '$count',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: isSelected
+                              ? Colors.white
+                              : AppColors.primaryDark,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
 
   Widget _buildEmptyState(bool noBookingsAtAll) {
     return Center(
@@ -940,22 +1034,6 @@ class _TravelerBookingsScreenState extends State<TravelerBookingsScreen> {
     );
   }
 
-  String _statusLabel(String s) {
-    switch (s) {
-      case 'pending':
-        return '⏳ Pending';
-      case 'confirmed':
-        return '✅ Confirmed';
-      case 'rejected':
-        return '❌ Rejected';
-      case 'cancelled':
-        return '🚫 Cancelled';
-      case 'accepted':
-        return '💳 Payment Due';
-      default:
-        return s;
-    }
-  }
 
   String _sortLabel(String s) {
     switch (s) {

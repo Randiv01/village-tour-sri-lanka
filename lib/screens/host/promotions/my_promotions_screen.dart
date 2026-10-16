@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -25,6 +26,9 @@ class _MyPromotionsScreenState extends State<MyPromotionsScreen> {
   final ShareRepository _shareRepo = ShareRepository();
   String _selectedPeriod = 'This Month';
   final List<String> _periods = ['This Week', 'This Month', 'All Time'];
+
+  bool _showPieChart = false;
+  int? _selectedPieSliceIndex;
 
   String? _selectedHomestayId;
   String _selectedHomestayTitle = 'All Village Homestays';
@@ -1067,8 +1071,457 @@ class _MyPromotionsScreenState extends State<MyPromotionsScreen> {
             pct(copyCount),
             AppColors.secondary,
           ),
+          const SizedBox(height: AppSpacing.lg),
+          // View on Pie Chart toggle button
+          _buildPieChartToggleButton(),
+          // Animated expandable Pie Chart section
+          AnimatedSize(
+            duration: const Duration(milliseconds: 320),
+            curve: Curves.easeInOutCubic,
+            child: _showPieChart
+                ? Padding(
+                    padding: const EdgeInsets.only(top: AppSpacing.md),
+                    child: _buildPieChartSection(
+                      total: total,
+                      waCount: waCount,
+                      fbCount: fbCount,
+                      igCount: igCount,
+                      copyCount: copyCount,
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
         ],
       ),
+    );
+  }
+
+  /// Toggle button to open/hide the pie chart view
+  Widget _buildPieChartToggleButton() {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            _showPieChart = !_showPieChart;
+            if (!_showPieChart) {
+              _selectedPieSliceIndex = null;
+            }
+          });
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 14),
+          decoration: BoxDecoration(
+            color: _showPieChart
+                ? AppColors.primaryDark.withValues(alpha: 0.08)
+                : const Color(0xFFF9F7F2),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: _showPieChart
+                  ? AppColors.primaryDark.withValues(alpha: 0.35)
+                  : AppColors.border.withValues(alpha: 0.7),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                _showPieChart
+                    ? Icons.pie_chart_rounded
+                    : Icons.pie_chart_outline_rounded,
+                size: 18,
+                color: _showPieChart
+                    ? AppColors.primaryDark
+                    : AppColors.secondary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                _showPieChart ? 'Hide Pie Chart' : 'View on Pie Chart',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primaryDark,
+                  letterSpacing: 0.2,
+                ),
+              ),
+              const SizedBox(width: 6),
+              AnimatedRotation(
+                turns: _showPieChart ? 0.5 : 0.0,
+                duration: const Duration(milliseconds: 250),
+                child: Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: 20,
+                  color: _showPieChart
+                      ? AppColors.primaryDark
+                      : AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Beautiful animated Pie/Donut Chart view with interactive touch & legend
+  Widget _buildPieChartSection({
+    required int total,
+    required int waCount,
+    required int fbCount,
+    required int igCount,
+    required int copyCount,
+  }) {
+    final slices = [
+      _SocialSlice(
+        label: 'WhatsApp Share Link',
+        shortLabel: 'WhatsApp',
+        count: waCount,
+        percentage: total > 0 ? (waCount / total) : 0.0,
+        color: const Color(0xFF25D366),
+        icon: Icons.chat_bubble_outline,
+      ),
+      _SocialSlice(
+        label: 'Facebook Social Share',
+        shortLabel: 'Facebook',
+        count: fbCount,
+        percentage: total > 0 ? (fbCount / total) : 0.0,
+        color: const Color(0xFF1877F2),
+        icon: Icons.facebook_outlined,
+      ),
+      _SocialSlice(
+        label: 'Instagram Travel Link',
+        shortLabel: 'Instagram',
+        count: igCount,
+        percentage: total > 0 ? (igCount / total) : 0.0,
+        color: const Color(0xFFE1306C),
+        icon: Icons.camera_alt_outlined,
+      ),
+      _SocialSlice(
+        label: 'Direct Link Copy & Other',
+        shortLabel: 'Direct Link',
+        count: copyCount,
+        percentage: total > 0 ? (copyCount / total) : 0.0,
+        color: AppColors.secondary,
+        icon: Icons.link_rounded,
+      ),
+    ];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFAF8F5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.border.withValues(alpha: 0.6),
+          width: 0.8,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.secondary,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  const Text(
+                    'Traffic Distribution',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primaryDark,
+                    ),
+                  ),
+                ],
+              ),
+              if (total > 0)
+                Text(
+                  _selectedPieSliceIndex != null
+                      ? 'Tap center to clear'
+                      : 'Tap slice or chip',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontStyle: FontStyle.italic,
+                    color: AppColors.textSecondary.withValues(alpha: 0.8),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Donut Chart with touch detection and smooth sweep animation
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: const Duration(milliseconds: 700),
+            curve: Curves.easeOutCubic,
+            builder: (context, animProgress, _) {
+              return GestureDetector(
+                onTapUp: (details) {
+                  const center = Offset(90, 90);
+                  final dx = details.localPosition.dx - center.dx;
+                  final dy = details.localPosition.dy - center.dy;
+                  final distance = math.sqrt(dx * dx + dy * dy);
+
+                  // Center hole tapped -> reset selection
+                  if (distance < 46) {
+                    setState(() => _selectedPieSliceIndex = null);
+                    return;
+                  }
+
+                  // Ring band tapped -> calculate tapped slice
+                  if (distance >= 46 && distance <= 94 && total > 0) {
+                    double angle = math.atan2(dy, dx);
+                    // normalize so -pi/2 (12 o'clock) is 0
+                    double normAngle = angle + (math.pi / 2);
+                    if (normAngle < 0) normAngle += 2 * math.pi;
+
+                    double currentAngle = 0;
+                    for (int i = 0; i < slices.length; i++) {
+                      final sweep = slices[i].percentage * 2 * math.pi;
+                      if (sweep > 0 &&
+                          normAngle >= currentAngle &&
+                          normAngle <= currentAngle + sweep) {
+                        setState(() {
+                          _selectedPieSliceIndex =
+                              (_selectedPieSliceIndex == i) ? null : i;
+                        });
+                        break;
+                      }
+                      currentAngle += sweep;
+                    }
+                  }
+                },
+                child: SizedBox(
+                  width: 180,
+                  height: 180,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      CustomPaint(
+                        size: const Size(180, 180),
+                        painter: _SocialPieChartPainter(
+                          slices: slices,
+                          animationProgress: animProgress,
+                          selectedIndex: _selectedPieSliceIndex,
+                        ),
+                      ),
+                      // Center Hole information
+                      _buildPieCenterHole(total, slices),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+          // Interactive clickable chips legend
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.center,
+            children: List.generate(slices.length, (idx) {
+              final s = slices[idx];
+              final isSelected = _selectedPieSliceIndex == idx;
+              final isMuted = _selectedPieSliceIndex != null && !isSelected;
+
+              return InkWell(
+                onTap: () {
+                  setState(() {
+                    if (_selectedPieSliceIndex == idx) {
+                      _selectedPieSliceIndex = null;
+                    } else {
+                      _selectedPieSliceIndex = idx;
+                    }
+                  });
+                },
+                borderRadius: BorderRadius.circular(10),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? s.color.withValues(alpha: 0.14)
+                        : (isMuted
+                            ? Colors.white.withValues(alpha: 0.5)
+                            : Colors.white),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isSelected
+                          ? s.color
+                          : AppColors.border.withValues(alpha: 0.7),
+                      width: isSelected ? 1.5 : 0.6,
+                    ),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: s.color.withValues(alpha: 0.18),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: s.color,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        s.shortLabel,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.w600,
+                          color: isSelected
+                              ? AppColors.primaryDark
+                              : AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 1.5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: s.color.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          '${(s.percentage * 100).toStringAsFixed(0)}%',
+                          style: TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.bold,
+                            color: s.color,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Center information displayed inside the donut hole
+  Widget _buildPieCenterHole(int total, List<_SocialSlice> slices) {
+    if (total == 0) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.share_outlined,
+            size: 20,
+            color: AppColors.textSecondary,
+          ),
+          const SizedBox(height: 2),
+          const Text(
+            '0',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primaryDark,
+            ),
+          ),
+          const Text(
+            'No Clicks',
+            style: TextStyle(
+              fontSize: 9,
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (_selectedPieSliceIndex != null &&
+        _selectedPieSliceIndex! >= 0 &&
+        _selectedPieSliceIndex! < slices.length) {
+      final s = slices[_selectedPieSliceIndex!];
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(s.icon, size: 18, color: s.color),
+          const SizedBox(height: 2),
+          Text(
+            '${(s.percentage * 100).toStringAsFixed(0)}%',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: s.color,
+              height: 1.1,
+            ),
+          ),
+          Text(
+            '${s.count} ${s.count == 1 ? 'click' : 'clicks'}',
+            style: const TextStyle(
+              fontSize: 9.5,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primaryDark,
+            ),
+          ),
+          Text(
+            s.shortLabel,
+            style: const TextStyle(
+              fontSize: 8.5,
+              color: AppColors.textSecondary,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          NumberFormat('#,##0').format(total),
+          style: const TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w900,
+            color: AppColors.primaryDark,
+            height: 1.1,
+          ),
+        ),
+        const Text(
+          'TOTAL CLICKS',
+          style: TextStyle(
+            fontSize: 8.5,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textSecondary,
+            letterSpacing: 0.8,
+          ),
+        ),
+      ],
     );
   }
 
@@ -2430,6 +2883,104 @@ class _MyPromotionsScreenState extends State<MyPromotionsScreen> {
         );
       },
     );
+  }
+}
+
+/// Data model for pie chart slices
+class _SocialSlice {
+  final String label;
+  final String shortLabel;
+  final int count;
+  final double percentage;
+  final Color color;
+  final IconData icon;
+
+  const _SocialSlice({
+    required this.label,
+    required this.shortLabel,
+    required this.count,
+    required this.percentage,
+    required this.color,
+    required this.icon,
+  });
+}
+
+/// Custom painter for rendering a modern, smooth donut pie chart
+class _SocialPieChartPainter extends CustomPainter {
+  final List<_SocialSlice> slices;
+  final double animationProgress;
+  final int? selectedIndex;
+
+  _SocialPieChartPainter({
+    required this.slices,
+    required this.animationProgress,
+    this.selectedIndex,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    const strokeWidth = 26.0;
+    final baseRadius = (size.width - strokeWidth - 14) / 2;
+
+    // Check if total clicks == 0
+    final hasData = slices.any((s) => s.count > 0);
+    if (!hasData) {
+      final emptyPaint = Paint()
+        ..color = const Color(0xFFEBE6DC)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth
+        ..strokeCap = StrokeCap.round;
+      canvas.drawCircle(center, baseRadius, emptyPaint);
+      return;
+    }
+
+    final activeSlices = slices.where((s) => s.count > 0).toList();
+
+    double startAngle = -math.pi / 2; // 12 o'clock
+
+    for (int i = 0; i < slices.length; i++) {
+      final slice = slices[i];
+      if (slice.count <= 0) continue;
+
+      final isSelected = selectedIndex == i;
+      final sweepAngle = slice.percentage * 2 * math.pi * animationProgress;
+      if (sweepAngle <= 0.001) continue;
+
+      final currentRadius = isSelected ? baseRadius + 4 : baseRadius;
+      final currentStroke = isSelected ? strokeWidth + 6 : strokeWidth;
+
+      final paint = Paint()
+        ..color = slice.color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = currentStroke
+        ..strokeCap =
+            activeSlices.length == 1 ? StrokeCap.round : StrokeCap.butt;
+
+      double drawStart = startAngle;
+      double drawSweep = sweepAngle;
+
+      // Small slice separator gap if more than 1 slice
+      if (activeSlices.length > 1) {
+        const gap = 0.04;
+        if (sweepAngle > gap * 2) {
+          drawStart = startAngle + gap;
+          drawSweep = sweepAngle - (gap * 2);
+        }
+      }
+
+      final rect = Rect.fromCircle(center: center, radius: currentRadius);
+      canvas.drawArc(rect, drawStart, drawSweep, false, paint);
+
+      startAngle += sweepAngle;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _SocialPieChartPainter oldDelegate) {
+    return oldDelegate.animationProgress != animationProgress ||
+        oldDelegate.selectedIndex != selectedIndex ||
+        oldDelegate.slices != slices;
   }
 }
 

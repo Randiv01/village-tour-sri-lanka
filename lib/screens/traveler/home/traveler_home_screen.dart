@@ -790,6 +790,7 @@ class TravelerHomeScreenState extends State<TravelerHomeScreen>
     final result = await showModalBottomSheet<HomeFilterData>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (context) => HomeFilterBottomSheet(initialData: _filterData),
     );

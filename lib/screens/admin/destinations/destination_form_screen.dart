@@ -504,7 +504,7 @@ class _DestinationFormScreenState extends State<DestinationFormScreen> {
         },
         child: Form(
           key: _formKey,
-          autovalidateMode: AutovalidateMode.onUserInteraction,
+          autovalidateMode: AutovalidateMode.disabled,
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(AppSpacing.lg),
             child: Column(
@@ -711,6 +711,9 @@ class _DestinationFormScreenState extends State<DestinationFormScreen> {
       controller: controller,
       focusNode: focusNode,
       maxLines: maxLines,
+      // Each field independently validates only when the user
+      // interacts with *that specific field*, not when other fields change.
+      autovalidateMode: AutovalidateMode.onUserInteraction,
       keyboardType: isNumeric
           ? const TextInputType.numberWithOptions(decimal: true, signed: true)
           : TextInputType.text,
